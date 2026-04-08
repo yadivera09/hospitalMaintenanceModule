@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersdayanmaintenanceModule -type f \\\\\\(-name *.sql -o -name *supabase* -o -name *migrations* \\\\\\))"
+    ]
+  }
+}
