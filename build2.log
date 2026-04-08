@@ -1,0 +1,390 @@
+
+> app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (133kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ Ô£ô Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/18) ...
+[getDashboardStats] n [Error]: Dynamic server usage: Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\auth\logout\route.js:12:15807)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:11327)
+    at A (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:5963)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getActividadReciente] n [Error]: Dynamic server usage: Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\auth\logout\route.js:12:15807)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:12055)
+    at A (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:5992)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getDashboardStats] n [Error]: Dynamic server usage: Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\auth\logout\route.js:12:15807)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:11327)
+    at A (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:5963)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getActividadReciente] n [Error]: Dynamic server usage: Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\auth\logout\route.js:12:15807)
+    at n (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:12055)
+    at A (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\dashboard\page.js:1:5992)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/clientes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:50303)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:47633)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\clientes\page.js:1:11828)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/clientes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/clientes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:50303)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:47633)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\clientes\page.js:1:11828)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/clientes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getTecnicos] n [Error]: Dynamic server usage: Route /admin/tecnicos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\329.js:1:12267)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\tecnicos\page.js:1:13111)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/tecnicos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getTecnicos] n [Error]: Dynamic server usage: Route /admin/tecnicos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\329.js:1:12267)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\tecnicos\page.js:1:13111)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/tecnicos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getMisReportes] n [Error]: Dynamic server usage: Route /tecnico/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:24303)
+    at M (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\957.js:1:18303)
+    at o (C:\Users\dayan\maintenanceModule\app\.next\server\app\(tecnico)\tecnico\dashboard\page.js:2:4710)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /tecnico/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getMisReportes] n [Error]: Dynamic server usage: Route /tecnico/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:24303)
+    at M (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\957.js:1:18303)
+    at o (C:\Users\dayan\maintenanceModule\app\.next\server\app\(tecnico)\tecnico\dashboard\page.js:2:4710)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /tecnico/dashboard couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getContratos] n [Error]: Dynamic server usage: Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at s (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:20873)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\contratos\page.js:1:13000)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:12833)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\contratos\page.js:1:13020)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getContratos] n [Error]: Dynamic server usage: Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at s (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:20873)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\contratos\page.js:1:13000)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:15503)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\885.js:1:12833)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\contratos\page.js:1:13020)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/contratos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getMisReportes] n [Error]: Dynamic server usage: Route /tecnico/mis-reportes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:24303)
+    at M (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\957.js:1:18303)
+    at a (C:\Users\dayan\maintenanceModule\app\.next\server\app\(tecnico)\tecnico\mis-reportes\page.js:4:1852)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /tecnico/mis-reportes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getMisReportes] n [Error]: Dynamic server usage: Route /tecnico/mis-reportes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at i (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\308.js:1:24303)
+    at M (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\957.js:1:18303)
+    at a (C:\Users\dayan\maintenanceModule\app\.next\server\app\(tecnico)\tecnico\mis-reportes\page.js:4:1852)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /tecnico/mis-reportes couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (4/18) 
+   Generating static pages (8/18) 
+   Generating static pages (13/18) 
+[getCategorias] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at f (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:1836)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46887)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getInsumos] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at h (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:3319)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46906)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getUbicaciones] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at w (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:4877)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46929)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:47633)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46949)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getCategorias] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at f (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:1836)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46887)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getInsumos] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at h (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:3319)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46906)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getUbicaciones] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at w (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\240.js:1:4877)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46929)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[getClientes] n [Error]: Dynamic server usage: Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\355.js:23:4125)
+    at r (C:\Users\dayan\maintenanceModule\app\.next\server\chunks\609.js:20:4593)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:47633)
+    at l (C:\Users\dayan\maintenanceModule\app\.next\server\app\(admin)\admin\catalogos\page.js:1:46949)
+    at em (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\dayan\maintenanceModule\app\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /admin/catalogos couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ Ô£ô Generating static pages (18/18)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Ôöî Ôùï /                                    5.35 kB        92.8 kB
+Ôö£ Ôùï /_not-found                          876 B          88.4 kB
+Ôö£ ãÆ /admin/catalogos                     11.4 kB         138 kB
+Ôö£ ãÆ /admin/clientes                      3.14 kB         173 kB
+Ôö£ ãÆ /admin/clientes/[id]                 3.01 kB         173 kB
+Ôö£ ãÆ /admin/contratos                     3.42 kB         175 kB
+Ôö£ ãÆ /admin/contratos/[id]                3.42 kB         175 kB
+Ôö£ ãÆ /admin/dashboard                     178 B          96.4 kB
+Ôö£ ãÆ /admin/equipos                       3.38 kB         174 kB
+Ôö£ ãÆ /admin/equipos/[id]                  5.48 kB         177 kB
+Ôö£ Ôùï /admin/reportes                      2.77 kB         131 kB
+Ôö£ ãÆ /admin/reportes/[id]                 5.94 kB         108 kB
+Ôö£ Ôùï /admin/reportes/analisis             3.31 kB         100 kB
+Ôö£ ãÆ /admin/tecnicos                      3.92 kB         174 kB
+Ôö£ ãÆ /admin/tecnicos/[id]                 2.78 kB         173 kB
+Ôö£ ãÆ /auth/logout                         0 B                0 B
+Ôö£ Ôùï /login                               4.68 kB         156 kB
+Ôö£ ãÆ /tecnico/dashboard                   3.33 kB         106 kB
+Ôö£ ãÆ /tecnico/mis-reportes                2.3 kB          105 kB
+Ôö£ Ôùï /tecnico/nuevo-reporte               6.41 kB         103 kB
+Ôöö ãÆ /tecnico/nuevo-reporte/[equipoId]    18.9 kB         142 kB
++ First Load JS shared by all            87.5 kB
+  Ôö£ chunks/2117-0381404f9c5e2a8b.js      31.7 kB
+  Ôö£ chunks/fd9d1056-fce859fffd8e9a74.js  53.6 kB
+  Ôöö other shared chunks (total)          2.12 kB
+
+
+ãÆ Middleware                             74.7 kB
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

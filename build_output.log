@@ -1,0 +1,20 @@
+
+> app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/app/actions/reportes.ts
+Module not found: Can't resolve '../lib/supabase/admin'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5Cdayan%5C%5CmaintenanceModule%5C%5Capp%5C%5Csrc%5C%5Capp%5C%5Cactions%5C%5Ctecnicos.ts%22%2C%5B%22updateTecnico%22%2C%22toggleActivoTecnico%22%2C%22createTecnico%22%2C%22getTecnicoById%22%2C%22getTecnicos%22%5D%5D%2C%5B%22C%3A%5C%5CUsers%5C%5Cdayan%5C%5CmaintenanceModule%5C%5Capp%5C%5Csrc%5C%5Capp%5C%5Cactions%5C%5Creportes.ts%22%2C%5B%22createBorradorReporte%22%2C%22guardarDetalleReporte%22%2C%22firmarComoCliente%22%2C%22getMisReportes%22%2C%22guardarInsumosTecnicos%22%2C%22firmarComoTecnico%22%5D%5D%5D&__client_imported__=true!
+
+
+> Build failed because of webpack errors

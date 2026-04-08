@@ -1,0 +1,93 @@
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\contratos\[id]\ContratoDetalleClient.tsx
+   30:15   error  'Contrato' is defined but never used                             @typescript-eslint/no-unused-vars
+   82:56   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  127:55   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  301:124  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  301:132  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\contratos\[id]\page.tsx
+  13:42  error  'params' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\equipos\[id]\EquiposDetalleClient.tsx
+   52:15  error  'Equipo' is defined but never used              @typescript-eslint/no-unused-vars
+   62:62  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   62:85  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  140:12  error  'isPending' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  170:44  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  176:57  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  394:65  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  444:53  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  495:56  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\equipos\[id]\page.tsx
+  25:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\reportes\[id]\page.tsx
+  21:34  error  'AlertCircle' is defined but never used    @typescript-eslint/no-unused-vars
+  35:15  error  'EstadoReporte' is defined but never used  @typescript-eslint/no-unused-vars
+  47:10  error  'formatFecha' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\reportes\analisis\page.tsx
+  10:21  error  'AlertTriangle' is defined but never used  @typescript-eslint/no-unused-vars
+  10:43  error  'Wrench' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\tecnicos\TecnicosPageClient.tsx
+   8:20  error  'useMemo' is defined but never used      @typescript-eslint/no-unused-vars
+  32:10  error  'EstadoBadge' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\tecnicos\[id]\TecnicoDetalleClient.tsx
+  6:36  error  'Hash' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(admin)\admin\tecnicos\[id]\page.tsx
+  11:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\(tecnico)\tecnico\mis-reportes\page.tsx
+  13:10  error  'Button' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\(tecnico)\tecnico\nuevo-reporte\[equipoId]\page.tsx
+    4:11  error  'DraftData' is defined but never used                      @typescript-eslint/no-unused-vars
+   60:7   error  'TEC_ACTUAL_ID' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  118:11  error  'labels' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  559:35  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  559:50  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  559:72  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  704:31  error  'setFirmaClienteSaved' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  720:28  error  'setNombreFirmante' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  762:33  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  783:45  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  784:71  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  913:40  error  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\(tecnico)\tecnico\nuevo-reporte\page.tsx
+  92:18  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\actions\catalogos.ts
+  206:14  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  289:14  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  368:14  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  444:14  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\app\actions\dashboard.ts
+  96:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\actions\equipos.ts
+  259:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  365:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\actions\reportes.ts
+  165:88  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\dayan\maintenanceModule\app\src\app\actions\tecnicos.ts
+   83:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:14  error  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\components\admin\Navbar.tsx
+  75:11  error  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\dayan\maintenanceModule\app\src\components\admin\equipos\EquipoForm.tsx
+  96:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Ô£û 52 problems (52 errors, 0 warnings)
+
