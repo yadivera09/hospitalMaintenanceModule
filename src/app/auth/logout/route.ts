@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse }  from 'next/server'
+import { NextResponse } from 'next/server'
 import { clearSesionMfa } from '@/app/actions/mfa'
 
 /**
@@ -27,6 +27,6 @@ export async function POST() {
     await supabase.auth.signOut()
 
     return NextResponse.redirect(
-        new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
+        new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hospital-maintenance-module-60jmr3dsk-yadivera09s-projects.vercel.app/login')
     )
 }
