@@ -105,6 +105,9 @@ export default function EquiposTable({
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
                             Cliente actual
                         </TableHead>
+                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
+                            Contrato
+                        </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
                             Estado
                         </TableHead>
@@ -171,12 +174,19 @@ export default function EquiposTable({
                                             <p className="text-sm text-[#334155] font-medium truncate max-w-[160px]">
                                                 {clienteNombre}
                                             </p>
-                                            <p className="text-xs text-[#94A3B8] font-mono">
-                                                {numeroContrato ?? ''}
-                                            </p>
                                         </div>
                                     ) : (
                                         <span className="text-xs text-[#94A3B8] italic">Sin asignación</span>
+                                    )}
+                                </TableCell>
+                                {/* Contrato */}
+                                <TableCell className="py-3.5 hidden lg:table-cell">
+                                    {numeroContrato ? (
+                                        <span className="text-xs text-[#334155] font-mono bg-[#F1F5F9] px-2 py-1 rounded">
+                                            {numeroContrato}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-[#94A3B8]">—</span>
                                     )}
                                 </TableCell>
 

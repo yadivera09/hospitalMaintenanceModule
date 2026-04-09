@@ -7,7 +7,7 @@
 
 import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, HardHat, Search, AlertCircle, Download } from 'lucide-react'
+import { Plus, HardHat, Search, AlertCircle, Download, Copy, Check } from 'lucide-react'
 import { exportToExcel } from '@/lib/exportToExcel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +50,8 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
     const [modoForm, setModoForm] = useState<'crear' | 'editar'>('crear')
     const [errorForm, setErrorForm] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [passwordModal, setPasswordModal] = useState<{ nombre: string; password: string } | null>(null)
+    const [passwordCopiado, setPasswordCopiado] = useState(false)
 
     // Reflejar cambios del SSR si refescamos globalmente y search está vacío
     if (busqueda === '' && lista !== tecnicosIniciales) {
@@ -98,6 +100,15 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
         setIsSubmitting(false)
         if (result.error) { setErrorForm(result.error); return }
         cerrarModal()
+
+        // Mostrar contraseña temporal si viene del crear
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pt = (result.data as any)?.passwordTemporal
+        if (pt) {
+            setPasswordCopiado(false)
+            setPasswordModal({ nombre: `${valores.nombre} ${valores.apellido}`, password: pt })
+        }
+
         if (busqueda) handleSearch(busqueda)
         else startTransition(() => { router.refresh() })
     }
@@ -248,7 +259,46 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Modal contraseña temporal */}
+            <Dialog open={!!passwordModal} onOpenChange={(open) => !open && setPasswordModal(null)}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#0F172A]">Técnico creado</DialogTitle>
+                        <DialogDescription className="text-[#94A3B8]">
+                            Comunica esta contraseña temporal a <strong className="text-[#334155]">{passwordModal?.nombre}</strong>.
+                            Deberá configurar su MFA en el primer inicio de sesión.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                        <code className="flex-1 text-sm font-mono font-semibold text-[#0F172A] tracking-widest">
+                            {passwordModal?.password}
+                        </code>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(passwordModal?.password ?? '')
+                                setPasswordCopiado(true)
+                                setTimeout(() => setPasswordCopiado(false), 2000)
+                            }}
+                            className="shrink-0 rounded-md border border-[#E2E8F0] p-1.5 text-[#94A3B8] hover:text-[#1E40AF] transition-colors"
+                            aria-label="Copiar contraseña"
+                        >
+                            {passwordCopiado ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                    </div>
+                    <p className="text-xs text-[#94A3B8]">
+                        Formato: 3 letras nombre + 3 letras apellido + 123
+                    </p>
+                    <Button
+                        onClick={() => setPasswordModal(null)}
+                        className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                    >
+                        Entendido
+                    </Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal crear/editar técnico */}
             <Dialog open={modalAbierto} onOpenChange={(open) => !open && cerrarModal()}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>

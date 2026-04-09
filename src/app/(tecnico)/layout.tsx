@@ -9,9 +9,8 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Plus, ClipboardList, HardHat, LogOut } from 'lucide-react'
 import OfflineBanner from '@/components/tecnico/OfflineBanner'
-import { MOCK_TECNICOS } from '@/mocks/tecnicos'
-
-const MOCK_TECNICO_ACTUAL = MOCK_TECNICOS[0] // Marcos Rodríguez (BLOQUE 1 — mock)
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV_ITEMS = [
     { href: '/tecnico/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -22,6 +21,54 @@ const NAV_ITEMS = [
 export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const router = useRouter()
+    const [tecnico, setTecnico] = useState<{ nombre: string; apellido: string } | null>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        async function cargarTecnico() {
+            const supabase = createClient()
+
+            // Obtener sesión actual
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session) {
+                setLoading(false)
+                return
+            }
+
+            // Buscar en la tabla tecnicos usando el email
+            const { data: tecnicoData } = await supabase
+                .from('tecnicos')
+                .select('nombre, apellido')
+                .eq('email', session.user.email)
+                .single()
+
+            if (tecnicoData) {
+                setTecnico(tecnicoData)
+            } else {
+                // Fallback: usar metadata de auth
+                setTecnico({
+                    nombre: session.user.user_metadata?.nombre || 'Técnico',
+                    apellido: session.user.user_metadata?.apellido || ''
+                })
+            }
+            setLoading(false)
+        }
+
+        cargarTecnico()
+    }, [])
+
+    // Mostrar un estado de carga mientras se obtienen los datos
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF] mx-auto"></div>
+                    <p className="mt-2 text-sm text-[#64748B]">Cargando...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-[#F1F5F9] flex flex-col">
@@ -40,12 +87,13 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
                     <div className="flex items-center gap-2">
                         <div className="text-right">
                             <p className="text-xs font-semibold text-white leading-none">
-                                {MOCK_TECNICO_ACTUAL.nombre} {MOCK_TECNICO_ACTUAL.apellido}
+                                {tecnico ? `${tecnico.nombre} ${tecnico.apellido}` : 'Cargando...'}
                             </p>
                             <p className="text-[10px] text-[#64748B] leading-none mt-0.5">Técnico</p>
                         </div>
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1E40AF] text-white text-xs font-bold">
-                            {MOCK_TECNICO_ACTUAL.nombre[0]}{MOCK_TECNICO_ACTUAL.apellido[0]}
+                            {tecnico ? tecnico.nombre[0] : '?'}
+                            {tecnico ? tecnico.apellido[0] : ''}
                         </div>
                         <form action="/auth/logout" method="POST" className="ml-1 flex items-center">
                             <button

@@ -10,9 +10,9 @@ import { NextResponse, type NextRequest } from 'next/server'
  * AUTH_ROUTES  — páginas públicas de autenticación (sin sesión requerida).
  * ADMIN_ROUTES / TECNICO_ROUTES — rutas protegidas por rol.
  */
-const MFA_ROUTES    = ['/configurar-mfa', '/verificar-mfa']
-const AUTH_ROUTES   = ['/login']
-const ADMIN_ROUTES  = ['/admin']
+const MFA_ROUTES = ['/configurar-mfa', '/verificar-mfa']
+const AUTH_ROUTES = ['/login']
+const ADMIN_ROUTES = ['/admin']
 const TECNICO_ROUTES = ['/tecnico']
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -146,39 +146,29 @@ export async function middleware(request: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function resolveMfaState(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase: any,
     userId: string
 ): Promise<'ok' | 'needs-setup' | 'needs-verify'> {
-    // Paso 1: verificar nivel AAL del JWT actual
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
     const currentLevel: string = aalData?.currentLevel ?? 'aal1'
-    const nextLevel: string    = aalData?.nextLevel    ?? 'aal1'
+    const nextLevel: string = aalData?.nextLevel ?? 'aal1'
 
-    // Usuario TOTP con factor enrollado y ya verificado → OK
+    // ✅ Log temporal para confirmar qué lee el middleware (quitar en producción)
+    console.log('[middleware] AAL →', { currentLevel, nextLevel, userId })
+
     if (currentLevel === 'aal2') return 'ok'
-
-    // Usuario TOTP con factor enrollado pero sin verificar en esta sesión
-    // (nextLevel='aal2' significa que hay un factor verificable disponible)
     if (nextLevel === 'aal2') return 'needs-verify'
 
-    // Paso 2: sin factor TOTP enrollado → consultar tabla tecnicos
-    // (cubre: usuarios email, usuarios sin MFA aún configurado)
+    // Solo consultar DB si no hay factor TOTP
     const { data: tecnico } = await supabase
         .from('tecnicos')
         .select('mfa_configurado, mfa_metodo, mfa_sesion_verificada')
         .eq('user_id', userId)
         .single()
 
-    // Sin fila en tecnicos → tratar igual que mfa_configurado = false.
-    // Todos los usuarios del sistema deben tener su fila en tecnicos antes
-    // de poder acceder. Si no existe, el flujo de /configurar-mfa la creará
-    // (o el admin de Supabase debe insertar la fila manualmente).
     if (!tecnico) return 'needs-setup'
-
     if (!tecnico.mfa_configurado) return 'needs-setup'
 
-    // Método email: el flag de sesión es la única señal de verificación
     if (tecnico.mfa_metodo === 'email' && !tecnico.mfa_sesion_verificada) {
         return 'needs-verify'
     }

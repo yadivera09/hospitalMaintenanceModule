@@ -118,33 +118,41 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
 
     const admin = createAdminClient()
 
-    // ── Paso 1: crear usuario en Supabase Auth vía invitación ─────────────────
-    // inviteUserByEmail envía el correo de bienvenida automáticamente.
-    // El campo `rol` en user_metadata es leído por el middleware para el routing.
-    // redirectTo apunta al callback que intercambia el token y redirige a /configurar-mfa.
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-    const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
-        parsed.data.email,
-        {
-            data: { rol: 'tecnico' },
-            redirectTo: `${siteUrl}/auth/callback?next=/configurar-mfa`,
-        }
-    )
-
-    if (inviteErr) {
-        // Supabase devuelve este mensaje cuando el email ya tiene cuenta en Auth.
-        // El técnico existe en Auth pero puede que no tenga fila en tecnicos —
-        // el admin debe usar el panel de detalle para gestionar ese caso.
-        if (inviteErr.message?.toLowerCase().includes('already been registered')) {
-            return { data: null, error: 'Este email ya tiene una cuenta en el sistema.' }
-        }
-        console.error('[createTecnico] inviteUserByEmail', inviteErr)
-        return { data: null, error: 'No se pudo enviar la invitación. Intenta de nuevo.' }
+    // ── Generar contraseña temporal: 3 letras nombre + 3 apellido + 123 ──────
+    // Ej: "Yadira Vera" → "yadver123"
+    function generarPasswordTemporal(nombre: string, apellido: string): string {
+        const n = nombre.trim().toLowerCase().replace(/\s+/g, '').slice(0, 3).padEnd(3, 'x')
+        const a = apellido.trim().toLowerCase().replace(/\s+/g, '').slice(0, 3).padEnd(3, 'x')
+        return `${n}${a}123`
     }
 
-    const userId = inviteData.user.id
+    const passwordTemporal = generarPasswordTemporal(parsed.data.nombre, parsed.data.apellido)
 
-    // ── Paso 2: insertar fila en tecnicos con el user_id recién creado ─────────
+    // ── Paso 1: crear usuario en Auth con contraseña temporal ─────────────────
+    const { data: createData, error: createErr } = await admin.auth.admin.createUser({
+        email: parsed.data.email,
+        password: passwordTemporal,
+        email_confirm: true,           // confirmar email automáticamente
+        user_metadata: {
+            rol: 'tecnico',
+            debe_cambiar_password: true,
+            nombre: parsed.data.nombre,
+            apellido: parsed.data.apellido,
+        },
+    })
+
+    if (createErr) {
+        if (createErr.message?.toLowerCase().includes('already been registered') ||
+            createErr.message?.toLowerCase().includes('already exists')) {
+            return { data: null, error: 'Este email ya tiene una cuenta en el sistema.' }
+        }
+        console.error('[createTecnico] createUser', createErr)
+        return { data: null, error: 'No se pudo crear el usuario. Intenta de nuevo.' }
+    }
+
+    const userId = createData.user.id
+
+    // ── Paso 2: insertar fila en tecnicos ─────────────────────────────────────
     try {
         const supabase = createClient()
         const { data, error } = await supabase
@@ -162,16 +170,20 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
             .single()
 
         if (error) {
-            // Rollback: eliminar el usuario de Auth para no dejar un huérfano.
             await admin.auth.admin.deleteUser(userId)
-
             if (error.code === '23505') return { data: null, error: 'Ya existe un técnico con ese email o cédula.' }
             throw error
         }
 
-        return { data: data as Tecnico, error: null }
+        return {
+            data: {
+                ...(data as Tecnico),
+                // @ts-expect-error campo extra solo para mostrar al admin
+                passwordTemporal,
+            },
+            error: null
+        }
     } catch (err) {
-        // Rollback defensivo por si el catch llega después de un error no 23505.
         await admin.auth.admin.deleteUser(userId).catch(() => {})
         console.error('[createTecnico] insert tecnicos', err)
         return { data: null, error: 'Error al registrar el técnico.' }
