@@ -98,7 +98,8 @@ export default function ContratosTable({
     }
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="w-full overflow-x-auto">
+            <div className="min-w-[640px] lg:min-w-full">
             <Table>
                 <TableHeader>
                     <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
@@ -218,6 +219,7 @@ export default function ContratosTable({
                     })}
                 </TableBody>
             </Table>
+            </div>
         </div>
     )
 }

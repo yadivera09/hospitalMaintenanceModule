@@ -83,7 +83,8 @@ export default function EquiposTable({
     }
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="w-full overflow-x-auto">
+            <div className="min-w-[640px] lg:min-w-full">
             <Table>
                 <TableHeader>
                     <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
@@ -102,10 +103,10 @@ export default function EquiposTable({
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
                             Categoría
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
+                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden xl:table-cell">
                             Cliente actual
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
+                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden xl:table-cell">
                             Contrato
                         </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
@@ -168,7 +169,7 @@ export default function EquiposTable({
                                 </TableCell>
 
                                 {/* Cliente actual */}
-                                <TableCell className="py-3.5 hidden lg:table-cell">
+                                <TableCell className="py-3.5 hidden xl:table-cell">
                                     {clienteNombre ? (
                                         <div>
                                             <p className="text-sm text-[#334155] font-medium truncate max-w-[160px]">
@@ -180,7 +181,7 @@ export default function EquiposTable({
                                     )}
                                 </TableCell>
                                 {/* Contrato */}
-                                <TableCell className="py-3.5 hidden lg:table-cell">
+                                <TableCell className="py-3.5 hidden xl:table-cell">
                                     {numeroContrato ? (
                                         <span className="text-xs text-[#334155] font-mono bg-[#F1F5F9] px-2 py-1 rounded">
                                             {numeroContrato}
@@ -225,6 +226,7 @@ export default function EquiposTable({
                     })}
                 </TableBody>
             </Table>
+            </div>
         </div>
     )
 }

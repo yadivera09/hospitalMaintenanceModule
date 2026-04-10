@@ -149,10 +149,10 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
 
     return (
         <div className="space-y-6">
-            {/* Encabezado */}
-            <div className="flex items-center justify-between gap-3">
+            {/* Encabezado - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#1E40AF]/10">
                         <Cpu className="h-5 w-5 text-[#1E40AF]" />
                     </div>
                     <div>
@@ -163,31 +163,35 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Botones - se apilan en mobile, horizontal en desktop */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Button
                         variant="outline"
                         onClick={() => setModalCargaMasivaAbierto(true)}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50"
+                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 justify-center"
                     >
                         <Upload className="h-4 w-4" />
-                        Carga masiva
+                        <span className="hidden sm:inline">Carga masiva</span>
+                        <span className="sm:hidden">Carga</span>
                     </Button>
                     <Button
                         variant="outline"
                         onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50"
+                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 justify-center"
                         id="btn-exportar-equipos"
                     >
                         <Download className="h-4 w-4" />
-                        Exportar Excel
+                        <span className="hidden sm:inline">Exportar Excel</span>
+                        <span className="sm:hidden">Exportar</span>
                     </Button>
                     <Button
                         id="btn-nuevo-equipo"
                         onClick={() => { setErrorCrear(null); setModalNuevoAbierto(true) }}
-                        className="gap-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                        className="gap-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white justify-center"
                     >
                         <Plus className="h-4 w-4" />
-                        Nuevo Equipo
+                        <span className="hidden sm:inline">Nuevo Equipo</span>
+                        <span className="sm:hidden">Nuevo</span>
                     </Button>
                 </div>
             </div>
