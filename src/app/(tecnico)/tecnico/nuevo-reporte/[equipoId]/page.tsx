@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog'
 import { getActividadesByCategoria } from '@/mocks/catalogos'
 import { getTiposMantenimiento, getUbicaciones, getInsumos, TipoMantenimiento, UbicacionConCliente, Insumo } from '@/app/actions/catalogos'
+import { getEquipoById } from '@/app/actions/equipos'
 import type { ActividadChecklist } from '@/types'
 import type SignatureCanvasType from 'react-signature-canvas'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -798,6 +799,17 @@ export default function NuevoReporteWizard() {
     const draftReporteId = searchParams.get('reporteId')
     const modoLectura = searchParams.get('modo') === 'lectura'
 
+    // Debug: Log del equipoId
+    console.log('[NuevoReporteWizard] equipoId:', equipoId)
+    console.log('[NuevoReporteWizard] tipo:', typeof equipoId)
+
+    // Validar que equipoId sea un UUID válido
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(equipoId)
+    if (!isValidUUID) {
+        console.error('ID de equipo inválido:', equipoId)
+        return <div className="p-4 text-red-600">Error: ID de equipo inválido</div>
+    }
+
     const firmaRef = useRef<SignatureCanvasType | null>(null)
     const firmaClienteRef = useRef<SignatureCanvasType | null>(null)
     const [firmaSaved, setFirmaSaved] = useState(false)
@@ -879,13 +891,31 @@ export default function NuevoReporteWizard() {
         async function cargarContexto() {
             setCargandoContexto(true)
             try {
-                const { getEquipoById } = await import('@/app/actions/equipos')
                 const { getTecnicos } = await import('@/app/actions/tecnicos')
                 const { getReporteBorradorData, getUltimoMantenimientoPreventivo } = await import('@/app/actions/reportes')
                 const supabaseModule = await import('@/lib/supabase/client').catch(() => null)
 
+                // Cargar equipo primero con manejo de error temprano
+                const eqRes = await getEquipoById(equipoId)
+
+                if (eqRes.error || !eqRes.data) {
+                    console.error('Error cargando equipo:', eqRes.error)
+                    setErrorGlobal(`Equipo no encontrado: ${eqRes.error || 'El equipo no existe o no tiene contrato vigente'}`)
+                    setCargandoContexto(false)
+                    return
+                }
+
+                setEquipo(eqRes.data as any)
+                setContratoVigente(eqRes.data.contrato_id ? {
+                    numero_contrato: eqRes.data.numero_contrato ?? '',
+                    cliente_nombre: eqRes.data.cliente_nombre
+                } : null)
+
+                if (eqRes.data.checklist_template) {
+                    setChecklistTemplate(eqRes.data.checklist_template)
+                }
+
                 const promesas: any[] = [
-                    getEquipoById(equipoId),
                     getTecnicos({ activo: true }),
                     getUltimoMantenimientoPreventivo(equipoId)
                 ]
@@ -903,18 +933,10 @@ export default function NuevoReporteWizard() {
                     promesas.push(Promise.resolve({ data: { user: null } }))
                 }
 
-                const [eqRes, tecsRes, prevRes, draftRes, authRes] = await Promise.all(promesas)
+                const [tecsRes, prevRes, draftRes, authRes] = await Promise.all(promesas)
 
                 if (prevRes?.data) {
                     setUltimoPreventivo(prevRes.data)
-                }
-
-                if (eqRes?.data) {
-                    setEquipo(eqRes.data as any)
-                    setContratoVigente(eqRes.data.contrato_vigente as any)
-                    if (eqRes.data.checklist_template) {
-                        setChecklistTemplate(eqRes.data.checklist_template)
-                    }
                 }
 
                 if (tecsRes?.data) {
@@ -930,9 +952,7 @@ export default function NuevoReporteWizard() {
                 }
 
                 // Cargar tipos, ubicaciones e insumos asegurandonos de tener el cliente si aplica
-                const clienteId = (eqRes?.data as any)?.contrato_vigente?.cliente_id
-                    || (eqRes?.data as any)?.cliente_id
-                    || undefined
+                const clienteId = eqRes.data.cliente_id || undefined
                 console.log('[cargarContexto] clienteId:', clienteId)
                 const [tiposRes, ubicasRes, insumosRes] = await Promise.all([
                     getTiposMantenimiento(),

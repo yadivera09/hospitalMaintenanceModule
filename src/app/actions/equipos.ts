@@ -118,11 +118,13 @@ export async function getEquipos(filtros?: {
  */
 export async function getEquipoById(
     id: string
-): Promise<ActionResult<EquipoConCliente & { historial_contratos: unknown[], mantenimientos: unknown[], historial_ubicaciones: any[] }>> {
+): Promise<ActionResult<EquipoConCliente & { historial_contratos: unknown[], mantenimientos: unknown[], historial_ubicaciones: any[], checklist_template: unknown[], ultimo_preventivo: string | null }>> {
     try {
         const supabase = createClient()
 
-        // 1. Fetch equipo info first to get categoria_id
+        console.log('[getEquipoById] Buscando equipo con ID:', id)
+
+        // 1. Verificar que el equipo existe
         const { data: equipoBase, error: eErr } = await supabase
             .from('equipos')
             .select(`
@@ -131,17 +133,36 @@ export async function getEquipoById(
                 tipo_mantenimiento:tipos_mantenimiento(id, nombre, periodicidad_dias)
             `)
             .eq('id', id)
-            .single()
+            .maybeSingle()
 
-        if (eErr || !equipoBase) throw new Error('Equipo no encontrado.')
+        if (eErr) {
+            console.error('[getEquipoById] Error en consulta equipo:', eErr)
+            throw new Error(`Error al buscar equipo: ${eErr.message}`)
+        }
 
-        // 2. Fetch all other related data in parallel
-        const [vigenteRes, historialRes, mantenimientosRes, resPreventivo, ubicacionesRes, checklistRes] = await Promise.all([
-            supabase
-                .from('v_equipo_contrato_vigente')
-                .select('*')
-                .eq('equipo_id', id)
-                .maybeSingle(),
+        if (!equipoBase) {
+            console.error('[getEquipoById] Equipo no encontrado con ID:', id)
+            throw new Error('Equipo no encontrado')
+        }
+
+        console.log('[getEquipoById] Equipo encontrado:', equipoBase.codigo_mh)
+
+        // 2. Obtener contrato vigente usando la vista
+        const { data: vigente, error: vigError } = await supabase
+            .from('v_equipo_contrato_vigente')
+            .select('*')
+            .eq('equipo_id', id)
+            .maybeSingle()
+
+        if (vigError) {
+            console.error('[getEquipoById] Error al obtener contrato vigente:', vigError)
+            // No lanzamos error, solo continuamos sin contrato
+        }
+
+        console.log('[getEquipoById] Contrato vigente:', vigente ? 'Sí' : 'No')
+
+        // 3. Obtener resto de datos en paralelo
+        const [historialRes, mantenimientosRes, resPreventivo, ubicacionesRes, checklistRes] = await Promise.all([
             supabase
                 .from('equipo_contratos')
                 .select(`
@@ -185,7 +206,6 @@ export async function getEquipoById(
                 .order('orden', { ascending: true })
         ])
 
-        const vigente = vigenteRes.data
         const ultimoPreventivo = resPreventivo.data?.fecha_inicio ?? null
         const historialUbicaciones = ubicacionesRes.data ?? []
         const checklistTemplate = checklistRes.data ?? []
@@ -208,7 +228,7 @@ export async function getEquipoById(
             error: null,
         }
     } catch (err: any) {
-        console.error('[getEquipoById]', err)
+        console.error('[getEquipoById] Error:', err)
         return { data: null, error: err.message || 'Equipo no encontrado.' }
     }
 }
