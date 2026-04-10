@@ -167,7 +167,8 @@ const paso3Schema = z.object({
         nombre: z.string(),
         codigo: z.string().nullable(),
         unidad: z.string(),
-        cantidad: z.number().gt(0, 'Debe ser > 0')
+        cantidad: z.number().gt(0, 'Debe ser > 0'),
+        es_nuevo: z.boolean()
     })),
     insumos_requeridos: z.array(z.object({
         uid: z.string(),
@@ -176,7 +177,8 @@ const paso3Schema = z.object({
         codigo: z.string().nullable(),
         unidad: z.string(),
         cantidad: z.number().gt(0, 'Debe ser > 0'),
-        motivo: z.string().nullable()
+        motivo: z.string().nullable(),
+        es_nuevo: z.boolean()
     })),
     accesorios: z.array(z.object({
         uid: z.string(),

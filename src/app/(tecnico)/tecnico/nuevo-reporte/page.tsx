@@ -57,6 +57,13 @@ export default function BuscarEquipoPage() {
         fetchEquipos()
     }, [])
 
+    useEffect(() => {
+        if (!cargandoEquipos && equipos.length === 0 && query.trim()) {
+            console.log('[BuscarEquipo] No se encontraron equipos para:', query)
+            console.log('[BuscarEquipo] Total equipos en estado:', equipos.length)
+        }
+    }, [equipos, cargandoEquipos, query])
+
     const resultados = useMemo(() => {
         const q = query.trim().toLowerCase()
         if (!q) return []

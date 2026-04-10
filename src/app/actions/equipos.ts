@@ -93,8 +93,13 @@ export async function getEquipos(filtros?: {
             }
         })
 
+        console.log('[getEquipos] Total equipos:', equiposConCliente.length)
+        console.log('[getEquipos] Equipos con contrato:', equiposConCliente.filter(e => e.contrato_id !== null).length)
+        console.log('[getEquipos] Primeros 3 equipos:', equiposConCliente.slice(0, 3).map(e => ({ codigo: e.codigo_mh, tieneContrato: !!e.contrato_id })))
+
         // Si se pide solo con contrato, filtramos los que no lo tienen
         if (filtros?.soloConContrato) {
+            console.log('[getEquipos] Filtrando solo equipos CON contrato')
             equiposConCliente = equiposConCliente.filter(e => e.contrato_id !== null)
         }
 
