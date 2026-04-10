@@ -3,8 +3,7 @@
 /**
  * src/components/admin/contratos/ContratosTable.tsx
  * Tabla de listado de contratos del panel administrador.
- * Props tipadas con tipos de src/types/index.ts.
- * Solo renderizado — sin lógica de negocio.
+ * Siguiendo el estándar de ClientesTable.
  */
 
 import { Eye, Pencil } from 'lucide-react'
@@ -21,24 +20,13 @@ import {
 import type { Contrato, EstadoContrato } from '@/types'
 import { computarEstadoContrato } from '@/types'
 
-// =============================================================================
-// TIPOS
-// =============================================================================
-
 interface ContratosTableProps {
     contratos: Contrato[]
     onVerDetalle: (id: string) => void
     onEditar: (contrato: Contrato) => void
 }
 
-// =============================================================================
-// HELPERS — badge de estado
-// =============================================================================
-
-const ESTADO_CONFIG: Record<
-    EstadoContrato,
-    { label: string; className: string }
-> = {
+const ESTADO_CONFIG: Record<EstadoContrato, { label: string; className: string }> = {
     activo: {
         label: 'Activo',
         className: 'bg-green-50 text-green-700 border border-green-200',
@@ -75,10 +63,6 @@ function formatFecha(fecha: string | null): string {
     })
 }
 
-// =============================================================================
-// COMPONENTE
-// =============================================================================
-
 export default function ContratosTable({
     contratos,
     onVerDetalle,
@@ -91,15 +75,14 @@ export default function ContratosTable({
                     No se encontraron contratos
                 </p>
                 <p className="mt-1 text-xs text-[#94A3B8]">
-                    Ajusta los filtros de búsqueda o crea un nuevo contrato.
+                    Intenta ajustar los filtros de búsqueda.
                 </p>
             </div>
         )
     }
 
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[640px] lg:min-w-full">
+        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
             <Table>
                 <TableHeader>
                     <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
@@ -113,10 +96,7 @@ export default function ContratosTable({
                             Tipo
                         </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
-                            Fecha inicio
-                        </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
-                            Fecha fin
+                            Vigencia
                         </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
                             Estado
@@ -145,12 +125,11 @@ export default function ContratosTable({
                                     </button>
                                 </TableCell>
 
-                                {/* Cliente */}
+                                {/* Cliente + fechas en mobile */}
                                 <TableCell className="py-3.5">
                                     <span className="text-sm text-[#334155]">
                                         {contrato.cliente?.razon_social ?? '—'}
                                     </span>
-                                    {/* Fechas en móvil */}
                                     <p className="mt-0.5 text-xs text-[#94A3B8] lg:hidden">
                                         {formatFecha(contrato.fecha_inicio)}
                                         {' → '}
@@ -165,21 +144,11 @@ export default function ContratosTable({
                                     </span>
                                 </TableCell>
 
-                                {/* Fecha inicio */}
+                                {/* Vigencia (fechas juntas) */}
                                 <TableCell className="py-3.5 hidden lg:table-cell">
-                                    <span className="text-sm text-[#334155]">
+                                    <span className={`text-sm ${estado === 'vencido' ? 'text-red-600' : 'text-[#334155]'}`}>
                                         {formatFecha(contrato.fecha_inicio)}
-                                    </span>
-                                </TableCell>
-
-                                {/* Fecha fin */}
-                                <TableCell className="py-3.5 hidden lg:table-cell">
-                                    <span
-                                        className={`text-sm ${estado === 'vencido'
-                                                ? 'text-red-600 font-medium'
-                                                : 'text-[#334155]'
-                                            }`}
-                                    >
+                                        {' → '}
                                         {formatFecha(contrato.fecha_fin)}
                                     </span>
                                 </TableCell>
@@ -219,7 +188,6 @@ export default function ContratosTable({
                     })}
                 </TableBody>
             </Table>
-            </div>
         </div>
     )
 }

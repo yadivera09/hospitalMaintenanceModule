@@ -3,8 +3,7 @@
 /**
  * src/components/admin/equipos/EquiposTable.tsx
  * Tabla de listado de equipos del panel administrador.
- * La columna "Cliente actual" refleja el contrato vigente del equipo.
- * Solo renderizado — sin lógica de negocio.
+ * Siguiendo el estándar de ClientesTable.
  */
 
 import { Eye, Pencil } from 'lucide-react'
@@ -22,19 +21,11 @@ import { computarEstadoEquipo } from '@/types'
 import type { EquipoConCliente } from '@/app/actions/equipos'
 import type { EstadoEquipo } from '@/types'
 
-// =============================================================================
-// TIPOS
-// =============================================================================
-
 interface EquiposTableProps {
     equipos: EquipoConCliente[]
     onVerDetalle: (id: string) => void
     onEditar: (equipo: EquipoConCliente) => void
 }
-
-// =============================================================================
-// HELPERS — badge de estado
-// =============================================================================
 
 const ESTADO_CONFIG: Record<EstadoEquipo, { label: string; className: string }> = {
     activo: {
@@ -60,10 +51,6 @@ function BadgeEstado({ estado }: { estado: EstadoEquipo }) {
     )
 }
 
-// =============================================================================
-// COMPONENTE
-// =============================================================================
-
 export default function EquiposTable({
     equipos,
     onVerDetalle,
@@ -76,15 +63,14 @@ export default function EquiposTable({
                     No se encontraron equipos
                 </p>
                 <p className="mt-1 text-xs text-[#94A3B8]">
-                    Ajusta los filtros o el término de búsqueda.
+                    Intenta ajustar los filtros de búsqueda.
                 </p>
             </div>
         )
     }
 
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[640px] lg:min-w-full">
+        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
             <Table>
                 <TableHeader>
                     <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
@@ -97,17 +83,11 @@ export default function EquiposTable({
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
                             N° Serie
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
-                            Activo Fijo
-                        </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
                             Categoría
                         </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden xl:table-cell">
-                            Cliente actual
-                        </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden xl:table-cell">
-                            Contrato
+                            Cliente
                         </TableHead>
                         <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
                             Estado
@@ -121,9 +101,6 @@ export default function EquiposTable({
                 <TableBody>
                     {equipos.map((equipo) => {
                         const estado = computarEstadoEquipo(equipo)
-                        const clienteNombre = equipo.cliente_nombre
-                        const numeroContrato = equipo.numero_contrato
-
                         return (
                             <TableRow
                                 key={equipo.id}
@@ -133,16 +110,20 @@ export default function EquiposTable({
                                 <TableCell className="py-3.5 pl-4">
                                     <button
                                         onClick={() => onVerDetalle(equipo.id)}
-                                        className="text-sm font-semibold font-mono text-[#1E40AF] hover:underline"
+                                        className="text-sm font-semibold font-mono text-[#1E40AF] hover:underline text-left"
                                     >
                                         {equipo.codigo_mh}
                                     </button>
+                                    {/* Marca/Modelo visible en mobile */}
+                                    <p className="mt-0.5 text-xs text-[#94A3B8] md:hidden">
+                                        {[equipo.marca, equipo.modelo].filter(Boolean).join(' · ') || '—'}
+                                    </p>
                                 </TableCell>
 
-                                {/* Nombre + Marca/Modelo */}
+                                {/* Equipo (nombre + marca/modelo) */}
                                 <TableCell className="py-3.5">
                                     <p className="text-sm font-medium text-[#0F172A]">{equipo.nombre}</p>
-                                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                                    <p className="text-xs text-[#94A3B8] mt-0.5 hidden md:block">
                                         {[equipo.marca, equipo.modelo].filter(Boolean).join(' · ') || '—'}
                                     </p>
                                 </TableCell>
@@ -154,13 +135,6 @@ export default function EquiposTable({
                                     </span>
                                 </TableCell>
 
-                                {/* Activo Fijo */}
-                                <TableCell className="py-3.5 hidden md:table-cell">
-                                    <span className="text-sm font-mono text-[#334155]">
-                                        {equipo.activo_fijo ?? '—'}
-                                    </span>
-                                </TableCell>
-
                                 {/* Categoría */}
                                 <TableCell className="py-3.5 hidden lg:table-cell">
                                     <span className="text-sm text-[#334155]">
@@ -168,26 +142,15 @@ export default function EquiposTable({
                                     </span>
                                 </TableCell>
 
-                                {/* Cliente actual */}
+                                {/* Cliente */}
                                 <TableCell className="py-3.5 hidden xl:table-cell">
-                                    {clienteNombre ? (
-                                        <div>
-                                            <p className="text-sm text-[#334155] font-medium truncate max-w-[160px]">
-                                                {clienteNombre}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-[#94A3B8] italic">Sin asignación</span>
-                                    )}
-                                </TableCell>
-                                {/* Contrato */}
-                                <TableCell className="py-3.5 hidden xl:table-cell">
-                                    {numeroContrato ? (
-                                        <span className="text-xs text-[#334155] font-mono bg-[#F1F5F9] px-2 py-1 rounded">
-                                            {numeroContrato}
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs text-[#94A3B8]">—</span>
+                                    <span className="text-sm text-[#334155]">
+                                        {equipo.cliente_nombre ?? '—'}
+                                    </span>
+                                    {equipo.numero_contrato && (
+                                        <p className="text-xs text-[#94A3B8] font-mono mt-0.5">
+                                            {equipo.numero_contrato}
+                                        </p>
                                     )}
                                 </TableCell>
 
@@ -226,7 +189,6 @@ export default function EquiposTable({
                     })}
                 </TableBody>
             </Table>
-            </div>
         </div>
     )
 }
