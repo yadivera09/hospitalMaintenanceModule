@@ -135,6 +135,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                 'Activo fijo': e.activo_fijo ?? '',
                 Categoría: e.categoria_nombre ?? '',
                 'Cliente actual': e.cliente_nombre ?? '',
+                'N° Contrato': e.numero_contrato ?? '',
                 Estado: e.activo ? 'Activo' : 'Inactivo',
             })),
             'equipos'
