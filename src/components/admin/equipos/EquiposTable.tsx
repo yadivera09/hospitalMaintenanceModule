@@ -6,7 +6,7 @@
  * Siguiendo el estándar de ClientesTable.
  */
 
-import { Eye, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,6 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import DeleteButton from '@/components/admin/shared/DeleteButton'
 import { computarEstadoEquipo } from '@/types'
 import type { EquipoConCliente } from '@/app/actions/equipos'
 import type { EstadoEquipo } from '@/types'
@@ -25,6 +26,8 @@ interface EquiposTableProps {
     equipos: EquipoConCliente[]
     onVerDetalle: (id: string) => void
     onEditar: (equipo: EquipoConCliente) => void
+    onDesactivar?: (equipo: EquipoConCliente) => Promise<{ error: string | null }>
+    onDesactivarExito?: (id: string) => void
 }
 
 const ESTADO_CONFIG: Record<EstadoEquipo, { label: string; className: string }> = {
@@ -55,6 +58,8 @@ export default function EquiposTable({
     equipos,
     onVerDetalle,
     onEditar,
+    onDesactivar,
+    onDesactivarExito,
 }: EquiposTableProps) {
     if (equipos.length === 0) {
         return (
@@ -165,16 +170,6 @@ export default function EquiposTable({
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => onVerDetalle(equipo.id)}
-                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
-                                            aria-label={`Ver detalle de ${equipo.codigo_mh}`}
-                                            title="Ver detalle"
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
                                             onClick={() => onEditar(equipo)}
                                             className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
                                             aria-label={`Editar ${equipo.codigo_mh}`}
@@ -182,6 +177,13 @@ export default function EquiposTable({
                                         >
                                             <Pencil className="h-4 w-4" />
                                         </Button>
+                                        {onDesactivar && equipo.activo && (
+                                            <DeleteButton
+                                                nombreRegistro={`${equipo.codigo_mh} – ${equipo.nombre}`}
+                                                onDesactivar={() => onDesactivar(equipo)}
+                                                onExito={() => onDesactivarExito?.(equipo.id)}
+                                            />
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>

@@ -165,6 +165,45 @@ export async function updateCliente(
 
 
 /**
+ * Desactiva un cliente (soft delete).
+ * Verifica que no tenga contratos activos antes de desactivar.
+ * NUNCA elimina físicamente — solo cambia activo = false.
+ */
+export async function desactivarCliente(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        // 1. Verificar contratos activos
+        const { count, error: countErr } = await supabase
+            .from('contratos')
+            .select('*', { count: 'exact', head: true })
+            .eq('cliente_id', id)
+            .eq('activo', true)
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el cliente tiene ${count} contrato(s) activo(s). Desactívalos primero.`,
+            }
+        }
+
+        // 2. Soft delete
+        const { error } = await supabase
+            .from('clientes')
+            .update({ activo: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarCliente]', err)
+        return { data: null, error: 'Error al desactivar el cliente.' }
+    }
+}
+
+/**
  * Activa o desactiva un cliente.
  */
 export async function toggleActivoCliente(

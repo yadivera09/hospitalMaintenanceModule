@@ -21,10 +21,11 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Eye, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import TecnicoForm from '@/components/admin/tecnicos/TecnicoForm'
-import { createTecnico, updateTecnico, getTecnicos, toggleActivoTecnico } from '@/app/actions/tecnicos'
+import { createTecnico, updateTecnico, getTecnicos, toggleActivoTecnico, desactivarTecnico } from '@/app/actions/tecnicos'
+import DeleteButton from '@/components/admin/shared/DeleteButton'
 import type { Tecnico } from '@/types'
 import type { TecnicoFormValues } from '@/components/admin/tecnicos/TecnicoForm'
 
@@ -124,12 +125,12 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
     function handleExportar() {
         exportToExcel(
             listaFiltrada.map((t) => ({
-                Nombre:   t.nombre,
+                Nombre: t.nombre,
                 Apellido: t.apellido,
-                Cédula:   t.cedula ?? '',
-                Email:    t.email,
+                Cédula: t.cedula ?? '',
+                Email: t.email,
                 Teléfono: t.telefono ?? '',
-                Activo:   t.activo ? 'Sí' : 'No',
+                Activo: t.activo ? 'Sí' : 'No',
             })),
             'tecnicos'
         )
@@ -218,8 +219,12 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                         {listaFiltrada.map((t) => (
                             <TableRow key={t.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
                                 <TableCell className="py-3 pl-4">
-                                    <p className="text-sm font-medium text-[#0F172A]">{t.nombre} {t.apellido}</p>
-                                </TableCell>
+                                    <button
+                                        onClick={() => router.push(`/admin/tecnicos/${t.id}`)}
+                                        className="text-sm font-medium text-[#0F172A] hover:text-[#1E40AF] hover:underline transition-colors text-left"
+                                    >
+                                        {t.nombre} {t.apellido}
+                                    </button>                                </TableCell>
                                 <TableCell className="py-3 hidden md:table-cell">
                                     <span className="text-xs font-mono text-[#334155]">{t.cedula ?? '—'}</span>
                                 </TableCell>
@@ -234,15 +239,19 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                                 </TableCell>
                                 <TableCell className="py-3 pr-4 text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/tecnicos/${t.id}`)}
-                                            className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50">
-                                            <Eye className="h-3.5 w-3.5" />
-                                        </Button>
                                         <Button variant="ghost" size="sm" onClick={() => {
                                             setTecnicoEditando(t); setModoForm('editar'); setErrorForm(null); setModalAbierto(true)
-                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                            title="Editar técnico">
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Button>
+                                        {t.activo && (
+                                            <DeleteButton
+                                                nombreRegistro={`${t.nombre} ${t.apellido}`}
+                                                onDesactivar={() => desactivarTecnico(t.id)}
+                                                onExito={() => startTransition(() => { router.refresh() })}
+                                            />
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>

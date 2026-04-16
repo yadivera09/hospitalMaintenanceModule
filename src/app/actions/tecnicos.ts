@@ -218,6 +218,45 @@ export async function updateTecnico(id: string, raw: unknown): Promise<ActionRes
     }
 }
 
+/**
+ * Desactiva un técnico (soft delete).
+ * Verifica que no tenga reportes de mantenimiento activos (no cerrados) asignados como técnico principal.
+ * NUNCA elimina físicamente — solo cambia activo = false.
+ */
+export async function desactivarTecnico(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        // 1. Verificar reportes activos donde este técnico es el principal
+        const { count, error: countErr } = await supabase
+            .from('reportes_mantenimiento')
+            .select('*', { count: 'exact', head: true })
+            .eq('tecnico_principal_id', id)
+            .neq('estado_reporte', 'cerrado')
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el técnico tiene ${count} reporte(s) de mantenimiento en curso asignados. Reasígnalos o ciérralos primero.`,
+            }
+        }
+
+        // 2. Soft delete
+        const { error } = await supabase
+            .from('tecnicos')
+            .update({ activo: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarTecnico]', err)
+        return { data: null, error: 'Error al desactivar el técnico.' }
+    }
+}
+
 export async function toggleActivoTecnico(id: string): Promise<ActionResult<boolean>> {
     try {
         const supabase = createClient()

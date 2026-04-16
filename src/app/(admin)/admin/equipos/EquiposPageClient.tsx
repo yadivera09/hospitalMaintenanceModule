@@ -21,7 +21,7 @@ import {
 import EquiposTable from '@/components/admin/equipos/EquiposTable'
 import EquipoForm from '@/components/admin/equipos/EquipoForm'
 import ModalCargaMasivaEquipos from '@/components/admin/equipos/ModalCargaMasivaEquipos'
-import { getEquipos, createEquipo } from '@/app/actions/equipos'
+import { getEquipos, createEquipo, desactivarEquipo } from '@/app/actions/equipos'
 import type { EquipoConCliente } from '@/app/actions/equipos'
 import type { Categoria } from '@/app/actions/catalogos'
 import type { EquipoFormValues } from '@/components/admin/equipos/EquipoForm'
@@ -269,6 +269,12 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                     equipos={listaFiltrada}
                     onVerDetalle={(id) => router.push(`/admin/equipos/${id}`)}
                     onEditar={(e) => startTransition(() => { router.push(`/admin/equipos/${e.id}`) })}
+                    onDesactivar={(equipo) => desactivarEquipo(equipo.id)}
+                    onDesactivarExito={() => startTransition(async () => {
+                        router.refresh()
+                        const { data } = await getEquipos({ search: busqueda || undefined, categoria_id: filtroCategoria })
+                        if (data) setLista(data)
+                    })}
                 />
                 <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
                     <p className="text-xs text-[#94A3B8]">

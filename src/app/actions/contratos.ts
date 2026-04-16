@@ -195,6 +195,46 @@ export async function updateContrato(
 }
 
 /**
+ * Desactiva un contrato (soft delete).
+ * Verifica que no tenga equipos vigentes asignados antes de desactivar.
+ * Una asignación es vigente cuando fecha_retiro IS NULL en equipo_contratos.
+ * NUNCA elimina físicamente — solo cambia activo = false.
+ */
+export async function desactivarContrato(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        // 1. Verificar asignaciones vigentes en equipo_contratos
+        const { count, error: countErr } = await supabase
+            .from('equipo_contratos')
+            .select('*', { count: 'exact', head: true })
+            .eq('contrato_id', id)
+            .is('fecha_retiro', null)
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el contrato tiene ${count} equipo(s) asignado(s) actualmente. Retira los equipos primero.`,
+            }
+        }
+
+        // 2. Soft delete
+        const { error } = await supabase
+            .from('contratos')
+            .update({ activo: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarContrato]', err)
+        return { data: null, error: 'Error al desactivar el contrato.' }
+    }
+}
+
+/**
  * Alterna el estado activo de un contrato dado su ID.
  */
 export async function toggleActivoContrato(id: string): Promise<ActionResult<boolean>> {

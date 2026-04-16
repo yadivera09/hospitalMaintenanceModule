@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import ClientesTable from '@/components/admin/clientes/ClientesTable'
 import ClienteForm from '@/components/admin/clientes/ClienteForm'
-import { createCliente, updateCliente } from '@/app/actions/clientes'
+import { createCliente, updateCliente, desactivarCliente } from '@/app/actions/clientes'
 import type { Cliente } from '@/types'
 import type { ClienteFormValues } from '@/components/admin/clientes/ClienteForm'
 
@@ -214,6 +214,8 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                     clientes={clientesFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/clientes/${id}`)}
                     onEditar={abrirEditar}
+                    onDesactivar={(cliente) => desactivarCliente(cliente.id)}
+                    onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
                 <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
                     <p className="text-xs text-[#94A3B8]">

@@ -439,6 +439,63 @@ export async function asignarEquipoAContrato(
  * @param modo  - 'insert': falla si codigo_mh ya existe (default)
  *               'upsert': actualiza equipo + reasigna contrato si ya existe
  */
+/**
+ * Desactiva un equipo (soft delete).
+ * Verifica que no tenga:
+ *   1. Asignaciones vigentes a contratos (fecha_retiro IS NULL en equipo_contratos)
+ *   2. Reportes de mantenimiento activos (estado_reporte != 'cerrado')
+ * NUNCA elimina físicamente — solo cambia activo = false.
+ */
+export async function desactivarEquipo(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        // 1. Verificar asignaciones vigentes
+        const { count: countAsig, error: asigErr } = await supabase
+            .from('equipo_contratos')
+            .select('*', { count: 'exact', head: true })
+            .eq('equipo_id', id)
+            .is('fecha_retiro', null)
+
+        if (asigErr) throw asigErr
+
+        if ((countAsig ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el equipo está asignado actualmente a ${countAsig} contrato(s). Retíralo del contrato primero.`,
+            }
+        }
+
+        // 2. Verificar reportes activos
+        const { count: countRep, error: repErr } = await supabase
+            .from('reportes_mantenimiento')
+            .select('*', { count: 'exact', head: true })
+            .eq('equipo_id', id)
+            .neq('estado_reporte', 'cerrado')
+
+        if (repErr) throw repErr
+
+        if ((countRep ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el equipo tiene ${countRep} reporte(s) de mantenimiento en curso. Ciérralos primero.`,
+            }
+        }
+
+        // 3. Soft delete
+        const { error } = await supabase
+            .from('equipos')
+            .update({ activo: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err: any) {
+        console.error('[desactivarEquipo]', err)
+        return { data: null, error: 'Error al desactivar el equipo.' }
+    }
+}
+
 export async function importarEquiposDesdeCSV(
     rows: any[],
     modo: 'insert' | 'upsert' = 'insert'

@@ -7,7 +7,7 @@
  * Solo renderizado — sin lógica de negocio.
  */
 
-import { Eye, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import DeleteButton from '@/components/admin/shared/DeleteButton'
 import type { Cliente } from '@/types'
 
 // =============================================================================
@@ -28,6 +29,8 @@ interface ClientesTableProps {
     clientes: Cliente[]
     onVerDetalle: (id: string) => void
     onEditar: (cliente: Cliente) => void
+    onDesactivar?: (cliente: Cliente) => Promise<{ error: string | null }>
+    onDesactivarExito?: (id: string) => void
 }
 
 // =============================================================================
@@ -48,6 +51,8 @@ export default function ClientesTable({
     clientes,
     onVerDetalle,
     onEditar,
+    onDesactivar,
+    onDesactivarExito,
 }: ClientesTableProps) {
     if (clientes.length === 0) {
         return (
@@ -148,16 +153,6 @@ export default function ClientesTable({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => onVerDetalle(cliente.id)}
-                                        className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
-                                        aria-label={`Ver detalle de ${cliente.razon_social}`}
-                                        title="Ver detalle"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
                                         onClick={() => onEditar(cliente)}
                                         className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
                                         aria-label={`Editar ${cliente.razon_social}`}
@@ -165,6 +160,13 @@ export default function ClientesTable({
                                     >
                                         <Pencil className="h-4 w-4" />
                                     </Button>
+                                    {onDesactivar && cliente.activo && (
+                                        <DeleteButton
+                                            nombreRegistro={cliente.razon_social}
+                                            onDesactivar={() => onDesactivar(cliente)}
+                                            onExito={() => onDesactivarExito?.(cliente.id)}
+                                        />
+                                    )}
                                 </div>
                             </TableCell>
                         </TableRow>

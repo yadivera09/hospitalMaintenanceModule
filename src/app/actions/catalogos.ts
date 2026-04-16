@@ -192,6 +192,43 @@ export async function updateCategoria(id: string, raw: unknown): Promise<ActionR
     }
 }
 
+/**
+ * Desactiva una categoría de equipo (soft delete).
+ * Verifica que no tenga equipos activos asignados a esta categoría.
+ * NUNCA elimina físicamente — solo cambia activa = false.
+ */
+export async function desactivarCategoria(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        const { count, error: countErr } = await supabase
+            .from('equipos')
+            .select('*', { count: 'exact', head: true })
+            .eq('categoria_id', id)
+            .eq('activo', true)
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: la categoría tiene ${count} equipo(s) activo(s) asignados. Reasígnalos o desactívalos primero.`,
+            }
+        }
+
+        const { error } = await supabase
+            .from('categorias_equipo')
+            .update({ activa: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarCategoria]', err)
+        return { data: null, error: 'Error al desactivar la categoría.' }
+    }
+}
+
 /** Alterna el estado activa/inactiva de una categoría */
 export async function toggleActivaCategoria(id: string): Promise<ActionResult<boolean>> {
     try {
@@ -276,6 +313,44 @@ export async function updateInsumo(id: string, raw: unknown): Promise<ActionResu
     }
 }
 
+/**
+ * Desactiva un insumo (soft delete).
+ * Verifica que no esté referenciado en reportes de mantenimiento activos (no cerrados).
+ * NUNCA elimina físicamente — solo cambia activo = false.
+ */
+export async function desactivarInsumo(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        // Verificar si está en reportes activos (no cerrados)
+        const { count, error: countErr } = await supabase
+            .from('reporte_insumos')
+            .select('reporte:reportes_mantenimiento!inner(estado_reporte)', { count: 'exact', head: true })
+            .eq('insumo_id', id)
+            .neq('reporte.estado_reporte', 'cerrado')
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: el insumo está siendo usado en ${count} reporte(s) de mantenimiento en curso.`,
+            }
+        }
+
+        const { error } = await supabase
+            .from('insumos')
+            .update({ activo: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarInsumo]', err)
+        return { data: null, error: 'Error al desactivar el insumo.' }
+    }
+}
+
 export async function toggleActivoInsumo(id: string): Promise<ActionResult<boolean>> {
     try {
         const supabase = createClient()
@@ -352,6 +427,44 @@ export async function updateUbicacion(id: string, raw: unknown): Promise<ActionR
     } catch (err) {
         console.error('[updateUbicacion]', err)
         return { data: null, error: 'Error al actualizar la ubicación.' }
+    }
+}
+
+/**
+ * Desactiva una ubicación (soft delete).
+ * Verifica que no tenga equipos asignados actualmente en esta ubicación
+ * (asignaciones vigentes: fecha_retiro IS NULL en equipo_contratos).
+ * NUNCA elimina físicamente — solo cambia activa = false.
+ */
+export async function desactivarUbicacion(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const supabase = createClient()
+
+        const { count, error: countErr } = await supabase
+            .from('equipo_contratos')
+            .select('*', { count: 'exact', head: true })
+            .eq('ubicacion_id', id)
+            .is('fecha_retiro', null)
+
+        if (countErr) throw countErr
+
+        if ((count ?? 0) > 0) {
+            return {
+                data: null,
+                error: `No se puede desactivar: la ubicación tiene ${count} equipo(s) asignado(s) actualmente. Retíralos primero.`,
+            }
+        }
+
+        const { error } = await supabase
+            .from('ubicaciones')
+            .update({ activa: false })
+            .eq('id', id)
+
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[desactivarUbicacion]', err)
+        return { data: null, error: 'Error al desactivar la ubicación.' }
     }
 }
 

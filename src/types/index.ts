@@ -213,6 +213,8 @@ export interface ReporteResumen {
     cliente_nombre: string
     tipo_nombre: string
     tecnico_nombre: string
+    activo?: boolean  // ← Agregar campo opcional
+
 }
 
 /** Motivo de la visita técnica — formulario físico */

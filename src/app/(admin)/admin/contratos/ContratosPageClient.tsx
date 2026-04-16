@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import ContratosTable from '@/components/admin/contratos/ContratosTable'
 import ContratoForm from '@/components/admin/contratos/ContratoForm'
-import { createContrato, updateContrato } from '@/app/actions/contratos'
+import { createContrato, updateContrato, desactivarContrato } from '@/app/actions/contratos'
 import { computarEstadoContrato } from '@/types'
 import type { Contrato, Cliente, EstadoContrato } from '@/types'
 import type { ContratoConCliente } from '@/app/actions/contratos'
@@ -187,6 +187,8 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                     contratos={contratosFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/contratos/${id}`)}
                     onEditar={(c) => { setContratoEditando(c); setModoForm('editar'); setErrorForm(null); setModalAbierto(true) }}
+                    onDesactivar={(contrato) => desactivarContrato(contrato.id)}
+                    onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
                 <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
                     <p className="text-xs text-[#94A3B8]">

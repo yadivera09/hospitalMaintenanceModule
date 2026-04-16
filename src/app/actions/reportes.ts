@@ -286,7 +286,7 @@ export async function getUltimoMantenimientoPreventivo(
 ): Promise<ActionResult<string | null>> {
     try {
         const supabase = createClient()
-        
+
         const { data, error } = await supabase
             .from('reportes_mantenimiento')
             .select(`
@@ -1011,25 +1011,29 @@ export async function getMisReportes(filtros?: {
 // UTILIDAD — Obtener todos los reportes para el panel admin
 // =============================================================================
 
+// src/app/actions/reportes.ts
+
 export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>> {
     try {
-        // Admin client para leer todos los reportes sin restricciones RLS
         const supabase = createAdminClient()
 
+        // ✅ REMOVER el filtro .eq('activo', true)
         const { data, error } = await supabase
             .from('reportes_mantenimiento')
             .select(`
-                id, estado_reporte, fecha_inicio, numero_reporte_fisico, equipo_id, tipo_mantenimiento_id,
+                id, estado_reporte, fecha_inicio, numero_reporte_fisico, 
+                equipo_id, tipo_mantenimiento_id, activo,
                 equipo:equipos(codigo_mh, nombre),
                 tipo:tipos_mantenimiento(nombre),
                 tecnico_principal:tecnicos(nombre, apellido)
             `)
-            .eq('activo', true)
+            // ❌ ELIMINA o comenta esta línea si existe:
+            // .eq('activo', true)
             .order('created_at', { ascending: false })
 
         if (error) throw error
 
-        // Obtener cliente por equipo_id via v_equipo_contrato_vigente
+        // Obtener clientes
         const equipoIds = Array.from(new Set((data ?? []).map((r: any) => r.equipo_id)))
         let clienteMap: Record<string, string> = {}
         if (equipoIds.length > 0) {
@@ -1056,6 +1060,7 @@ export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>
             tecnico_nombre: r.tecnico_principal
                 ? `${r.tecnico_principal.nombre} ${r.tecnico_principal.apellido}`
                 : '—',
+            activo: r.activo,  // ← Agregar este campo
         }))
 
         return { data: reportes, error: null }
@@ -1234,7 +1239,7 @@ export async function getReporteById(id: string): Promise<ActionResult<any>> {
 
                 // Mapeo de cliente para firma
                 cliente_firma_nombre: reporte.nombre_cliente_firma,
-                
+
                 actividades: actividades || [],
                 insumos_usados: insumosUsados || [],
                 insumos_requeridos: insumosRequeridos || []
@@ -1257,7 +1262,7 @@ export async function duplicarReporteAction(
 ): Promise<ActionResult<{ nuevo_id: string }>> {
     try {
         const supabase = createClient()
-        
+
         // 1. Obtener técnico actual
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return { data: null, error: 'Usuario no autenticado' }
@@ -1267,7 +1272,7 @@ export async function duplicarReporteAction(
             .select('id')
             .eq('user_id', user.id)
             .single()
-        
+
         if (!tecnico) return { data: null, error: 'Técnico no identificado' }
 
         // 2. Llamar RPC

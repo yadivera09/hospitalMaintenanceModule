@@ -39,13 +39,14 @@ import {
 } from '@/components/ui/table'
 import { exportToExcel } from '@/lib/exportToExcel'
 import {
-    createCategoria, updateCategoria, toggleActivaCategoria,
-    createInsumo, updateInsumo, toggleActivoInsumo, getInsumos,
-    createUbicacion, updateUbicacion, toggleActivaUbicacion,
+    createCategoria, updateCategoria, toggleActivaCategoria, desactivarCategoria,
+    createInsumo, updateInsumo, toggleActivoInsumo, desactivarInsumo, getInsumos,
+    createUbicacion, updateUbicacion, toggleActivaUbicacion, desactivarUbicacion,
     createActividad, toggleActivaActividad,
     type Categoria, type Insumo, type ActividadChecklist,
     type UbicacionConCliente
 } from '@/app/actions/catalogos'
+import DeleteButton from '@/components/admin/shared/DeleteButton'
 import type { Cliente } from '@/types'
 
 // ─── Tipos de props ───────────────────────────────────────────────────────────
@@ -131,11 +132,20 @@ function TabCategorias({ inicial, onRefresh }: { inicial: Categoria[]; onRefresh
                                     <Switch checked={c.activa} onCheckedChange={() => handleToggle(c)} />
                                 </TableCell>
                                 <TableCell className="py-3 pr-4 text-right">
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                        setEditando(c); setForm({ nombre: c.nombre, descripcion: c.descripcion ?? '' }); setError(null); setModal(true)
-                                    }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            setEditando(c); setForm({ nombre: c.nombre, descripcion: c.descripcion ?? '' }); setError(null); setModal(true)
+                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        {c.activa && (
+                                            <DeleteButton
+                                                nombreRegistro={c.nombre}
+                                                onDesactivar={() => desactivarCategoria(c.id)}
+                                                onExito={onRefresh}
+                                            />
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -322,11 +332,20 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                                     <Switch checked={i.activo} onCheckedChange={() => handleToggle(i)} />
                                 </TableCell>
                                 <TableCell className="py-3 pr-4 text-right">
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                        setEditando(i); setForm({ nombre: i.nombre, codigo: i.codigo ?? '', unidad_medida: i.unidad_medida }); setError(null); setModal(true)
-                                    }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            setEditando(i); setForm({ nombre: i.nombre, codigo: i.codigo ?? '', unidad_medida: i.unidad_medida }); setError(null); setModal(true)
+                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        {i.activo && (
+                                            <DeleteButton
+                                                nombreRegistro={i.nombre}
+                                                onDesactivar={() => desactivarInsumo(i.id)}
+                                                onExito={() => { if (search) handleSearch(search); else onRefresh() }}
+                                            />
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                             )
@@ -451,11 +470,20 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                                     <Switch checked={u.activa} onCheckedChange={() => handleToggle(u)} />
                                 </TableCell>
                                 <TableCell className="py-3 pr-4 text-right">
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                        setEditando(u); setForm({ nombre: u.nombre, cliente_id: u.cliente_id, descripcion: u.descripcion ?? '' }); setError(null); setModal(true)
-                                    }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            setEditando(u); setForm({ nombre: u.nombre, cliente_id: u.cliente_id, descripcion: u.descripcion ?? '' }); setError(null); setModal(true)
+                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        {u.activa && (
+                                            <DeleteButton
+                                                nombreRegistro={u.nombre}
+                                                onDesactivar={() => desactivarUbicacion(u.id)}
+                                                onExito={onRefresh}
+                                            />
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}

@@ -6,7 +6,7 @@
  * Siguiendo el estándar de ClientesTable.
  */
 
-import { Eye, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,6 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import DeleteButton from '@/components/admin/shared/DeleteButton'
 import type { Contrato, EstadoContrato } from '@/types'
 import { computarEstadoContrato } from '@/types'
 
@@ -24,6 +25,8 @@ interface ContratosTableProps {
     contratos: Contrato[]
     onVerDetalle: (id: string) => void
     onEditar: (contrato: Contrato) => void
+    onDesactivar?: (contrato: Contrato) => Promise<{ error: string | null }>
+    onDesactivarExito?: (id: string) => void
 }
 
 const ESTADO_CONFIG: Record<EstadoContrato, { label: string; className: string }> = {
@@ -67,6 +70,8 @@ export default function ContratosTable({
     contratos,
     onVerDetalle,
     onEditar,
+    onDesactivar,
+    onDesactivarExito,
 }: ContratosTableProps) {
     if (contratos.length === 0) {
         return (
@@ -164,23 +169,21 @@ export default function ContratosTable({
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => onVerDetalle(contrato.id)}
-                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
-                                            aria-label={`Ver detalle de ${contrato.numero_contrato}`}
-                                            title="Ver detalle"
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
                                             onClick={() => onEditar(contrato)}
                                             className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
                                             aria-label={`Editar ${contrato.numero_contrato}`}
                                             title="Editar"
                                         >
+
                                             <Pencil className="h-4 w-4" />
                                         </Button>
+                                        {onDesactivar && contrato.activo && (
+                                            <DeleteButton
+                                                nombreRegistro={contrato.numero_contrato}
+                                                onDesactivar={() => onDesactivar(contrato)}
+                                                onExito={() => onDesactivarExito?.(contrato.id)}
+                                            />
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
