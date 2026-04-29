@@ -163,11 +163,20 @@ async function resolveMfaState(
     // Solo consultar DB si no hay factor TOTP
     // Usar admin client para bypass de RLS — el middleware no tiene contexto auth del usuario
     const admin = createAdminClient()
-    const { data: tecnico } = await admin
+
+    // LOG NUEVO
+    console.log('[middleware] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
+    console.log('[middleware] SERVICE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+    console.log('[middleware] SERVICE_KEY prefix:', process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 15))
+
+    const { data: tecnico, error: tecError } = await admin
         .from('tecnicos')
         .select('mfa_configurado, mfa_metodo, mfa_sesion_verificada')
         .eq('user_id', userId)
         .single()
+
+    // LOG NUEVO
+    console.log('[middleware] tecnico query result:', { tecnico, tecError })
 
     if (!tecnico) return 'needs-setup'
     if (!tecnico.mfa_configurado) return 'needs-setup'
