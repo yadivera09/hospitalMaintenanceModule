@@ -36,7 +36,26 @@ type ActionResult<T> = { data: T | null; error: string | null }
 export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nombre: string; apellido: string; user_id: string | null }>> {
     try {
         const supabase = createClient()
-        const { data: { session }, error: authErr } = await supabase.auth.getSession()
+        
+        // 🔍 LOG 1: ¿qué dice getSession?
+        const sessionResult = await supabase.auth.getSession()
+        console.log('[getTecnicoActual][DEBUG] getSession result:', {
+            hasSession: !!sessionResult.data.session,
+            userId: sessionResult.data.session?.user?.id,
+            email: sessionResult.data.session?.user?.email,
+            error: sessionResult.error?.message,
+        })
+
+        // 🔍 LOG 2: ¿qué dice getUser?
+        const userResult = await supabase.auth.getUser()
+        console.log('[getTecnicoActual][DEBUG] getUser result:', {
+            hasUser: !!userResult.data.user,
+            userId: userResult.data.user?.id,
+            email: userResult.data.user?.email,
+            error: userResult.error?.message,
+        })
+
+        const { data: { session }, error: authErr } = sessionResult
 
         if (authErr || !session?.user) {
             console.error('[getTecnicoActual] No hay sesión:', authErr?.message)
@@ -44,43 +63,54 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
         }
 
         const user = session.user
-
-        // Usar adminClient para evitar problemas de RLS en producción
         const admin = createAdminClient()
 
-        const { data: tecnico, error: tecError } = await admin
+        // 🔍 LOG 3: ¿qué devuelve la query a tecnicos?
+        const tecnicoQuery = await admin
             .from('tecnicos')
-            .select('id, nombre, apellido, user_id')
+            .select('id, nombre, apellido, user_id, activo, email')
             .eq('user_id', user.id)
             .eq('activo', true)
-            .single()
+            .maybeSingle()
+        
+        console.log('[getTecnicoActual][DEBUG] tecnico query:', {
+            data: tecnicoQuery.data,
+            error: tecnicoQuery.error?.message,
+            errorCode: tecnicoQuery.error?.code,
+            queriedUserId: user.id,
+        })
 
-        if (tecnico) {
-            return { data: tecnico, error: null }
+        if (tecnicoQuery.data) {
+            return { data: tecnicoQuery.data, error: null }
         }
 
         // Fallback por email
         if (user.email) {
-            const { data: tecByEmail } = await admin
+            const fallback = await admin
                 .from('tecnicos')
                 .select('id, nombre, apellido, user_id')
                 .eq('email', user.email)
                 .eq('activo', true)
-                .single()
+                .maybeSingle()
 
-            if (tecByEmail) {
-                if (!tecByEmail.user_id) {
+            console.log('[getTecnicoActual][DEBUG] fallback by email:', {
+                data: fallback.data,
+                error: fallback.error?.message,
+                queriedEmail: user.email,
+            })
+
+            if (fallback.data) {
+                if (!fallback.data.user_id) {
                     await admin
                         .from('tecnicos')
                         .update({ user_id: user.id })
-                        .eq('id', tecByEmail.id)
-                    tecByEmail.user_id = user.id
+                        .eq('id', fallback.data.id)
+                    fallback.data.user_id = user.id
                 }
-                return { data: tecByEmail, error: null }
+                return { data: fallback.data, error: null }
             }
         }
 
-        console.error('[getTecnicoActual] tecError:', tecError?.message)
         return { data: null, error: 'No se encontró un técnico vinculado a esta cuenta.' }
     } catch (err) {
         console.error('[getTecnicoActual] excepción:', err)
