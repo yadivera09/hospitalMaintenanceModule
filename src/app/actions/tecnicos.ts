@@ -34,7 +34,7 @@ type ActionResult<T> = { data: T | null; error: string | null }
  * Fallback: si no encuentra por user_id, intenta por email del usuario Auth.
  */
 export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nombre: string; apellido: string; user_id: string | null }>> {
-    console.log('[getTecnicoActual] >>> FUNCION INVOCADA <<<')
+    console.error('[getTecnicoActual] >>> FUNCION INVOCADA <<<')
     try {
         const supabase = createClient()
 
