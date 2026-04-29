@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Rutas agrupadas por tipo de acceso.
@@ -160,7 +161,9 @@ async function resolveMfaState(
     if (nextLevel === 'aal2') return 'needs-verify'
 
     // Solo consultar DB si no hay factor TOTP
-    const { data: tecnico } = await supabase
+    // Usar admin client para bypass de RLS — el middleware no tiene contexto auth del usuario
+    const admin = createAdminClient()
+    const { data: tecnico } = await admin
         .from('tecnicos')
         .select('mfa_configurado, mfa_metodo, mfa_sesion_verificada')
         .eq('user_id', userId)
