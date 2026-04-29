@@ -886,7 +886,10 @@ export default function NuevoReporteWizard() {
 
     // ── Cargar contexto real desde Supabase al montar
     useEffect(() => {
+        console.log('🔵 [PAGE] useEffect disparado, equipoId:', equipoId, 'draftReporteId:', draftReporteId)
+        
         async function cargarContexto() {
+            console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
                 const { getTecnicos, getTecnicoActual } = await import('@/app/actions/tecnicos')
