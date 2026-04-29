@@ -36,12 +36,14 @@ type ActionResult<T> = { data: T | null; error: string | null }
 export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nombre: string; apellido: string; user_id: string | null }>> {
     try {
         const supabase = createClient()
-        const { data: { user }, error: authErr } = await supabase.auth.getUser()
+        const { data: { session }, error: authErr } = await supabase.auth.getSession()
 
-        if (authErr || !user) {
+        if (authErr || !session?.user) {
             console.error('[getTecnicoActual] No hay sesión:', authErr?.message)
             return { data: null, error: 'No se detectó sesión de usuario.' }
         }
+
+        const user = session.user
 
         // Usar adminClient para evitar problemas de RLS en producción
         const admin = createAdminClient()
