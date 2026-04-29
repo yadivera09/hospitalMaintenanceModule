@@ -267,7 +267,7 @@ export async function toggleActivoTecnico(id: string): Promise<ActionResult<bool
         if (updateErr) throw updateErr
 
         return { data: !current.activo, error: null }
-    } catch (err) {
+    } catch {
         return { data: null, error: 'Error al cambiar estado del técnico.' }
     }
 }

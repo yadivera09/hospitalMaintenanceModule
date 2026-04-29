@@ -7,7 +7,7 @@
  * En BLOQUE 1 se usa un mock de usuario; la sesión real se conectará en BLOQUE 2.
  */
 
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Menu, LogOut, ChevronRight, Home } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -72,7 +72,6 @@ function capitalize(str: string) {
 
 export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
     const pathname = usePathname()
-    const router = useRouter()
     const breadcrumbs = buildBreadcrumbs(pathname)
 
     /** Cierra sesión via route handler POST /auth/logout */

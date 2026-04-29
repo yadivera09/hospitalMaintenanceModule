@@ -240,7 +240,7 @@ export async function toggleActivaCategoria(id: string): Promise<ActionResult<bo
         if (updateErr) throw updateErr
 
         return { data: !current.activa, error: null }
-    } catch (err) {
+    } catch {
         return { data: null, error: 'Error al cambiar estado de la categoría.' }
     }
 }
@@ -361,7 +361,7 @@ export async function toggleActivoInsumo(id: string): Promise<ActionResult<boole
         if (updateErr) throw updateErr
 
         return { data: !current.activo, error: null }
-    } catch (err) {
+    } catch {
         return { data: null, error: 'Error al cambiar estado del insumo.' }
     }
 }
@@ -478,7 +478,7 @@ export async function toggleActivaUbicacion(id: string): Promise<ActionResult<bo
         if (updateErr) throw updateErr
 
         return { data: !current.activa, error: null }
-    } catch (err) {
+    } catch {
         return { data: null, error: 'Error al cambiar estado de la ubicación.' }
     }
 }
@@ -554,7 +554,7 @@ export async function toggleActivaActividad(id: string): Promise<ActionResult<bo
         if (updateErr) throw updateErr
 
         return { data: !current.activa, error: null }
-    } catch (err) {
+    } catch {
         return { data: null, error: 'Error al cambiar estado de la actividad.' }
     }
 }

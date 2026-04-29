@@ -80,7 +80,7 @@ export async function getEquiposProblematicos(): Promise<{
                 // Tipo más frecuente
                 let tipoFrecuente = '—'
                 let maxCount = 0
-                for (const [nombre, cnt] of g.tipoCounts) {
+                for (const [nombre, cnt] of Array.from(g.tipoCounts.entries())) {
                     if (cnt > maxCount) { maxCount = cnt; tipoFrecuente = nombre }
                 }
 

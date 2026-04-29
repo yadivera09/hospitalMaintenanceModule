@@ -51,7 +51,7 @@ export default function FirmaClienteModal({ isOpen, onOpenChange, reporteId, onS
         startTransition(async () => {
             const { error: srvErr } = await firmarComoCliente({
                 reporte_id: reporteId,
-                nombre: nameTrm,
+                nombre_firmante: nameTrm,
                 firma_base64: firmaBase64
             })
 

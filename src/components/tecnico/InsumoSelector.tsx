@@ -170,7 +170,7 @@ export default function InsumoSelector({
                                         <p className="text-xs font-bold leading-none">
                                             {isCreatingManual ? 'Creando insumo...' : 'Agregar nuevo insumo'}
                                         </p>
-                                        <p className="text-[10px] opacity-70 mt-0.5 font-medium">"{query.trim()}"</p>
+                                        <p className="text-[10px] opacity-70 mt-0.5 font-medium">&quot;{query.trim()}&quot;</p>
                                     </div>
                                 </button>
                             )}

@@ -804,12 +804,9 @@ export default function NuevoReporteWizard() {
     console.log('[NuevoReporteWizard] equipoId:', equipoId)
     console.log('[NuevoReporteWizard] tipo:', typeof equipoId)
 
-    // Validar que equipoId sea un UUID válido
+    // 1. Validar que equipoId sea un UUID válido
     const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(equipoId)
-    if (!isValidUUID) {
-        console.error('ID de equipo inválido:', equipoId)
-        return <div className="p-4 text-red-600">Error: ID de equipo inválido</div>
-    }
+    const [uuidError, setUuidError] = useState(!isValidUUID)
 
     const firmaRef = useRef<SignatureCanvasType | null>(null)
     const firmaClienteRef = useRef<SignatureCanvasType | null>(null)
@@ -1318,6 +1315,17 @@ export default function NuevoReporteWizard() {
                 router.push('/tecnico/dashboard')
             }
         })
+    }
+
+    // ── Si el UUID es inválido, mostramos error
+    if (uuidError) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                <AlertTriangle className="h-10 w-10 text-red-500" />
+                <p className="text-sm font-semibold text-[#0F172A]">ID de equipo inválido</p>
+                <Button variant="outline" onClick={() => router.push('/tecnico/nuevo-reporte')}>Volver</Button>
+            </div>
+        )
     }
 
     // ── Mientras carga contexto

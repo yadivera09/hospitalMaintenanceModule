@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, FileDown, AlertCircle, CheckCircle2, XCircle, Info, Table, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Upload, FileDown, AlertCircle, CheckCircle2, Info, Table, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

@@ -23,6 +23,10 @@ export const MOCK_TECNICOS: Tecnico[] = [
         estado_display: 'activo',
         created_at: '2023-01-10T08:00:00-05:00',
         updated_at: '2024-12-01T08:00:00-05:00',
+        mfa_configurado: true,
+        mfa_metodo: 'totp',
+        mfa_configurado_en: '2024-12-01T08:30:00-05:00',
+        mfa_sesion_verificada: true,
     },
     {
         id: 'tec-0002-0002-0002-0002-000000000002',
@@ -36,6 +40,10 @@ export const MOCK_TECNICOS: Tecnico[] = [
         estado_display: 'activo',
         created_at: '2023-03-15T08:00:00-05:00',
         updated_at: '2025-01-05T08:00:00-05:00',
+        mfa_configurado: true,
+        mfa_metodo: 'email',
+        mfa_configurado_en: '2025-01-05T09:00:00-05:00',
+        mfa_sesion_verificada: true,
     },
     {
         id: 'tec-0003-0003-0003-0003-000000000003',
@@ -49,6 +57,10 @@ export const MOCK_TECNICOS: Tecnico[] = [
         estado_display: 'suspendido',
         created_at: '2022-08-20T08:00:00-05:00',
         updated_at: '2024-09-01T08:00:00-05:00',
+        mfa_configurado: false,
+        mfa_metodo: null,
+        mfa_configurado_en: null,
+        mfa_sesion_verificada: false,
     },
     {
         id: 'tec-0004-0004-0004-0004-000000000004',
@@ -62,6 +74,10 @@ export const MOCK_TECNICOS: Tecnico[] = [
         estado_display: 'inactivo',
         created_at: '2021-05-01T08:00:00-05:00',
         updated_at: '2023-12-15T08:00:00-05:00',
+        mfa_configurado: false,
+        mfa_metodo: null,
+        mfa_configurado_en: null,
+        mfa_sesion_verificada: false,
     },
 ]
 
