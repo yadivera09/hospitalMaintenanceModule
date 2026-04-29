@@ -43,37 +43,32 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
             return { data: null, error: 'No se detectó sesión de usuario.' }
         }
 
-        // 1. Buscar por user_id (vínculo directo)
-        const { data: tecByUserId, error: err1 } = await supabase
+        // Usar adminClient para evitar problemas de RLS en producción
+        const admin = createAdminClient()
+
+        const { data: tecnico, error: tecError } = await admin
             .from('tecnicos')
             .select('id, nombre, apellido, user_id')
             .eq('user_id', user.id)
             .eq('activo', true)
             .single()
 
-        if (tecByUserId) {
-            return { data: tecByUserId, error: null }
+        if (tecnico) {
+            return { data: tecnico, error: null }
         }
 
-        if (err1) {
-            console.warn('[getTecnicoActual] No encontrado por user_id, intentando por email...', err1.message)
-        }
-
-        // 2. Fallback: buscar por email (por si user_id es NULL en la tabla)
-        const userEmail = user.email
-        if (userEmail) {
-            const { data: tecByEmail, error: err2 } = await supabase
+        // Fallback por email
+        if (user.email) {
+            const { data: tecByEmail } = await admin
                 .from('tecnicos')
                 .select('id, nombre, apellido, user_id')
-                .eq('email', userEmail)
+                .eq('email', user.email)
                 .eq('activo', true)
                 .single()
 
             if (tecByEmail) {
-                // Auto-reparar: vincular el user_id si estaba NULL
                 if (!tecByEmail.user_id) {
-                    console.log('[getTecnicoActual] Auto-vinculando user_id para técnico:', tecByEmail.id)
-                    await supabase
+                    await admin
                         .from('tecnicos')
                         .update({ user_id: user.id })
                         .eq('id', tecByEmail.id)
@@ -81,15 +76,12 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
                 }
                 return { data: tecByEmail, error: null }
             }
-
-            if (err2) {
-                console.error('[getTecnicoActual] No encontrado por email:', err2.message)
-            }
         }
 
+        console.error('[getTecnicoActual] tecError:', tecError?.message)
         return { data: null, error: 'No se encontró un técnico vinculado a esta cuenta.' }
     } catch (err) {
-        console.error('[getTecnicoActual]', err)
+        console.error('[getTecnicoActual] excepción:', err)
         return { data: null, error: 'Error al detectar identidad del técnico.' }
     }
 }
