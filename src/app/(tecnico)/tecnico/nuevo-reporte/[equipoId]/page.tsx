@@ -889,9 +889,8 @@ export default function NuevoReporteWizard() {
         async function cargarContexto() {
             setCargandoContexto(true)
             try {
-                const { getTecnicos } = await import('@/app/actions/tecnicos')
+                const { getTecnicos, getTecnicoActual } = await import('@/app/actions/tecnicos')
                 const { getReporteBorradorData, getUltimoMantenimientoPreventivo } = await import('@/app/actions/reportes')
-                const supabaseModule = await import('@/lib/supabase/client').catch(() => null)
 
                 // Cargar equipo primero con manejo de error temprano
                 const eqRes = await getEquipoById(equipoId)
@@ -913,50 +912,27 @@ export default function NuevoReporteWizard() {
                     setChecklistTemplate(eqRes.data.checklist_template)
                 }
 
-                const promesas: any[] = [
+                // Cargar técnicos, técnico actual, y último preventivo en paralelo
+                const [tecsRes, tecActualRes, prevRes, draftRes] = await Promise.all([
                     getTecnicos({ activo: true }),
-                    getUltimoMantenimientoPreventivo(equipoId)
-                ]
-
-                if (draftReporteId) {
-                    promesas.push(getReporteBorradorData(draftReporteId))
-                } else {
-                    promesas.push(Promise.resolve(null))
-                }
-
-                if (supabaseModule) {
-                    const sb = supabaseModule.createClient()
-                    promesas.push(sb.auth.getUser())
-                } else {
-                    promesas.push(Promise.resolve({ data: { user: null } }))
-                }
-
-                const [tecsRes, prevRes, draftRes, authRes] = await Promise.all(promesas)
+                    getTecnicoActual(),
+                    getUltimoMantenimientoPreventivo(equipoId),
+                    draftReporteId ? getReporteBorradorData(draftReporteId) : Promise.resolve(null),
+                ])
 
                 if (prevRes?.data) {
                     setUltimoPreventivo(prevRes.data)
                 }
 
-                if (tecsRes?.data) {
-                    const allTecs = tecsRes.data as TecnicoData[]
-                    setTecnicos(allTecs)
+                // Establecer técnico actual desde server action (más confiable que client-side)
+                if (tecActualRes?.data) {
+                    setTecnicoActual(tecActualRes.data as TecnicoData)
+                } else {
+                    console.error('[cargarContexto] No se pudo detectar técnico actual:', tecActualRes?.error)
+                }
 
-                    if (authRes?.data?.user) {
-                        const userId = authRes.data.user.id
-                        // 1. Intentar encontrarlo en la lista ya cargada (más rápido)
-                        const found = allTecs.find(t => t.user_id === userId)
-                        if (found) {
-                            setTecnicoActual(found)
-                        } else {
-                            // 2. Fallback: Consulta directa si no estaba en la lista (posible RLS restrictivo)
-                            const { data: tc } = await supabaseModule!.createClient()
-                                .from('tecnicos')
-                                .select('id, nombre, apellido, user_id')
-                                .eq('user_id', userId)
-                                .single()
-                            if (tc) setTecnicoActual(tc)
-                        }
-                    }
+                if (tecsRes?.data) {
+                    setTecnicos(tecsRes.data as TecnicoData[])
                 }
 
                 // Cargar tipos, ubicaciones e insumos asegurandonos de tener el cliente si aplica
@@ -975,6 +951,8 @@ export default function NuevoReporteWizard() {
                 // Initialize draft data if it exists
                 if (draftRes?.data) {
                     const r = draftRes.data;
+                    const { createClient: createBrowserSB } = await import('@/lib/supabase/client')
+                    const sbClient = createBrowserSB()
                     console.log('[cargarContexto] hora_salida raw:', r.hora_salida, '| estado:', r.estado_reporte)
                     // Primera actualización: campos que no dependen de otros selects cargados
                     update({
@@ -1000,7 +978,7 @@ export default function NuevoReporteWizard() {
                     const _ubicacionDetalle = r.ubicacion_detalle || ''
 
                     // Cargar técnicos de apoyo
-                    const { data: tecApoyo } = await supabaseModule!.createClient()
+                    const { data: tecApoyo } = await sbClient
                         .from('reporte_tecnicos')
                         .select('tecnico_id')
                         .eq('reporte_id', draftReporteId)
@@ -1010,7 +988,7 @@ export default function NuevoReporteWizard() {
                     }
 
                     // Cargar insumos usados
-                    const { data: insUsados } = await supabaseModule!.createClient()
+                    const { data: insUsados } = await sbClient
                         .from('reporte_insumos_usados')
                         .select('insumo_id, cantidad, insumo:insumos(nombre, codigo, unidad_medida)')
                         .eq('reporte_id', draftReporteId)
@@ -1029,7 +1007,7 @@ export default function NuevoReporteWizard() {
                     }
 
                     // Cargar insumos requeridos
-                    const { data: insReq } = await supabaseModule!.createClient()
+                    const { data: insReq } = await sbClient
                         .from('reporte_insumos_requeridos')
                         .select('insumo_id, cantidad, observacion, insumo:insumos(nombre, codigo, unidad_medida)')
                         .eq('reporte_id', draftReporteId)
@@ -1049,7 +1027,7 @@ export default function NuevoReporteWizard() {
                     }
 
                     // Cargar accesorios
-                    const { data: accs } = await supabaseModule!.createClient()
+                    const { data: accs } = await sbClient
                         .from('reporte_accesorios')
                         .select('descripcion, cantidad, estado_equipo_contexto')
                         .eq('reporte_id', draftReporteId)
