@@ -6,8 +6,8 @@
  * BLOQUE 2 — Conectado a Supabase real.
  */
 
-import { createClient }      from '@/lib/supabase/server'
-import { createAdminClient }  from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import type { Tecnico } from '@/types'
 
@@ -36,8 +36,7 @@ type ActionResult<T> = { data: T | null; error: string | null }
 export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nombre: string; apellido: string; user_id: string | null }>> {
     try {
         const supabase = createClient()
-        
-        // 🔍 LOG 1: ¿qué dice getSession?
+
         const sessionResult = await supabase.auth.getSession()
         console.log('[getTecnicoActual][DEBUG] getSession result:', {
             hasSession: !!sessionResult.data.session,
@@ -46,7 +45,6 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
             error: sessionResult.error?.message,
         })
 
-        // 🔍 LOG 2: ¿qué dice getUser?
         const userResult = await supabase.auth.getUser()
         console.log('[getTecnicoActual][DEBUG] getUser result:', {
             hasUser: !!userResult.data.user,
@@ -58,21 +56,20 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
         const { data: { session }, error: authErr } = sessionResult
 
         if (authErr || !session?.user) {
-            console.error('[getTecnicoActual] No hay sesión:', authErr?.message)
-            return { data: null, error: 'No se detectó sesión de usuario.' }
+            console.error('[getTecnicoActual] No hay sesion:', authErr?.message)
+            return { data: null, error: 'No se detecto sesion de usuario.' }
         }
 
         const user = session.user
         const admin = createAdminClient()
 
-        // 🔍 LOG 3: ¿qué devuelve la query a tecnicos?
         const tecnicoQuery = await admin
             .from('tecnicos')
             .select('id, nombre, apellido, user_id, activo, email')
             .eq('user_id', user.id)
             .eq('activo', true)
             .maybeSingle()
-        
+
         console.log('[getTecnicoActual][DEBUG] tecnico query:', {
             data: tecnicoQuery.data,
             error: tecnicoQuery.error?.message,
@@ -84,7 +81,6 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
             return { data: tecnicoQuery.data, error: null }
         }
 
-        // Fallback por email
         if (user.email) {
             const fallback = await admin
                 .from('tecnicos')
@@ -111,10 +107,10 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
             }
         }
 
-        return { data: null, error: 'No se encontró un técnico vinculado a esta cuenta.' }
+        return { data: null, error: 'No se encontro un tecnico vinculado a esta cuenta.' }
     } catch (err) {
-        console.error('[getTecnicoActual] excepción:', err)
-        return { data: null, error: 'Error al detectar identidad del técnico.' }
+        console.error('[getTecnicoActual] excepcion:', err)
+        return { data: null, error: 'Error al detectar identidad del tecnico.' }
     }
 }
 
@@ -248,13 +244,13 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
         const { data, error } = await supabase
             .from('tecnicos')
             .insert({
-                user_id:  userId,
-                nombre:   parsed.data.nombre,
+                user_id: userId,
+                nombre: parsed.data.nombre,
                 apellido: parsed.data.apellido,
-                cedula:   parsed.data.cedula || null,
-                email:    parsed.data.email,
+                cedula: parsed.data.cedula || null,
+                email: parsed.data.email,
                 telefono: parsed.data.telefono || null,
-                activo:   parsed.data.activo,
+                activo: parsed.data.activo,
             })
             .select()
             .single()
@@ -274,7 +270,7 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
             error: null
         }
     } catch (err) {
-        await admin.auth.admin.deleteUser(userId).catch(() => {})
+        await admin.auth.admin.deleteUser(userId).catch(() => { })
         console.error('[createTecnico] insert tecnicos', err)
         return { data: null, error: 'Error al registrar el técnico.' }
     }
