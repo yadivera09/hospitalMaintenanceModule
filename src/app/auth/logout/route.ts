@@ -27,6 +27,6 @@ export async function POST() {
     await supabase.auth.signOut()
 
     return NextResponse.redirect(
-        new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hospital-maintenance-module1-git-main-yadivera09s-projects.vercel.app/login')
+        new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? 'hospital-maintenance-module.vercel.app/login')
     )
 }
