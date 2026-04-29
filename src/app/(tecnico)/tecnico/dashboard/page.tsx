@@ -1,5 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
 import DashboardClient from './DashboardClient'
+import { createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
     const supabase = createClient()
@@ -11,30 +13,38 @@ export default async function DashboardPage() {
         return <div>No autenticado</div>
     }
 
-    // 2. Obtener el técnico desde TU TABLA usando el email
+    // 2. Obtener el técnico desde TU TABLA usando el user_id (más robusto que el email)
     const { data: tecnico } = await supabase
         .from('tecnicos')
-        .select('nombre, apellido')
-        .eq('email', session.user.email)  // Buscar por email
+        .select('id, nombre, apellido')
+        .eq('user_id', session.user.id)
         .single()
 
-    // 3. Formar el nombre completo desde tu tabla
+    // 3. Formar el nombre completo
     const nombreTecnico = tecnico
         ? `${tecnico.nombre} ${tecnico.apellido}`
         : session.user.user_metadata?.nombre_completo || 'Técnico'
 
-    // 4. Obtener los reportes del técnico usando el ID de tu tabla
-    const { data: reportes } = await supabase
-        .from('reportes')
-        .select(`
-            *,
-            equipo:equipos (
-                codigo_mh,
-                nombre
-            )
-        `)
-        .eq('tecnico_id', session.user.id)
-        .order('fecha_inicio', { ascending: false })
+    // 4. Obtener los reportes del técnico usando el ID de la tabla tecnicos
+    // Si no hay técnico encontrado, devolvemos lista vacía
+    let reportes: any[] = []
+    
+    if (tecnico) {
+        const { data } = await supabase
+            .from('reportes_mantenimiento')
+            .select(`
+                *,
+                equipo:equipos (
+                    codigo_mh,
+                    nombre
+                )
+            `)
+            .eq('tecnico_principal_id', tecnico.id)
+            .eq('activo', true)
+            .order('fecha_inicio', { ascending: false })
+        
+        reportes = data || []
+    }
 
     return (
         <DashboardClient

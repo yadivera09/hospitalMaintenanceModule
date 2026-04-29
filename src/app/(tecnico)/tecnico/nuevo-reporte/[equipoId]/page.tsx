@@ -790,6 +790,7 @@ interface TecnicoData {
     id: string
     nombre: string
     apellido: string
+    user_id?: string // Opcional para matching
 }
 
 export default function NuevoReporteWizard() {
@@ -940,14 +941,24 @@ export default function NuevoReporteWizard() {
                 }
 
                 if (tecsRes?.data) {
-                    setTecnicos(tecsRes.data as TecnicoData[])
+                    const allTecs = tecsRes.data as TecnicoData[]
+                    setTecnicos(allTecs)
+
                     if (authRes?.data?.user) {
-                        const { data: tc } = await supabaseModule!.createClient()
-                            .from('tecnicos')
-                            .select('id, nombre, apellido')
-                            .eq('user_id', authRes.data.user.id)
-                            .single()
-                        if (tc) setTecnicoActual(tc)
+                        const userId = authRes.data.user.id
+                        // 1. Intentar encontrarlo en la lista ya cargada (más rápido)
+                        const found = allTecs.find(t => t.user_id === userId)
+                        if (found) {
+                            setTecnicoActual(found)
+                        } else {
+                            // 2. Fallback: Consulta directa si no estaba en la lista (posible RLS restrictivo)
+                            const { data: tc } = await supabaseModule!.createClient()
+                                .from('tecnicos')
+                                .select('id, nombre, apellido, user_id')
+                                .eq('user_id', userId)
+                                .single()
+                            if (tc) setTecnicoActual(tc)
+                        }
                     }
                 }
 

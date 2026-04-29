@@ -1,347 +1,371 @@
-# SOFT DELETE - Implementación para Módulo de Mantenimiento
-## Mobilhospital - Eliminación con PROTECT y desactivación inteligente
+# soft-delete.md — Mobilhospital Maintenance Module
+> Guía para Claude Code (Antigravity) · Solo aplica al panel `/admin`  
+> Stack: Next.js 14 App Router · TypeScript · Supabase JS v2 · Tailwind · shadcn/ui
 
 ---
 
-## 📋 ÍNDICE
+## 1. Filosofía general
 
-1. [Arquitectura General](#arquitectura-general)
-2. [Migraciones Base de Datos](#migraciones-base-de-datos)
-3. [Funciones PostgreSQL (RPC)](#funciones-postgresql-rpc)
-4. [Servicio de Soft Delete](#servicio-de-soft-delete)
-5. [Hook Personalizado](#hook-personalizado)
-6. [Componente DeleteDialog](#componente-deletedialog)
-7. [Integración en Equipos](#integracion-en-equipos)
-8. [RLS Policies](#rls-policies)
-9. [Testing](#testing)
-10. [Checklist Final](#checklist-final)
+Mobilhospital **no elimina registros físicamente** (hard delete) desde el panel admin.  
+La "eliminación" es siempre un **soft delete**: se cambia el campo `activo = false`.
 
----
+La única excepción son registros de tablas de unión sin dependencias propias  
+(ej.: `equipo_contratos` si no tiene reportes asociados), y aún así se prefiere desactivar.
 
-## 🎯 ARQUITECTURA GENERAL
-
-### Principios aplicados:
-- **Soft Delete universal**: Todos los modelos tienen campo `activo` (boolean)
-- **PROTECT pattern**: Verificar dependencias antes de desactivar
-- **Auditoría**: Registrar quién y cuándo se desactivó (opcional)
-- **Dashboard diferenciado**:
-  - Admin: Puede ver/activar/desactivar registros
-  - Técnico: Solo ve registros activos
-
-### Tablas afectadas (ya tienen `activo/activa`):
-✅ `equipos.activo`
-✅ `clientes.activo`
-✅ `contratos.activo`
-✅ `tecnicos.activo`
-✅ `categorias_equipo.activa`
-✅ `tipos_mantenimiento.activo`
-✅ `insumos.activo`
-✅ `ubicaciones.activa`
-✅ `reportes_mantenimiento.activo`
+### Regla de oro
+```
+¿El registro tiene filas hijas activas en otras tablas? → SOLO desactivar (bloquear delete).  
+¿El registro no tiene hijas activas?                   → Permitir desactivar (y opcionalmente soft-delete).  
+Hard delete físico                                     → NUNCA desde el panel admin.
+```
 
 ---
 
-## 🗄️ MIGRACIONES BASE DE DATOS
+## 2. Campo `activo` — convención en todos los modelos
 
-### 1. Crear migración: `supabase/migrations/XXXX_soft_delete_system.sql`
+Todas las tablas maestras ya tienen o deben tener:
 
 ```sql
--- =====================================================
--- SOFT DELETE SYSTEM - Mobilhospital
--- =====================================================
+activo BOOLEAN NOT NULL DEFAULT true
+```
 
--- 1.1 AUDIT LOG para soft deletes (opcional pero recomendado)
-CREATE TABLE IF NOT EXISTS public.audit_soft_deletes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    table_name TEXT NOT NULL,
-    record_id UUID NOT NULL,
-    deleted_by UUID REFERENCES auth.users(id),
-    deleted_at TIMESTAMPTZ DEFAULT now(),
-    metadata JSONB,
-    restored_at TIMESTAMPTZ,
-    restored_by UUID REFERENCES auth.users(id)
-);
+### Tablas confirmadas con `activo`
+| Tabla | Campo activo | Tiene dependientes |
+|---|---|---|
+| `clientes` | ✅ | `contratos` |
+| `contratos` | ✅ | `equipo_contratos` |
+| `equipos` | ✅ | `equipo_contratos`, `reportes` |
+| `categorias_equipo` | añadir si falta | `equipos` |
+| `tipos_mantenimiento` | añadir si falta | `equipos` |
+| `tecnicos` | añadir si falta | `reportes` |
+| `insumos` | añadir si falta | `reporte_insumos` |
+| `ubicaciones` | añadir si falta | `equipo_contratos` |
 
--- Índices para búsqueda rápida
-CREATE INDEX idx_audit_soft_deletes_record ON audit_soft_deletes(table_name, record_id);
-CREATE INDEX idx_audit_soft_deletes_deleted_at ON audit_soft_deletes(deleted_at);
+### Migración para tablas que aún no tienen `activo`
+```sql
+-- Ejecutar en Supabase SQL Editor para cada tabla que falte
+ALTER TABLE categorias_equipo ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE tipos_mantenimiento ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE tecnicos ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE insumos ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE ubicaciones ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;
+```
 
--- 1.2 FUNCIÓN PARA VERIFICAR DEPENDENCIAS (EQUIPOS)
-CREATE OR REPLACE FUNCTION public.check_equipo_dependencies(p_equipo_id UUID)
-RETURNS TABLE (
-    has_dependencies BOOLEAN,
-    dependency_count BIGINT,
-    dependency_type TEXT
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    -- Verificar reportes de mantenimiento activos
-    RETURN QUERY
-    SELECT 
-        COUNT(*) > 0 AS has_dependencies,
-        COUNT(*) AS dependency_count,
-        'reportes_mantenimiento' AS dependency_type
-    FROM public.reportes_mantenimiento
-    WHERE equipo_id = p_equipo_id AND activo = true
-    
-    UNION ALL
-    
-    SELECT 
-        COUNT(*) > 0,
-        COUNT(*),
-        'equipo_contratos'
-    FROM public.equipo_contratos
-    WHERE equipo_id = p_equipo_id AND fecha_retiro IS NULL;
-END;
-$$;
+---
 
--- 1.3 FUNCIÓN PARA VERIFICAR DEPENDENCIAS (CLIENTES)
-CREATE OR REPLACE FUNCTION public.check_cliente_dependencies(p_cliente_id UUID)
-RETURNS TABLE (
-    has_dependencies BOOLEAN,
-    dependency_count BIGINT,
-    dependency_type TEXT
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    RETURN QUERY
-    SELECT COUNT(*) > 0, COUNT(*), 'contratos_activos'
-    FROM public.contratos
-    WHERE cliente_id = p_cliente_id AND activo = true
-    
-    UNION ALL
-    
-    SELECT COUNT(*) > 0, COUNT(*), 'ubicaciones_activas'
-    FROM public.ubicaciones
-    WHERE cliente_id = p_cliente_id AND activa = true;
-END;
-$$;
+## 3. Server Actions — patrón estándar
 
--- 1.4 FUNCIÓN PARA VERIFICAR DEPENDENCIAS (CONTRATOS)
-CREATE OR REPLACE FUNCTION public.check_contrato_dependencies(p_contrato_id UUID)
-RETURNS TABLE (
-    has_dependencies BOOLEAN,
-    dependency_count BIGINT,
-    dependency_type TEXT
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    RETURN QUERY
-    SELECT COUNT(*) > 0, COUNT(*), 'equipos_asignados'
-    FROM public.equipo_contratos
-    WHERE contrato_id = p_contrato_id AND fecha_retiro IS NULL;
-END;
-$$;
+Todas las acciones de soft delete viven en `src/app/actions/<entidad>.ts`.  
+Siguen el mismo contrato que las acciones existentes (ver `clientes.ts`).
 
--- 1.5 FUNCIÓN PARA VERIFICAR DEPENDENCIAS (TÉCNICOS)
-CREATE OR REPLACE FUNCTION public.check_tecnico_dependencies(p_tecnico_id UUID)
-RETURNS TABLE (
-    has_dependencies BOOLEAN,
-    dependency_count BIGINT,
-    dependency_type TEXT
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    RETURN QUERY
-    SELECT COUNT(*) > 0, COUNT(*), 'reportes_activos'
-    FROM public.reportes_mantenimiento
-    WHERE tecnico_principal_id = p_tecnico_id AND activo = true
-    
-    UNION ALL
-    
-    SELECT COUNT(*) > 0, COUNT(*), 'reportes_apoyo'
-    FROM public.reporte_tecnicos
-    WHERE tecnico_id = p_tecnico_id;
-END;
-$$;
+### 3.1 Función de verificación de dependencias
 
--- 1.6 FUNCIÓN PRINCIPAL DE SOFT DELETE (GENERIC)
-CREATE OR REPLACE FUNCTION public.soft_delete_record(
-    p_table_name TEXT,
-    p_record_id UUID,
-    p_user_id UUID DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql SECURITY DEFINER
-AS $$
-DECLARE
-    v_column_name TEXT;
-    v_result JSONB;
-    v_dependencies JSONB;
-BEGIN
-    -- Determinar la columna de estado según la tabla
-    v_column_name := CASE p_table_name
-        WHEN 'equipos' THEN 'activo'
-        WHEN 'clientes' THEN 'activo'
-        WHEN 'contratos' THEN 'activo'
-        WHEN 'tecnicos' THEN 'activo'
-        WHEN 'categorias_equipo' THEN 'activa'
-        WHEN 'tipos_mantenimiento' THEN 'activo'
-        WHEN 'insumos' THEN 'activo'
-        WHEN 'ubicaciones' THEN 'activa'
-        ELSE 'activo'
-    END;
+Crear en `src/lib/soft-delete.ts`:
 
-    -- Verificar dependencias según la tabla
-    IF p_table_name = 'equipos' THEN
-        SELECT jsonb_agg(
-            jsonb_build_object(
-                'type', dependency_type,
-                'count', dependency_count
-            )
-        ) INTO v_dependencies
-        FROM check_equipo_dependencies(p_record_id)
-        WHERE has_dependencies = true;
-        
-        IF v_dependencies IS NOT NULL THEN
-            RETURN jsonb_build_object(
-                'success', false,
-                'message', 'El equipo tiene dependencias activas',
-                'dependencies', v_dependencies
-            );
-        END IF;
-    
-    ELSIF p_table_name = 'clientes' THEN
-        SELECT jsonb_agg(
-            jsonb_build_object(
-                'type', dependency_type,
-                'count', dependency_count
-            )
-        ) INTO v_dependencies
-        FROM check_cliente_dependencies(p_record_id)
-        WHERE has_dependencies = true;
-        
-        IF v_dependencies IS NOT NULL THEN
-            RETURN jsonb_build_object(
-                'success', false,
-                'message', 'El cliente tiene dependencias activas',
-                'dependencies', v_dependencies
-            );
-        END IF;
-    
-    ELSIF p_table_name = 'contratos' THEN
-        SELECT jsonb_agg(
-            jsonb_build_object(
-                'type', dependency_type,
-                'count', dependency_count
-            )
-        ) INTO v_dependencies
-        FROM check_contrato_dependencies(p_record_id)
-        WHERE has_dependencies = true;
-        
-        IF v_dependencies IS NOT NULL THEN
-            RETURN jsonb_build_object(
-                'success', false,
-                'message', 'El contrato tiene equipos asignados activos',
-                'dependencies', v_dependencies
-            );
-        END IF;
-    
-    ELSIF p_table_name = 'tecnicos' THEN
-        SELECT jsonb_agg(
-            jsonb_build_object(
-                'type', dependency_type,
-                'count', dependency_count
-            )
-        ) INTO v_dependencies
-        FROM check_tecnico_dependencies(p_record_id)
-        WHERE has_dependencies = true;
-        
-        IF v_dependencies IS NOT NULL THEN
-            RETURN jsonb_build_object(
-                'success', false,
-                'message', 'El técnico tiene reportes activos',
-                'dependencies', v_dependencies
-            );
-        END IF;
-    END IF;
+```typescript
+import { createClient } from '@/lib/supabase/server'
 
-    -- Ejecutar soft delete
-    EXECUTE format('
-        UPDATE public.%I 
-        SET %I = false, updated_at = now()
-        WHERE id = $1
-        RETURNING jsonb_build_object(
-            ''success'', true,
-            ''id'', id,
-            ''message'', ''Registro desactivado correctamente''
-        )
-    ', p_table_name, v_column_name)
-    INTO v_result
-    USING p_record_id;
+/**
+ * Verifica si un registro tiene filas hijas activas.
+ * Retorna true si TIENE dependencias (no se puede desactivar limpiamente sin avisar).
+ */
+export async function tieneDependenciasActivas(
+  tabla: string,
+  fkColumn: string,
+  id: string
+): Promise<{ tiene: boolean; count: number }> {
+  const supabase = createClient()
+  const { count } = await supabase
+    .from(tabla)
+    .select('*', { count: 'exact', head: true })
+    .eq(fkColumn, id)
+    .eq('activo', true)    // solo hijas activas importan
+  
+  return { tiene: (count ?? 0) > 0, count: count ?? 0 }
+}
+```
 
-    -- Registrar en auditoría si hay user_id
-    IF p_user_id IS NOT NULL AND v_result->>'success' = 'true' THEN
-        INSERT INTO public.audit_soft_deletes (table_name, record_id, deleted_by, metadata)
-        VALUES (p_table_name, p_record_id, p_user_id, jsonb_build_object('timestamp', now()));
-    END IF;
+### 3.2 Action de soft delete — ejemplo con `clientes`
 
-    RETURN COALESCE(v_result, jsonb_build_object(
-        'success', false,
-        'message', 'Registro no encontrado'
-    ));
-END;
-$$;
+```typescript
+// src/app/actions/clientes.ts  (agregar a las acciones existentes)
 
--- 1.7 FUNCIÓN PARA RESTAURAR REGISTRO
-CREATE OR REPLACE FUNCTION public.restore_record(
-    p_table_name TEXT,
-    p_record_id UUID,
-    p_user_id UUID DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql SECURITY DEFINER
-AS $$
-DECLARE
-    v_column_name TEXT;
-    v_result JSONB;
-BEGIN
-    v_column_name := CASE p_table_name
-        WHEN 'categorias_equipo' THEN 'activa'
-        ELSE 'activo'
-    END;
+export async function desactivarCliente(id: string): Promise<ActionResult> {
+  const supabase = createClient()
 
-    EXECUTE format('
-        UPDATE public.%I 
-        SET %I = true, updated_at = now()
-        WHERE id = $1
-        RETURNING jsonb_build_object(
-            ''success'', true,
-            ''id'', id,
-            ''message'', ''Registro restaurado correctamente''
-        )
-    ', p_table_name, v_column_name)
-    INTO v_result
-    USING p_record_id;
+  // 1. Verificar contratos activos
+  const { tiene, count } = await tieneDependenciasActivas('contratos', 'cliente_id', id)
 
-    -- Actualizar auditoría
-    IF p_user_id IS NOT NULL AND v_result->>'success' = 'true' THEN
-        UPDATE public.audit_soft_deletes
-        SET restored_at = now(), restored_by = p_user_id
-        WHERE table_name = p_table_name AND record_id = p_record_id AND restored_at IS NULL;
-    END IF;
+  if (tiene) {
+    return {
+      data: null,
+      error: `No se puede desactivar: el cliente tiene ${count} contrato(s) activo(s). Desactívalos primero.`,
+    }
+  }
 
-    RETURN COALESCE(v_result, jsonb_build_object(
-        'success', false,
-        'message', 'Registro no encontrado'
-    ));
-END;
-$$;
+  // 2. Soft delete
+  const { error } = await supabase
+    .from('clientes')
+    .update({ activo: false, updated_at: new Date().toISOString() })
+    .eq('id', id)
 
--- 1.8 ÍNDICES adicionales para performance
-CREATE INDEX IF NOT EXISTS idx_equipos_activo ON equipos(activo) WHERE activo = true;
-CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo) WHERE activo = true;
-CREATE INDEX IF NOT EXISTS idx_contratos_activo ON contratos(activo) WHERE activo = true;
-CREATE INDEX IF NOT EXISTS idx_tecnicos_activo ON tecnicos(activo) WHERE activo = true;
+  if (error) return { data: null, error: error.message }
+  return { data: true, error: null }
+}
+```
 
--- 1.9 TRIGGER para evitar soft delete duplicado (opcional)
-CREATE OR REPLACE FUNCTION public.prevent_double_soft_delete()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF OLD.activo = false AND NEW.activo = false THEN
-        RAISE EXCEPTION 'El registro ya está desactivado';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+### 3.3 Patrón para cada entidad
 
--- Aplicar trigger a tablas principales
-CREATE TRIGGER prevent_double_soft_delete_equipos
-    BEFORE UPDATE OF activo ON equipos
-    FOR EACH ROW EXECUTE FUNCTION prevent_double_soft_delete();
+| Entidad | FK a verificar antes de desactivar |
+|---|---|
+| `clientes` | `contratos.cliente_id` |
+| `contratos` | `equipo_contratos.contrato_id` |
+| `equipos` | `equipo_contratos.equipo_id` + `reportes.equipo_id` |
+| `tecnicos` | `reportes.tecnico_id` (solo reportes activos/en curso) |
+| `categorias_equipo` | `equipos.categoria_id` |
+| `tipos_mantenimiento` | `equipos.tipo_mantenimiento_id` |
+| `insumos` | `reporte_insumos.insumo_id` |
+| `ubicaciones` | `equipo_contratos.ubicacion_id` |
+
+---
+
+## 4. Componente UI — `DeleteButton` reutilizable
+
+Crear en `src/components/admin/shared/DeleteButton.tsx`:
+
+```typescript
+'use client'
+
+import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
+
+interface DeleteButtonProps {
+  /** Nombre del registro para el mensaje de confirmación */
+  nombreRegistro: string
+  /** Action de desactivación — debe retornar { error: string | null } */
+  onDesactivar: () => Promise<{ error: string | null }>
+  /** Callback después de desactivar exitosamente */
+  onExito?: () => void
+  /** Texto personalizado para el botón. Default: "Desactivar" */
+  label?: string
+  disabled?: boolean
+}
+
+export default function DeleteButton({
+  nombreRegistro,
+  onDesactivar,
+  onExito,
+  label = 'Desactivar',
+  disabled = false,
+}: DeleteButtonProps) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleConfirm() {
+    setLoading(true)
+    const { error } = await onDesactivar()
+    setLoading(false)
+
+    if (error) {
+      // Error de dependencias u otro — mostrar toast de error explicativo
+      toast.error('No se puede desactivar', { description: error })
+      return
+    }
+
+    toast.success(`"${nombreRegistro}" fue desactivado correctamente.`)
+    onExito?.()
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled || loading}
+          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">{label}</span>
+        </Button>
+      </AlertDialogTrigger>
+
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Desactivar este registro?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vas a desactivar <strong>{nombreRegistro}</strong>.  
+            El registro no se eliminará — quedará inactivo y podrás reactivarlo después.  
+            Si tiene dependencias activas, la operación será bloqueada automáticamente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {loading ? 'Desactivando…' : 'Sí, desactivar'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+```
+
+---
+
+## 5. Integración en tablas existentes
+
+### Patrón de uso en `ClientesPageClient.tsx` (y equivalentes)
+
+```typescript
+// Dentro de la columna de acciones de la tabla
+import DeleteButton from '@/components/admin/shared/DeleteButton'
+import { desactivarCliente } from '@/app/actions/clientes'
+
+// En la fila de la tabla:
+<DeleteButton
+  nombreRegistro={cliente.razon_social}
+  onDesactivar={() => desactivarCliente(cliente.id)}
+  onExito={() => {
+    // Refrescar lista — usar el mismo patrón que el form de edición
+    setClientes(prev => prev.filter(c => c.id !== cliente.id))
+    // O router.refresh() si la lista viene del Server Component
+  }}
+/>
+```
+
+### Dónde colocar el botón en la tabla
+El botón de desactivar va como **última columna** de acciones, junto al botón de editar:
+
+```
+| Razón social | RUC | Email | Estado | Acciones        |
+|--------------|-----|-------|--------|-----------------|
+| Clínica S.A  | ... | ...   | Activo | [✏️ Editar] [🗑️] |
+```
+
+---
+
+## 6. Queries — filtrar por `activo` en los listados
+
+### Regla: los listados del panel admin siempre filtran por defecto
+
+```typescript
+// CORRECTO — mostrar solo activos por defecto
+const { data } = await supabase
+  .from('clientes')
+  .select('*')
+  .eq('activo', true)
+  .order('razon_social')
+
+// Para ver inactivos — solo con filtro explícito en la UI
+const { data } = await supabase
+  .from('clientes')
+  .select('*')
+  .eq('activo', false)
+  .order('updated_at', { ascending: false })
+```
+
+### Filtro de estado en la UI (opcional pero recomendado)
+
+Añadir al buscador existente un select de estado:
+
+```typescript
+// En ClientesPageClient o equivalente
+const [filtroActivo, setFiltroActivo] = useState<'todos' | 'activos' | 'inactivos'>('activos')
+
+// Al construir el query en la action:
+export async function getClientes(filtro: 'todos' | 'activos' | 'inactivos' = 'activos') {
+  let query = supabase.from('clientes').select('*').order('razon_social')
+  if (filtro === 'activos') query = query.eq('activo', true)
+  if (filtro === 'inactivos') query = query.eq('activo', false)
+  return query
+}
+```
+
+---
+
+## 7. Reactivar un registro
+
+El mismo `ClienteForm` (y equivalentes) ya tiene el campo `activo` como Select.  
+**Reactivar = abrir el modal de edición y cambiar `activo` a `true`.**  
+No se necesita un botón separado de "reactivar".
+
+---
+
+## 8. Árbol de archivos a crear/modificar
+
+```
+src/
+├── lib/
+│   └── soft-delete.ts                          ← NUEVO — helper de verificación
+│
+├── app/
+│   └── actions/
+│       ├── clientes.ts                         ← MODIFICAR — añadir desactivarCliente()
+│       ├── contratos.ts                        ← MODIFICAR — añadir desactivarContrato()
+│       ├── equipos.ts                          ← MODIFICAR — añadir desactivarEquipo()
+│       ├── tecnicos.ts                         ← MODIFICAR — añadir desactivarTecnico()
+│       └── catalogos.ts                        ← MODIFICAR — desactivar cat/tipos/insumos
+│
+└── components/
+    └── admin/
+        └── shared/
+            └── DeleteButton.tsx                ← NUEVO — botón reutilizable
+```
+
+### Archivos de página a modificar (solo añadir el botón en la tabla)
+```
+src/app/(admin)/admin/
+├── clientes/ClientesPageClient.tsx             ← añadir DeleteButton en columna acciones
+├── contratos/ContratosPageClient.tsx           ← ídem
+├── equipos/EquiposPageClient.tsx               ← ídem
+├── tecnicos/TecnicosPageClient.tsx             ← ídem
+└── catalogos/CatalogosPageClient.tsx           ← ídem (categorías, tipos, insumos)
+```
+
+---
+
+## 9. RLS en Supabase
+
+Asegurarse de que las policies existentes de UPDATE permitan el cambio de `activo`:
+
+```sql
+-- Si ya existe una policy de UPDATE para el rol admin, no hay que tocarla.
+-- Si no existe, crear una como esta (ejemplo para clientes):
+CREATE POLICY "Admin puede actualizar clientes"
+  ON clientes FOR UPDATE
+  TO authenticated
+  USING (auth.jwt() ->> 'role' = 'admin')
+  WITH CHECK (auth.jwt() ->> 'role' = 'admin');
+```
+
+El soft delete es un `UPDATE`, no un `DELETE`, así que **no se necesita policy de DELETE**.
+
+---
+
+## 10. Checklist de implementación por sección
+
+Para cada sección del panel admin, seguir este orden:
+
+- [ ] Verificar que la tabla SQL tiene columna `activo BOOLEAN NOT NULL DEFAULT true`
+- [ ] Añadir `desactivar<Entidad>()` en `src/app/actions/<entidad>.ts`
+- [ ] Importar y usar `DeleteButton` en el `PageClient` correspondiente
+- [ ] Probar caso feliz: desactivar sin dependencias → toast verde
+- [ ] Probar caso bloqueado: desactivar con hijas activas → toast rojo con mensaje
+- [ ] Probar reactivación: editar registro → cambiar `activo` a `true`
+- [ ] Verificar que el listado filtra por `activo = true` por defecto
