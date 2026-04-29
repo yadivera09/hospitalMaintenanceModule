@@ -34,84 +34,53 @@ type ActionResult<T> = { data: T | null; error: string | null }
  * Fallback: si no encuentra por user_id, intenta por email del usuario Auth.
  */
 export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nombre: string; apellido: string; user_id: string | null }>> {
-    console.error('[getTecnicoActual] >>> FUNCION INVOCADA <<<')
     try {
         const supabase = createClient()
 
-        const sessionResult = await supabase.auth.getSession()
-        console.log('[getTecnicoActual][DEBUG] getSession result:', {
-            hasSession: !!sessionResult.data.session,
-            userId: sessionResult.data.session?.user?.id,
-            email: sessionResult.data.session?.user?.email,
-            error: sessionResult.error?.message,
-        })
+        // Usar getUser en vez de getSession (más seguro y confiable en producción)
+        const { data: { user }, error: authErr } = await supabase.auth.getUser()
 
-        const userResult = await supabase.auth.getUser()
-        console.log('[getTecnicoActual][DEBUG] getUser result:', {
-            hasUser: !!userResult.data.user,
-            userId: userResult.data.user?.id,
-            email: userResult.data.user?.email,
-            error: userResult.error?.message,
-        })
-
-        const { data: { session }, error: authErr } = sessionResult
-
-        if (authErr || !session?.user) {
-            console.error('[getTecnicoActual] No hay sesion:', authErr?.message)
-            return { data: null, error: 'No se detecto sesion de usuario.' }
+        if (authErr || !user) {
+            return { data: null, error: 'No se detectó sesión de usuario.' }
         }
 
-        const user = session.user
         const admin = createAdminClient()
 
-        const tecnicoQuery = await admin
+        const { data: tecnico } = await admin
             .from('tecnicos')
-            .select('id, nombre, apellido, user_id, activo, email')
+            .select('id, nombre, apellido, user_id')
             .eq('user_id', user.id)
             .eq('activo', true)
             .maybeSingle()
 
-        console.log('[getTecnicoActual][DEBUG] tecnico query:', {
-            data: tecnicoQuery.data,
-            error: tecnicoQuery.error?.message,
-            errorCode: tecnicoQuery.error?.code,
-            queriedUserId: user.id,
-        })
-
-        if (tecnicoQuery.data) {
-            return { data: tecnicoQuery.data, error: null }
+        if (tecnico) {
+            return { data: tecnico, error: null }
         }
 
+        // Fallback por email
         if (user.email) {
-            const fallback = await admin
+            const { data: tecByEmail } = await admin
                 .from('tecnicos')
                 .select('id, nombre, apellido, user_id')
                 .eq('email', user.email)
                 .eq('activo', true)
                 .maybeSingle()
 
-            console.log('[getTecnicoActual][DEBUG] fallback by email:', {
-                data: fallback.data,
-                error: fallback.error?.message,
-                queriedEmail: user.email,
-            })
-
-            if (fallback.data) {
-                if (!fallback.data.user_id) {
+            if (tecByEmail) {
+                if (!tecByEmail.user_id) {
                     await admin
                         .from('tecnicos')
                         .update({ user_id: user.id })
-                        .eq('id', fallback.data.id)
-                    fallback.data.user_id = user.id
+                        .eq('id', tecByEmail.id)
+                    tecByEmail.user_id = user.id
                 }
-                return { data: fallback.data, error: null }
+                return { data: tecByEmail, error: null }
             }
         }
 
-        return { data: null, error: 'No se encontro un tecnico vinculado a esta cuenta.' }
+        return { data: null, error: 'No se encontró un técnico vinculado a esta cuenta.' }
     } catch (err) {
-        console.error('[getTecnicoActual] excepcion:', err)
-        return { data: null, error: 'Error al detectar identidad del tecnico.' }
+        return { data: null, error: 'Error al detectar identidad del técnico.' }
     }
 }
 
