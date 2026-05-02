@@ -37,6 +37,8 @@ import {
 import { getActividadesByCategoria } from '@/mocks/catalogos'
 import { getTiposMantenimiento, getUbicaciones, getInsumos, TipoMantenimiento, UbicacionConCliente, Insumo } from '@/app/actions/catalogos'
 import { getEquipoById } from '@/app/actions/equipos'
+import { getTecnicos, getTecnicoActual } from '@/app/actions/tecnicos'
+import { getReporteBorradorData, getUltimoMantenimientoPreventivo } from '@/app/actions/reportes'
 import type { ActividadChecklist } from '@/types'
 import type SignatureCanvasType from 'react-signature-canvas'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -892,8 +894,6 @@ export default function NuevoReporteWizard() {
             console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
-                const { getTecnicos, getTecnicoActual } = await import('@/app/actions/tecnicos')
-                const { getReporteBorradorData, getUltimoMantenimientoPreventivo } = await import('@/app/actions/reportes')
 
                 // Cargar equipo primero con manejo de error temprano
                 const eqRes = await getEquipoById(equipoId)
