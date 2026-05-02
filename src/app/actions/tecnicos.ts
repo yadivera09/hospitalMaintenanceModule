@@ -40,6 +40,9 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
         // Usar getUser en vez de getSession (más seguro y confiable en producción)
         const { data: { user }, error: authErr } = await supabase.auth.getUser()
 
+        console.error('[getTecnicoActual] user:', user?.id ?? 'NULL')
+        console.error('[getTecnicoActual] authErr:', JSON.stringify(authErr))
+
         if (authErr || !user) {
             return { data: null, error: 'No se detectó sesión de usuario.' }
         }
@@ -98,7 +101,9 @@ export async function getTecnicos(filtros?: { activo?: boolean, search?: string 
             query = query.or(`nombre.ilike.%${filtros.search}%,apellido.ilike.%${filtros.search}%,cedula.ilike.%${filtros.search}%`)
         }
 
+        console.error('[getTecnicos] iniciando query con admin client')
         const { data, error } = await query
+        console.error('[getTecnicos] resultado:', data?.length ?? 0, 'error:', error)
         if (error) throw error
         return { data: data as Tecnico[], error: null }
     } catch (err) {
