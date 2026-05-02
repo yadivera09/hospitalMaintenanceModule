@@ -37,13 +37,14 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
     try {
         const supabase = createClient()
 
-        // Usar getUser en vez de getSession (más seguro y confiable en producción)
-        const { data: { user }, error: authErr } = await supabase.auth.getUser()
+        // getUser() hace una llamada HTTP al servidor de Auth que falla en Vercel (TypeError: fetch failed).
+        // El middleware ya validó el JWT en cada request, por lo que getSession() es seguro aquí.
+        const { data: { session } } = await supabase.auth.getSession()
+        const user = session?.user
 
-        console.error('[getTecnicoActual] user:', user?.id ?? 'NULL')
-        console.error('[getTecnicoActual] authErr:', JSON.stringify(authErr))
+        console.error('[getTecnicoActual] user (from session):', user?.id ?? 'NULL')
 
-        if (authErr || !user) {
+        if (!user) {
             return { data: null, error: 'No se detectó sesión de usuario.' }
         }
 
