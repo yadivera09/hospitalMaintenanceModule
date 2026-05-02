@@ -86,8 +86,8 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
 
 export async function getTecnicos(filtros?: { activo?: boolean, search?: string }): Promise<ActionResult<Tecnico[]>> {
     try {
-        const supabase = createClient()
-        let query = supabase
+        const admin = createAdminClient()
+        let query = admin
             .from('tecnicos')
             .select('*')
             .order('nombre', { ascending: true })
