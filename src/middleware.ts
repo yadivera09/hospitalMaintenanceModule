@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getRolesUsuario } from '@/lib/seguridad/permisos'
 
 /**
  * Rutas agrupadas por tipo de acceso.
@@ -106,26 +107,33 @@ export async function middleware(request: NextRequest) {
 
     // ─── 4. MFA OK — continuar con lógica de rol ─────────────────────────────
 
-    const rol = user.user_metadata?.rol as string | undefined
+    // TODO Fase 5: quitar fallback cuando user_metadata.rol esté completamente migrado.
+    // getRolesUsuario() ya maneja el fallback internamente — no duplicar aquí.
+    const roles = await getRolesUsuario(user.id)
+
+    const esAdmin   = roles.includes('administrador')
+    const esTecnico = roles.includes('tecnico')
+    // OR: si cualquier rol da acceso, se permite
+    const tieneRol  = roles.length > 0
 
     // Sin rol asignado en rutas protegidas → login
-    if (!rol && isProtectedRoute(pathname)) {
+    if (!tieneRol && isProtectedRoute(pathname)) {
         return redirect(request, '/login')
     }
 
-    // Técnico intentando acceder a rutas de admin
-    if (rol === 'tecnico' && ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
+    // Técnico (sin rol admin) intentando acceder a rutas de admin
+    if (!esAdmin && esTecnico && ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
         return redirect(request, '/tecnico/dashboard')
     }
 
     // Administrador intentando acceder a rutas de técnico
-    if (rol === 'administrador' && TECNICO_ROUTES.some((r) => pathname.startsWith(r))) {
+    if (esAdmin && TECNICO_ROUTES.some((r) => pathname.startsWith(r))) {
         return redirect(request, '/admin/dashboard')
     }
 
     // Usuario autenticado (MFA completo) en página de login → dashboard
     if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-        const dest = rol === 'administrador' ? '/admin/dashboard' : '/tecnico/dashboard'
+        const dest = esAdmin ? '/admin/dashboard' : '/tecnico/dashboard'
         return redirect(request, dest)
     }
 
