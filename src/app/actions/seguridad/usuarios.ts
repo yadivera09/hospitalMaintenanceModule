@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getRolesUsuario } from '@/lib/seguridad/permisos'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
+import { revalidatePath } from 'next/cache'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos
@@ -235,6 +236,8 @@ export async function asignarRolesUsuario(
             },
         })
 
+        revalidatePath('/admin/seguridad/usuarios')
+        revalidatePath(`/admin/seguridad/usuarios/${usuarioId}`)
         return { data: true, error: null }
     } catch (err) {
         console.error('[asignarRolesUsuario]', err)
@@ -292,6 +295,8 @@ export async function toggleUsuarioActivo(id: string): Promise<ActionResult<bool
             },
         })
 
+        revalidatePath('/admin/seguridad/usuarios')
+        revalidatePath(`/admin/seguridad/usuarios/${id}`)
         return { data: nuevoEstado, error: null }
     } catch (err) {
         console.error('[toggleUsuarioActivo]', err)

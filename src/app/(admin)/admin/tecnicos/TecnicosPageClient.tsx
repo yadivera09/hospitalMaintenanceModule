@@ -54,10 +54,7 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
     const [passwordModal, setPasswordModal] = useState<{ nombre: string; password: string } | null>(null)
     const [passwordCopiado, setPasswordCopiado] = useState(false)
 
-    // Reflejar cambios del SSR si refescamos globalmente y search está vacío
-    if (busqueda === '' && lista !== tecnicosIniciales) {
-        setLista(tecnicosIniciales)
-    }
+
 
     async function handleSearch(term: string) {
         setBusqueda(term)
@@ -76,9 +73,23 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
     }
 
     async function handleToggle(t: Tecnico) {
-        await toggleActivoTecnico(t.id)
-        if (busqueda) handleSearch(busqueda)
-        else startTransition(() => { router.refresh() })
+        // 1. Actualizar estado local inmediatamente (optimista)
+        setLista(prev => prev.map(item => 
+            item.id === t.id ? { ...item, activo: !item.activo } : item
+        ))
+        
+        // 2. Llamar a la action
+        const result = await toggleActivoTecnico(t.id)
+        
+        // 3. Si falla, revertir el cambio optimista
+        if (result.error) {
+            setLista(prev => prev.map(item => 
+                item.id === t.id ? { ...item, activo: t.activo } : item
+            ))
+        }
+        
+        // 4. Refresh en background para sincronizar con el servidor
+        startTransition(() => { router.refresh() })
     }
 
     async function handleGuardar(valores: TecnicoFormValues) {

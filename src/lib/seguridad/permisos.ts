@@ -37,8 +37,35 @@ interface PermisoModuloRow {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getRolesUsuario
+// fallbackMetadataRol (privado)
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Fallback de compatibilidad: lee el rol desde user_metadata.
+ * Se usa cuando el usuario no tiene fila en public.usuarios o no tiene
+ * roles en usuario_roles (usuarios no migrados al nuevo RBAC).
+ *
+ * TODO Fase 5: quitar este fallback cuando user_metadata.rol esté deprecated.
+ */
+async function fallbackMetadataRol(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    admin: any,
+    userId: string
+): Promise<string[]> {
+    const { data: authUser } = await admin.auth.admin.getUserById(userId)
+    const rolLegacy = authUser?.user?.user_metadata?.rol as string | undefined
+
+    if (rolLegacy) {
+        console.warn(
+            `[getRolesUsuario] Usuario ${userId} sin roles en usuario_roles. ` +
+            `Usando fallback user_metadata.rol="${rolLegacy}".`
+        )
+        return [rolLegacy]
+    }
+
+    return []
+}
+
 
 /**
  * Obtiene los nombres de los roles activos asignados a un usuario.
@@ -59,67 +86,44 @@ interface PermisoModuloRow {
 export async function getRolesUsuario(userId: string): Promise<string[]> {
     const admin = createAdminClient()
 
-    // ── Nueva forma: usuarios → usuario_roles → roles ─────────────────────────
-    const { data: filas, error } = await admin
-        .from('usuario_roles')
-        .select(`
-            activo,
-            roles ( nombre )
-        `)
-        .eq('activo', true)
-        .filter('usuarios.user_id', 'eq', userId)
-
-    // Si hay error de query, loggear y continuar al fallback
-    if (error) {
-        console.error('[getRolesUsuario] Error al leer usuario_roles:', error.message)
-    }
-
-    // Intentar extraer roles desde la query con join via usuarios
-    // La query de arriba puede no retornar datos si el JOIN no está disponible
-    // en la versión actual del cliente. Hacemos la query en dos pasos para mayor robustez.
+    // ── Paso 1: resolver usuarios.id desde auth.users.id ─────────────────────
+    // Se hace primero porque usuario_roles apunta a usuarios.id (no a auth.users.id).
     const { data: usuarioRow } = await admin
         .from('usuarios')
         .select('id')
         .eq('user_id', userId)
         .single()
 
-    if (usuarioRow?.id) {
-        const { data: rolRows, error: rolError } = await admin
-            .from('usuario_roles')
-            .select(`
-                activo,
-                roles ( nombre )
-            `)
-            .eq('usuario_id', usuarioRow.id)
-            .eq('activo', true)
-
-        if (rolError) {
-            console.error('[getRolesUsuario] Error al leer roles del usuario:', rolError.message)
-        }
-
-        if (rolRows && rolRows.length > 0) {
-            const nombres = (rolRows as unknown as UsuarioRolRow[])
-                .map((r) => r.roles?.nombre)
-                .filter((n): n is string => typeof n === 'string' && n.length > 0)
-
-            if (nombres.length > 0) return nombres
-        }
+    if (!usuarioRow?.id) {
+        // El usuario no tiene fila en public.usuarios todavía → ir directo al fallback
+        return await fallbackMetadataRol(admin, userId)
     }
 
-    // ── Fallback: user_metadata.rol (mientras se migra) ───────────────────────
-    // Cubre usuarios cuyo registro en 'usuarios' aún no existe o no tiene roles.
-    const { data: authUser } = await admin.auth.admin.getUserById(userId)
-    const rolLegacy = authUser?.user?.user_metadata?.rol as string | undefined
+    // ── Paso 2: leer roles activos desde usuario_roles → roles ───────────────
+    const { data: rolRows, error: rolError } = await admin
+        .from('usuario_roles')
+        .select(`
+            activo,
+            roles ( nombre )
+        `)
+        .eq('usuario_id', usuarioRow.id)
+        .eq('activo', true)
 
-    if (rolLegacy) {
-        console.warn(
-            `[getRolesUsuario] Usuario ${userId} no tiene roles en usuario_roles. ` +
-            `Usando fallback user_metadata.rol="${rolLegacy}".`
-        )
-        return [rolLegacy]
+    if (rolError) {
+        console.error('[getRolesUsuario] Error al leer roles:', rolError.message)
+        return await fallbackMetadataRol(admin, userId)
     }
 
-    return []
+    if (rolRows && rolRows.length > 0) {
+        const nombres = (rolRows as unknown as UsuarioRolRow[])
+            .map((r) => r.roles?.nombre)
+            .filter((n): n is string => typeof n === 'string' && n.length > 0)
+
+        if (nombres.length > 0) return nombres
+    }
+
+    // Sin roles en usuario_roles → intentar fallback
+    return await fallbackMetadataRol(admin, userId)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

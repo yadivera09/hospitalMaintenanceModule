@@ -123,7 +123,7 @@ export async function getAuditoria(filtros: FiltrosAuditoria = {}): Promise<
         const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
         const registros: RegistroAuditoria[] = (data ?? []).map((r) => {
-            const usuario = r.usuarios as { nombre: string; apellido: string } | null
+            const usuario = r.usuarios as unknown as { nombre: string; apellido: string } | null
             return {
                 id: r.id,
                 usuario_id: r.usuario_id,

@@ -139,7 +139,7 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
                     <Badge
                         className="text-xs px-2 py-0 bg-[#1E40AF] text-white border-0 rounded-sm"
                     >
-                        Administrador
+                        {usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1)}
                     </Badge>
                 </div>
 

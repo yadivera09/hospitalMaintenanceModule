@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getRolesUsuario } from '@/lib/seguridad/permisos'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
 import { z } from 'zod'
+import { revalidatePath } from 'next/cache'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos
@@ -40,6 +41,12 @@ export interface RolConPermisos {
 export interface AsignarPermisoInput {
     moduloId: string
     permisoId: string
+}
+
+export interface PermisoBase {
+    id: string
+    codigo: string
+    nombre: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,6 +79,32 @@ async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } |
         .single()
 
     return { userId: session.user.id, usuarioId: usuario?.id ?? '' }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getPermisos — catálogo completo de permisos del sistema
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lista todos los permisos del catálogo (ver, crear, editar, etc.) con sus IDs reales.
+ * Necesario para construir la matriz de permisos en el cliente sin depender
+ * de qué permisos tenga ya asignados el rol.
+ */
+export async function getPermisos(): Promise<ActionResult<PermisoBase[]>> {
+    try {
+        const admin = createAdminClient()
+        const { data, error } = await admin
+            .from('permisos')
+            .select('id, codigo, nombre')
+            .order('nombre', { ascending: true })
+
+        if (error) throw error
+
+        return { data: (data ?? []) as PermisoBase[], error: null }
+    } catch (err) {
+        console.error('[getPermisos]', err)
+        return { data: null, error: 'Error al cargar el catálogo de permisos.' }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,6 +257,7 @@ export async function crearRol(
             detalle: { datos: { nombre: data.nombre } },
         })
 
+        revalidatePath('/admin/seguridad/roles')
         return { data, error: null }
     } catch (err) {
         console.error('[crearRol]', err)
@@ -288,6 +322,8 @@ export async function editarRol(
             detalle: { cambios: parsed.data },
         })
 
+        revalidatePath('/admin/seguridad/roles')
+        revalidatePath(`/admin/seguridad/roles/${id}`)
         return { data, error: null }
     } catch (err) {
         console.error('[editarRol]', err)
@@ -332,6 +368,7 @@ export async function eliminarRol(id: string): Promise<ActionResult<boolean>> {
             detalle: { nombre: rol.nombre },
         })
 
+        revalidatePath('/admin/seguridad/roles')
         return { data: true, error: null }
     } catch (err) {
         console.error('[eliminarRol]', err)
@@ -406,6 +443,8 @@ export async function asignarPermisosRol(
             },
         })
 
+        revalidatePath('/admin/seguridad/roles')
+        revalidatePath(`/admin/seguridad/roles/${rolId}`)
         return { data: true, error: null }
     } catch (err) {
         console.error('[asignarPermisosRol]', err)

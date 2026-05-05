@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getRolesUsuario } from '@/lib/seguridad/permisos'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
 import { z } from 'zod'
+import { revalidatePath } from 'next/cache'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos
@@ -96,7 +97,7 @@ export async function getGrupos(): Promise<ActionResult<GrupoResumen[]>> {
         if (error) throw error
 
         const grupos: GrupoResumen[] = (data ?? []).map((g) => {
-            const resp = g.responsable as { nombre: string; apellido: string } | null
+            const resp = g.responsable as unknown as { nombre: string; apellido: string } | null
             return {
                 id: g.id,
                 nombre: g.nombre,
@@ -143,7 +144,7 @@ export async function getGrupoById(id: string): Promise<ActionResult<GrupoDetall
 
         if (error) throw error
 
-        const resp = data.responsable as { nombre: string; apellido: string } | null
+        const resp = data.responsable as unknown as { nombre: string; apellido: string } | null
         const miembros = (data.grupo_miembros ?? []).map((m: any) => ({
             usuario_id: m.usuario_id,
             nombre: m.usuarios?.nombre ?? '',
@@ -212,6 +213,7 @@ export async function crearGrupo(raw: unknown): Promise<ActionResult<{ id: strin
             detalle: { datos: parsed.data },
         })
 
+        revalidatePath('/admin/seguridad/grupos')
         return { data, error: null }
     } catch (err) {
         console.error('[crearGrupo]', err)
@@ -262,6 +264,8 @@ export async function editarGrupo(
             detalle: { cambios: parsed.data },
         })
 
+        revalidatePath('/admin/seguridad/grupos')
+        revalidatePath(`/admin/seguridad/grupos/${id}`)
         return { data, error: null }
     } catch (err) {
         console.error('[editarGrupo]', err)
@@ -316,6 +320,7 @@ export async function eliminarGrupo(id: string): Promise<ActionResult<boolean>> 
             detalle: { nombre: grupo?.nombre },
         })
 
+        revalidatePath('/admin/seguridad/grupos')
         return { data: true, error: null }
     } catch (err) {
         console.error('[eliminarGrupo]', err)
@@ -358,6 +363,8 @@ export async function agregarMiembro(
             detalle: { grupo_id: grupoId, usuario_id: usuarioId },
         })
 
+        revalidatePath('/admin/seguridad/grupos')
+        revalidatePath(`/admin/seguridad/grupos/${grupoId}`)
         return { data: true, error: null }
     } catch (err) {
         console.error('[agregarMiembro]', err)
@@ -398,6 +405,8 @@ export async function removerMiembro(
             detalle: { grupo_id: grupoId, usuario_id: usuarioId },
         })
 
+        revalidatePath('/admin/seguridad/grupos')
+        revalidatePath(`/admin/seguridad/grupos/${grupoId}`)
         return { data: true, error: null }
     } catch (err) {
         console.error('[removerMiembro]', err)

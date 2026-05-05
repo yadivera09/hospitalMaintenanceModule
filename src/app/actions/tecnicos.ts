@@ -287,10 +287,10 @@ export async function updateTecnico(id: string, raw: unknown): Promise<ActionRes
  */
 export async function desactivarTecnico(id: string): Promise<ActionResult<boolean>> {
     try {
-        const supabase = createClient()
+        const admin = createAdminClient()
 
         // 1. Verificar reportes activos donde este técnico es el principal
-        const { count, error: countErr } = await supabase
+        const { count, error: countErr } = await admin
             .from('reportes_mantenimiento')
             .select('*', { count: 'exact', head: true })
             .eq('tecnico_principal_id', id)
@@ -306,7 +306,7 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
         }
 
         // 2. Soft delete
-        const { error } = await supabase
+        const { error } = await admin
             .from('tecnicos')
             .update({ activo: false })
             .eq('id', id)
@@ -321,11 +321,11 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
 
 export async function toggleActivoTecnico(id: string): Promise<ActionResult<boolean>> {
     try {
-        const supabase = createClient()
-        const { data: current, error: fetchErr } = await supabase.from('tecnicos').select('activo').eq('id', id).single()
+        const admin = createAdminClient()
+        const { data: current, error: fetchErr } = await admin.from('tecnicos').select('activo').eq('id', id).single()
         if (fetchErr) throw fetchErr
 
-        const { error: updateErr } = await supabase.from('tecnicos').update({ activo: !current.activo }).eq('id', id)
+        const { error: updateErr } = await admin.from('tecnicos').update({ activo: !current.activo }).eq('id', id)
         if (updateErr) throw updateErr
 
         return { data: !current.activo, error: null }
