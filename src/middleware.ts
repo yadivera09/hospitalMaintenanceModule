@@ -24,7 +24,7 @@ const TECNICO_ROUTES = ['/tecnico']
 function redirect(request: NextRequest, pathname: string) {
     const url = request.nextUrl.clone()
     url.pathname = pathname
-    return NextResponse.redirect(url)
+    return NextResponse.redirect(url, { status: 303 })
 }
 
 function isProtectedRoute(pathname: string) {

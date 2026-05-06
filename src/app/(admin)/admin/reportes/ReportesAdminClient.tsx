@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ClipboardList, Search, Download } from 'lucide-react'
+import { ClipboardList, Search, Download, User } from 'lucide-react'
+import { useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { exportToExcel } from '@/lib/exportToExcel'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -63,18 +65,30 @@ function ChipEstado({ estado, count, activo, onClick }: ChipEstadoProps) {
 interface ReportesAdminClientProps {
     reportes: ReporteResumen[]
     tipos: { id: string; nombre: string }[]
+    tecnicos: { id: string; nombre: string; apellido: string }[]
 }
 
 // ---------------------------------------------------------------------------
 // COMPONENTE
 // ---------------------------------------------------------------------------
 
-export default function ReportesAdminClient({ reportes, tipos }: ReportesAdminClientProps) {
+export default function ReportesAdminClient({ reportes, tipos, tecnicos }: ReportesAdminClientProps) {
+    const searchParams = useSearchParams()
+    
     const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
     const [filtroTipo, setFiltroTipo] = useState<string>('todos')
+    const [filtroTecnico, setFiltroTecnico] = useState<string>('todos')
     const [busqueda, setBusqueda] = useState('')
     const [fechaDesde, setFechaDesde] = useState('')
     const [fechaHasta, setFechaHasta] = useState('')
+
+    // Efecto para capturar el query param tecnico_id
+    useEffect(() => {
+        const tid = searchParams.get('tecnico_id')
+        if (tid) {
+            setFiltroTecnico(tid)
+        }
+    }, [searchParams])
 
     const conteoEstados = useMemo<Record<EstadoReporte, number>>(() => {
         const base: Record<EstadoReporte, number> = {
@@ -94,13 +108,16 @@ export default function ReportesAdminClient({ reportes, tipos }: ReportesAdminCl
         return reportes.filter((r) => {
             const matchEstado = filtroEstado === 'todos' || r.estado_reporte === filtroEstado
             const matchTipo = filtroTipo === 'todos' || r.tipo_mantenimiento_id === filtroTipo
+            const matchTecnico = filtroTecnico === 'todos' || 
+                               r.tecnico_principal_id === filtroTecnico ||
+                               (r as any).tecnico_principal_id === filtroTecnico
             const matchBusqueda = !q || r.equipo_codigo_mh.toLowerCase().includes(q)
             const fecha = new Date(r.fecha_inicio)
             const matchDesde = !fechaDesde || fecha >= new Date(fechaDesde)
             const matchHasta = !fechaHasta || fecha <= new Date(fechaHasta + 'T23:59:59')
-            return matchEstado && matchTipo && matchBusqueda && matchDesde && matchHasta
+            return matchEstado && matchTipo && matchTecnico && matchBusqueda && matchDesde && matchHasta
         })
-    }, [reportes, filtroEstado, filtroTipo, busqueda, fechaDesde, fechaHasta])
+    }, [reportes, filtroEstado, filtroTipo, filtroTecnico, busqueda, fechaDesde, fechaHasta])
 
     function handleChipClick(estado: EstadoReporte) {
         setFiltroEstado((prev) => prev === estado ? 'todos' : estado)
@@ -174,12 +191,12 @@ export default function ReportesAdminClient({ reportes, tipos }: ReportesAdminCl
             </div>
 
             {/* Filtros */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8] pointer-events-none" />
                     <Input
                         type="search"
-                        placeholder="Código MH del equipo…"
+                        placeholder="Código MH…"
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
                         className="pl-9 bg-white border-[#E2E8F0]"
@@ -188,12 +205,29 @@ export default function ReportesAdminClient({ reportes, tipos }: ReportesAdminCl
 
                 <Select value={filtroTipo} onValueChange={setFiltroTipo}>
                     <SelectTrigger className="bg-white border-[#E2E8F0]">
-                        <SelectValue placeholder="Todos los tipos" />
+                        <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="todos">Todos los tipos</SelectItem>
                         {tipos.map((t) => (
                             <SelectItem key={t.id} value={t.id}>{t.nombre}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                <Select value={filtroTecnico} onValueChange={setFiltroTecnico}>
+                    <SelectTrigger className="bg-white border-[#E2E8F0]">
+                        <div className="flex items-center gap-2 truncate">
+                            <User className="h-4 w-4 text-[#94A3B8]" />
+                            <SelectValue placeholder="Técnico" />
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="todos">Todos los técnicos</SelectItem>
+                        {tecnicos.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                                {t.nombre} {t.apellido}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>

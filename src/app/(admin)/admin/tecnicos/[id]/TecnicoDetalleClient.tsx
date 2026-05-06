@@ -6,6 +6,7 @@ import {
     ArrowLeft, User2, Mail, Phone, CalendarDays,
     Pencil, AlertCircle, CheckCircle2, XCircle,
     ShieldCheck, ShieldOff, RotateCcw, Smartphone, Mail as MailIcon,
+    ArrowRight
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -190,6 +191,18 @@ export default function TecnicoDetalleClient({ tecnicoInicial, errorInicial }: P
                             })}
                         </div>
                     )}
+
+                    <div className="mt-4 pt-3 border-t border-[#E2E8F0]">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => router.push(`/admin/reportes?tecnico_id=${tecnico.id}`)}
+                            className="w-full text-[#1E40AF] hover:bg-blue-50 text-xs gap-2"
+                        >
+                            Ver historial completo de reportes
+                            <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
                 </div>
             </div>
 

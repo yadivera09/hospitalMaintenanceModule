@@ -5,7 +5,7 @@
  * Shell Client para la página de Técnicos.
  */
 
-import { useState, useMemo, useTransition } from 'react'
+import { useState, useMemo, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, HardHat, Search, AlertCircle, Download, Copy, Check } from 'lucide-react'
 import { exportToExcel } from '@/lib/exportToExcel'
@@ -53,6 +53,12 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [passwordModal, setPasswordModal] = useState<{ nombre: string; password: string } | null>(null)
     const [passwordCopiado, setPasswordCopiado] = useState(false)
+    const [isTransitioning, startTransitionSync] = useTransition()
+
+    // Sincronizar lista local cuando cambian los datos del servidor (via router.refresh)
+    useEffect(() => {
+        setLista(tecnicosIniciales)
+    }, [tecnicosIniciales])
 
 
 
@@ -62,7 +68,7 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
             setLista(tecnicosIniciales)
             return
         }
-        const { data } = await getTecnicos({ search: term })
+        const { data } = await getTecnicos({ search: term, role: 'tecnico' })
         if (data) setLista(data)
     }
 
@@ -230,12 +236,13 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                         {listaFiltrada.map((t) => (
                             <TableRow key={t.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
                                 <TableCell className="py-3 pl-4">
-                                    <button
-                                        onClick={() => router.push(`/admin/tecnicos/${t.id}`)}
-                                        className="text-sm font-medium text-[#0F172A] hover:text-[#1E40AF] hover:underline transition-colors text-left"
-                                    >
-                                        {t.nombre} {t.apellido}
-                                    </button>                                </TableCell>
+                                        <button
+                                            onClick={() => router.push(`/admin/tecnicos/${t.id}`)}
+                                            className="text-sm font-medium text-[#0F172A] hover:text-[#1E40AF] hover:underline transition-colors text-left"
+                                        >
+                                            {t.nombre} {t.apellido}
+                                        </button>
+                                </TableCell>
                                 <TableCell className="py-3 hidden md:table-cell">
                                     <span className="text-xs font-mono text-[#334155]">{t.cedula ?? '—'}</span>
                                 </TableCell>
@@ -261,6 +268,7 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                                                 nombreRegistro={`${t.nombre} ${t.apellido}`}
                                                 onDesactivar={() => desactivarTecnico(t.id)}
                                                 onExito={() => startTransition(() => { router.refresh() })}
+                                                tecnicos={tecnicosIniciales}
                                             />
                                         )}
                                     </div>

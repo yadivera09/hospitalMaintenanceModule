@@ -917,7 +917,7 @@ export default function NuevoReporteWizard() {
 
                 // Cargar técnicos, técnico actual, y último preventivo en paralelo
                 const [tecsRes, tecActualRes, prevRes, draftRes] = await Promise.all([
-                    getTecnicos({ activo: true }),
+                    getTecnicos({ activo: true, role: 'tecnico' }),
                     getTecnicoActual(),
                     getUltimoMantenimientoPreventivo(equipoId),
                     draftReporteId ? getReporteBorradorData(draftReporteId) : Promise.resolve(null),

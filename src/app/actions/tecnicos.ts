@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { Tecnico } from '@/types'
 
@@ -24,7 +25,7 @@ const TecnicoSchema = z.object({
     activo: z.boolean().default(true),
 })
 
-type ActionResult<T> = { data: T | null; error: string | null }
+type ActionResult<T> = { data: T | null; error: string | null; meta?: any }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -88,12 +89,38 @@ export async function getTecnicoActual(): Promise<ActionResult<{ id: string; nom
     }
 }
 
-export async function getTecnicos(filtros?: { activo?: boolean, search?: string }): Promise<ActionResult<Tecnico[]>> {
+export async function getTecnicos(filtros?: { activo?: boolean, search?: string, role?: string }): Promise<ActionResult<Tecnico[]>> {
     try {
         const admin = createAdminClient()
+
+        // Siempre incluimos la relación con usuarios (identidad) para saber quién tiene perfil y quién no
+        // Usamos !inner solo si se requiere filtrar por rol de forma estricta
+        let selectStr = `
+            *,
+            usuarios (
+                id, user_id,
+                usuario_roles (
+                    activo,
+                    roles (nombre)
+                )
+            )
+        `
+        if (filtros?.role) {
+            selectStr = `
+                *,
+                usuarios!inner (
+                    id, user_id,
+                    usuario_roles!inner (
+                        activo,
+                        roles!inner(nombre)
+                    )
+                )
+            `
+        }
+
         let query = admin
             .from('tecnicos')
-            .select('*')
+            .select(selectStr)
             .order('nombre', { ascending: true })
 
         if (filtros?.activo !== undefined) query = query.eq('activo', filtros.activo)
@@ -102,11 +129,21 @@ export async function getTecnicos(filtros?: { activo?: boolean, search?: string 
             query = query.or(`nombre.ilike.%${filtros.search}%,apellido.ilike.%${filtros.search}%,cedula.ilike.%${filtros.search}%`)
         }
 
-        console.error('[getTecnicos] iniciando query con admin client')
+        if (filtros?.role) {
+            query = query.eq('usuarios.usuario_roles.roles.nombre', filtros.role)
+            query = query.eq('usuarios.usuario_roles.activo', true)
+        }
+
         const { data, error } = await query
-        console.error('[getTecnicos] resultado:', data?.length ?? 0, 'error:', error)
+        
         if (error) throw error
-        return { data: data as Tecnico[], error: null }
+
+        let result = (data ?? []).map(t => {
+            const { usuarios, ...tecnico } = t as any
+            return tecnico as Tecnico
+        })
+
+        return { data: result, error: null }
     } catch (err) {
         console.error('[getTecnicos]', err)
         return { data: null, error: 'Error al cargar técnicos.' }
@@ -214,13 +251,47 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
 
     const userId = createData.user.id
 
-    // ── Paso 2: insertar fila en tecnicos ─────────────────────────────────────
+    // ── Paso 2: insertar fila en usuarios (identidad genérica) ──────────────
     try {
-        const supabase = createClient()
-        const { data, error } = await supabase
+        const { data: usuarioData, error: usuarioErr } = await admin
+            .from('usuarios')
+            .insert({
+                user_id: userId,
+                nombre: parsed.data.nombre,
+                apellido: parsed.data.apellido,
+                email: parsed.data.email,
+                telefono: parsed.data.telefono || null,
+                activo: parsed.data.activo,
+            })
+            .select()
+            .single()
+
+        if (usuarioErr) {
+            await admin.auth.admin.deleteUser(userId)
+            throw usuarioErr
+        }
+
+        // ── Paso 3: asignar rol 'tecnico' ─────────────────────────────────────
+        const { data: rolData } = await admin
+            .from('roles')
+            .select('id')
+            .eq('nombre', 'tecnico')
+            .single()
+
+        if (rolData) {
+            await admin.from('usuario_roles').insert({
+                usuario_id: usuarioData.id,
+                rol_id: rolData.id,
+                activo: true
+            })
+        }
+
+        // ── Paso 4: insertar fila en tecnicos (perfil de negocio) ─────────────
+        const { data, error } = await admin
             .from('tecnicos')
             .insert({
                 user_id: userId,
+                usuario_id: usuarioData.id,
                 nombre: parsed.data.nombre,
                 apellido: parsed.data.apellido,
                 cedula: parsed.data.cedula || null,
@@ -232,11 +303,16 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
             .single()
 
         if (error) {
+            // Rollback manual de las tablas creadas
+            await admin.from('usuario_roles').delete().eq('usuario_id', usuarioData.id)
+            await admin.from('usuarios').delete().eq('id', usuarioData.id)
             await admin.auth.admin.deleteUser(userId)
+            
             if (error.code === '23505') return { data: null, error: 'Ya existe un técnico con ese email o cédula.' }
             throw error
         }
 
+        revalidatePath('/admin/tecnicos')
         return {
             data: {
                 ...(data as Tecnico),
@@ -246,8 +322,9 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
             error: null
         }
     } catch (err) {
+        // En caso de error inesperado, intentar borrar el usuario de Auth para evitar huérfanos
         await admin.auth.admin.deleteUser(userId).catch(() => { })
-        console.error('[createTecnico] insert tecnicos', err)
+        console.error('[createTecnico] proceso completo', err)
         return { data: null, error: 'Error al registrar el técnico.' }
     }
 }
@@ -273,6 +350,7 @@ export async function updateTecnico(id: string, raw: unknown): Promise<ActionRes
             if (error.code === '23505') return { data: null, error: 'Ya existe un técnico con ese email o cédula.' }
             throw error
         }
+        revalidatePath('/admin/tecnicos')
         return { data: data as Tecnico, error: null }
     } catch (err) {
         console.error('[updateTecnico]', err)
@@ -294,14 +372,37 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
             .from('reportes_mantenimiento')
             .select('*', { count: 'exact', head: true })
             .eq('tecnico_principal_id', id)
-            .neq('estado_reporte', 'cerrado')
+            .in('estado_reporte', ['en_progreso', 'pendiente_firma_cliente'])
 
         if (countErr) throw countErr
 
         if ((count ?? 0) > 0) {
+            // Obtener detalle de los reportes bloqueantes
+            const { data: reportes } = await admin
+                .from('reportes_mantenimiento')
+                .select(`
+                    id, 
+                    numero_reporte_fisico, 
+                    estado_reporte,
+                    equipos (codigo_mh, nombre)
+                `)
+                .eq('tecnico_principal_id', id)
+                .in('estado_reporte', ['en_progreso', 'pendiente_firma_cliente'])
+                .limit(5)
+
             return {
                 data: null,
-                error: `No se puede desactivar: el técnico tiene ${count} reporte(s) de mantenimiento en curso asignados. Reasígnalos o ciérralos primero.`,
+                error: `No se puede desactivar: el técnico tiene ${count} reporte(s) en progreso o pendientes de firma. Reasígnalos o espera a que finalicen.`,
+                meta: {
+                    reportes: reportes?.map(r => ({
+                        id: r.id,
+                        serial: r.numero_reporte_fisico || 'S/N',
+                        equipo: (r.equipos as any)?.nombre || (r.equipos as any)?.codigo_mh || 'Equipo desconocido',
+                        estado: r.estado_reporte
+                    })),
+                    total: count,
+                    tecnicoId: id
+                }
             }
         }
 
@@ -312,10 +413,60 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
             .eq('id', id)
 
         if (error) throw error
+        revalidatePath('/admin/tecnicos')
         return { data: true, error: null }
     } catch (err) {
         console.error('[desactivarTecnico]', err)
         return { data: null, error: 'Error al desactivar el técnico.' }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// eliminarTecnicoDefinitivo — hard delete para limpieza de datos
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Elimina permanentemente un técnico de la tabla tecnicos.
+ * Solo si no tiene reportes asociados (FK constraint).
+ * Útil para limpiar registros huérfanos o de prueba.
+ */
+export async function eliminarTecnicoDefinitivo(id: string): Promise<ActionResult<boolean>> {
+    try {
+        const admin = createAdminClient()
+
+        // 1. Verificar si tiene reportes como principal
+        const { count: countPrincipal } = await admin
+            .from('reportes_mantenimiento')
+            .select('*', { count: 'exact', head: true })
+            .eq('tecnico_principal_id', id)
+
+        if ((countPrincipal ?? 0) > 0) {
+            return { data: null, error: 'HAS_DEPENDENCIES' }
+        }
+
+        // 2. Verificar si tiene participaciones como apoyo
+        const { count: countApoyo } = await admin
+            .from('reporte_tecnicos')
+            .select('*', { count: 'exact', head: true })
+            .eq('tecnico_id', id)
+
+        if ((countApoyo ?? 0) > 0) {
+            return { data: null, error: 'HAS_DEPENDENCIES' }
+        }
+
+        // 3. Proceder con el hard delete en la tabla tecnicos
+        const { error } = await admin
+            .from('tecnicos')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+
+        revalidatePath('/admin/tecnicos')
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[eliminarTecnicoDefinitivo]', err)
+        return { data: null, error: 'Error al eliminar el registro permanentemente.' }
     }
 }
 
@@ -328,6 +479,7 @@ export async function toggleActivoTecnico(id: string): Promise<ActionResult<bool
         const { error: updateErr } = await admin.from('tecnicos').update({ activo: !current.activo }).eq('id', id)
         if (updateErr) throw updateErr
 
+        revalidatePath('/admin/tecnicos')
         return { data: !current.activo, error: null }
     } catch {
         return { data: null, error: 'Error al cambiar estado del técnico.' }

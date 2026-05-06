@@ -72,6 +72,7 @@ export interface CategoriaEquipo {
 export interface Tecnico {
     id: string
     user_id: string | null // FK a auth.users
+    usuario_id: string | null // FK a usuarios
     nombre: string
     apellido: string
     cedula: string | null
@@ -208,6 +209,7 @@ export interface ReporteResumen {
     numero_reporte_fisico: string | null
     equipo_id: string
     tipo_mantenimiento_id: string
+    tecnico_principal_id: string
     equipo_codigo_mh: string
     equipo_nombre: string
     cliente_nombre: string

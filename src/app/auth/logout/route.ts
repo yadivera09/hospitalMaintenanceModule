@@ -12,8 +12,9 @@ import { clearSesionMfa } from '@/app/actions/mfa'
  *   2. Resetear mfa_sesion_verificada para usuarios email.
  *   3. signOut() — invalida el JWT.
  */
-export async function POST() {
+export async function POST(request: Request) {
     const supabase = createClient()
+    const { origin } = new URL(request.url)
 
     // 1. Obtener userId antes de cerrar sesión
     const { data: { user } } = await supabase.auth.getUser()
@@ -26,7 +27,5 @@ export async function POST() {
     // 3. Cerrar sesión
     await supabase.auth.signOut()
 
-    return NextResponse.redirect(
-        new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hospital-maintenance-module.vercel.app')
-    )
+    return NextResponse.redirect(`${origin}/login`, { status: 303 })
 }

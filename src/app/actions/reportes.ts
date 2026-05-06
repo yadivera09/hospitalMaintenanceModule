@@ -1022,10 +1022,10 @@ export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>
             .from('reportes_mantenimiento')
             .select(`
                 id, estado_reporte, fecha_inicio, numero_reporte_fisico, 
-                equipo_id, tipo_mantenimiento_id, activo,
+                equipo_id, tipo_mantenimiento_id, tecnico_principal_id, activo,
                 equipo:equipos(codigo_mh, nombre),
                 tipo:tipos_mantenimiento(nombre),
-                tecnico_principal:tecnicos(nombre, apellido)
+                tecnico_principal:tecnicos(id, nombre, apellido)
             `)
             // ❌ ELIMINA o comenta esta línea si existe:
             // .eq('activo', true)
@@ -1053,6 +1053,7 @@ export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>
             numero_reporte_fisico: r.numero_reporte_fisico,
             equipo_id: r.equipo_id,
             tipo_mantenimiento_id: r.tipo_mantenimiento_id,
+            tecnico_principal_id: r.tecnico_principal_id || (r.tecnico_principal as any)?.id,
             equipo_codigo_mh: r.equipo?.codigo_mh ?? '—',
             equipo_nombre: r.equipo?.nombre ?? '—',
             cliente_nombre: clienteMap[r.equipo_id] ?? '—',
@@ -1315,5 +1316,31 @@ export async function duplicarReporte(reporteId: string, nuevoEquipoId: string):
     } catch (err) {
         console.error('[duplicarReporte]', err)
         return { data: null, error: 'Error inesperado al duplicar el reporte' }
+    }
+}
+
+/**
+ * Reasigna un reporte a un nuevo técnico principal.
+ * Solo permitido si el reporte no está cerrado.
+ */
+export async function reasignarReporte(reporteId: string, nuevoTecnicoId: string): Promise<ActionResult<boolean>> {
+    try {
+        const admin = createAdminClient()
+
+        const { error } = await admin
+            .from('reportes_mantenimiento')
+            .update({ tecnico_principal_id: nuevoTecnicoId })
+            .eq('id', reporteId)
+            .neq('estado_reporte', 'cerrado')
+
+        if (error) {
+            console.error('[reasignarReporte] error:', error)
+            return { data: null, error: 'Error al reasignar el reporte.' }
+        }
+
+        return { data: true, error: null }
+    } catch (err) {
+        console.error('[reasignarReporte]', err)
+        return { data: null, error: 'Error inesperado al reasignar.' }
     }
 }

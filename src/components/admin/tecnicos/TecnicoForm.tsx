@@ -10,6 +10,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { validarCedulaEcuatoriana } from '@/lib/validators'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,9 +32,11 @@ const tecnicoSchema = z.object({
     apellido: z.string().min(2, 'Mínimo 2 caracteres').max(100),
     cedula: z
         .string()
-        .regex(/^\d+$/, 'Solo se permiten dígitos')
-        .min(10, 'Mínimo 10 dígitos')
-        .max(13, 'Máximo 13 dígitos'),
+        .min(10, 'La cédula debe tener 10 dígitos')
+        .max(10, 'La cédula debe tener 10 dígitos')
+        .refine((val) => validarCedulaEcuatoriana(val), {
+            message: 'Cédula ecuatoriana no válida',
+        }),
     email: z.string().email('Email inválido'),
     telefono: z.string().optional().or(z.literal('')),
     estado_display: z.enum(['activo', 'inactivo', 'suspendido']),

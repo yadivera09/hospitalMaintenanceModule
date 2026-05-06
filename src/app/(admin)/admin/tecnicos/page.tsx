@@ -8,6 +8,6 @@ import TecnicosPageClient from './TecnicosPageClient'
 export const metadata = { title: 'Técnicos — Mobilhospital' }
 
 export default async function TecnicosPage() {
-    const { data: tecnicos, error } = await getTecnicos()
+    const { data: tecnicos, error } = await getTecnicos({ role: 'tecnico' })
     return <TecnicosPageClient tecnicosIniciales={tecnicos ?? []} errorInicial={error} />
 }
