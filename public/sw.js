@@ -17,6 +17,20 @@ const SHELL_PAGES = [
     '/tecnico/nuevo-reporte',
 ]
 
+// ─── MESSAGE ─────────────────────────────────────────────────────────────────
+// Manejar mensajes del cliente (p.ej. Chrome DevTools "Update" o Workbox).
+// Devolver false implícitamente (sin async) evita el warning
+// "A listener indicated an asynchronous response by returning true,
+//  but the message channel closed".
+
+self.addEventListener('message', (event) => {
+    if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+        self.skipWaiting()
+    }
+    // Para cualquier otro mensaje no se envía respuesta asíncrona —
+    // no retornamos true para no abrir el canal de respuesta.
+})
+
 // ─── INSTALL ─────────────────────────────────────────────────────────────────
 // Pre-carga el shell con las cookies de sesión activa.
 // skipWaiting() para que el nuevo SW tome control sin esperar que se

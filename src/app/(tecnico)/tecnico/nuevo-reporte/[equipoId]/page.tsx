@@ -45,6 +45,9 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import InsumoSelector from '@/components/tecnico/InsumoSelector'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useOfflineReporte } from '@/hooks/useOfflineReporte'
+import { generarIdLocal } from '@/lib/offline/db'
+import { WifiOff } from 'lucide-react'
 
 // ── Wrapper client-only para SignatureCanvas
 // Se usa un componente separado para evitar conflictos de ref con next/dynamic
@@ -829,6 +832,11 @@ export default function NuevoReporteWizard() {
     const [checklistTemplate, setChecklistTemplate] = useState<any[]>([])
     const [reporteId, setReporteId] = useState<string | null>(draftReporteId)
 
+    // Hook offline: guarda pasos en IDB y finaliza offline cuando no hay red
+    const { isOnline, guardarPaso, finalizarReporte } = useOfflineReporte()
+    // ID local persistente para el borrador en IDB (distinto del ID de Supabase)
+    const localIdRef = useRef<string>(generarIdLocal())
+
     const [ultimoPreventivo, setUltimoPreventivo] = useState<string | null>(null)
     const [cargandoContexto, setCargandoContexto] = useState(true)
     const initPasoUrl = parseInt(searchParams.get('paso') || '0', 10)
@@ -1078,12 +1086,35 @@ export default function NuevoReporteWizard() {
 
     const puedeAvanzar = true // Ahora mediado por trigger() en handleSiguiente
 
-    // PASO 1 → 2: Crear borrador en Supabase
+    // PASO 1 → 2: Guardar en IDB siempre; solo llamar al servidor si hay conexión
     async function handleAvanzarDesdePaso1() {
         if (!tecnicoActual) {
             setErrorGlobal('No se pudo identificar al técnico actual')
             return
         }
+
+        // Guardar progreso en IDB (funciona con y sin conexión)
+        await guardarPaso(localIdRef.current, {
+            equipo_id: equipoId,
+            tecnico_principal_id: tecnicoActual.id,
+            tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+            fecha_inicio: datos.fecha_ejecucion,
+            hora_entrada: datos.hora_entrada || null,
+            hora_salida: datos.hora_salida || null,
+            ciudad: datos.ciudad || null,
+            solicitado_por: datos.solicitado_por || null,
+            motivo_visita: datos.motivo_visita || null,
+            numero_reporte_fisico: datos.numero_reporte_fisico || null,
+            dispositivo_origen: 'web',
+        })
+
+        // Sin conexión: el borrador ya está en IDB, avanzar sin red
+        if (!isOnline) {
+            setErrorGlobal(null)
+            setPaso(2)
+            return
+        }
+
         startTransition(async () => {
             if (reporteId) {
                 const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
@@ -1101,10 +1132,7 @@ export default function NuevoReporteWizard() {
                     ubicacion_detalle: datos.ubicacion_detalle || null,
                     dispositivo_origen: 'web',
                 })
-                if (result.error) {
-                    setErrorGlobal(result.error)
-                    return
-                }
+                if (result.error) { setErrorGlobal(result.error); return }
                 setErrorGlobal(null)
                 setPaso(2)
             } else {
@@ -1123,10 +1151,7 @@ export default function NuevoReporteWizard() {
                     ubicacion_detalle: datos.ubicacion_detalle || null,
                     dispositivo_origen: 'web',
                 })
-                if (result.error) {
-                    setErrorGlobal(result.error)
-                    return
-                }
+                if (result.error) { setErrorGlobal(result.error); return }
                 setReporteId(result.data!.id)
                 setErrorGlobal(null)
                 setPaso(2)
@@ -1134,8 +1159,25 @@ export default function NuevoReporteWizard() {
         })
     }
 
-    // PASO 2 → 3: Guardar detalle + checklist
+    // PASO 2 → 3: Guardar en IDB siempre; solo llamar al servidor si hay conexión
     async function handleAvanzarDesdePaso2() {
+        await guardarPaso(localIdRef.current, {
+            diagnostico: datos.diagnostico || null,
+            trabajo_realizado: datos.trabajo_realizado || null,
+            estado_equipo_post: datos.estado_equipo_post || null,
+            actividades: datos.checklist.map((c) => ({
+                actividad_id: c.actividad_id,
+                completada: c.completada,
+                observacion: c.observacion || null,
+            })),
+        })
+
+        if (!isOnline) {
+            setErrorGlobal(null)
+            setPaso(3)
+            return
+        }
+
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
             const { guardarDetalleReporte } = await import('@/app/actions/reportes')
@@ -1158,8 +1200,33 @@ export default function NuevoReporteWizard() {
         })
     }
 
-    // PASO 3 → 4: Guardar insumos, accesorios y técnicos
+    // PASO 3 → 4: Guardar en IDB siempre; solo llamar al servidor si hay conexión
     async function handleAvanzarDesdePaso3() {
+        await guardarPaso(localIdRef.current, {
+            insumos_usados: datos.insumos_usados.map((i) => ({
+                insumo_id: i.insumo_id,
+                cantidad: i.cantidad,
+                observacion: null,
+            })),
+            insumos_requeridos: datos.insumos_requeridos.map((i) => ({
+                insumo_id: i.insumo_id,
+                cantidad: i.cantidad,
+                urgente: false,
+                observacion: (i as any).motivo || null,
+            })),
+            accesorios: datos.accesorios.map((a) => ({
+                descripcion: a.descripcion,
+                cantidad: a.cantidad,
+            })),
+            tecnicos_apoyo: datos.tecnicos_apoyo,
+        })
+
+        if (!isOnline) {
+            setErrorGlobal(null)
+            setPaso(4)
+            return
+        }
+
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
             const { guardarInsumosTecnicos } = await import('@/app/actions/reportes')
@@ -1204,17 +1271,67 @@ export default function NuevoReporteWizard() {
         return true
     }
 
-    // PASO 4b (= PASO 5): Firma cliente → cerrar reporte
+    // PASO 4b (= PASO 5): Firma técnico → cerrar reporte
+    // Sin conexión: guarda todo en IDB y encola para sync posterior.
     async function handleFirmarEnviar() {
-        if (!reporteId) { setErrorGlobal('Reporte no encontrado'); return }
         if (!firmaSaved) { setErrorGlobal('Primero firma como técnico'); return }
 
+        const base64Tecnico = firmaRef.current?.isEmpty()
+            ? null
+            : (firmaRef.current?.toDataURL('image/png') ?? null)
+        if (!base64Tecnico) { setErrorGlobal('Firma requerida'); return }
+
+        // Sin conexión: guardar reporte completo en IDB con firma y salir
+        if (!isOnline) {
+            await finalizarReporte({
+                equipo_id: equipoId,
+                tecnico_principal_id: tecnicoActual?.id || '',
+                tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                fecha_inicio: datos.fecha_ejecucion,
+                hora_entrada: datos.hora_entrada || null,
+                hora_salida: datos.hora_salida || null,
+                ciudad: datos.ciudad || null,
+                solicitado_por: datos.solicitado_por || null,
+                motivo_visita: datos.motivo_visita || null,
+                numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                dispositivo_origen: 'web',
+                diagnostico: datos.diagnostico || null,
+                trabajo_realizado: datos.trabajo_realizado || null,
+                estado_equipo_post: datos.estado_equipo_post || null,
+                actividades: datos.checklist.map((c) => ({
+                    actividad_id: c.actividad_id,
+                    completada: c.completada,
+                    observacion: c.observacion || null,
+                })),
+                insumos_usados: datos.insumos_usados.map((i) => ({
+                    insumo_id: i.insumo_id,
+                    cantidad: i.cantidad,
+                    observacion: null,
+                })),
+                insumos_requeridos: datos.insumos_requeridos.map((i) => ({
+                    insumo_id: i.insumo_id,
+                    cantidad: i.cantidad,
+                    urgente: false,
+                    observacion: (i as any).motivo || null,
+                })),
+                accesorios: datos.accesorios.map((a) => ({
+                    descripcion: a.descripcion,
+                    cantidad: a.cantidad,
+                })),
+                tecnicos_apoyo: datos.tecnicos_apoyo,
+                firma_base64: base64Tecnico,
+            })
+            setErrorGlobal(null)
+            router.push('/tecnico/mis-reportes')
+            return
+        }
+
+        // Con conexión: flujo normal de firmas en servidor
+        if (!reporteId) { setErrorGlobal('Reporte no encontrado'); return }
         startTransition(async () => {
-            // Paso 4: firma técnico
             const tecnicoOk = await handleFirmarTecnico()
             if (!tecnicoOk) return
 
-            // Paso 5: firma cliente (si hay canvas de cliente)
             if (firmaClienteRef.current && firmaClienteSaved) {
                 const base64Cliente = firmaClienteRef.current.toDataURL('image/png')
                 const { firmarComoCliente } = await import('@/app/actions/reportes')
@@ -1225,7 +1342,6 @@ export default function NuevoReporteWizard() {
                 })
                 if (result.error) { setErrorGlobal(result.error); return }
             } else {
-                // Si no hay firma de cliente todavía, solo quedamos en pendiente_firma_cliente
                 setErrorGlobal(null)
                 alert('Firma del técnico guardada. El reporte queda en espera de firma del cliente.')
                 router.push('/tecnico/mis-reportes')
@@ -1437,7 +1553,13 @@ export default function NuevoReporteWizard() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                         <Badge className="text-[10px] bg-white text-[#1E40AF] border border-[#1E40AF]/30">Paso {paso} / 4</Badge>
-                        {reporteId && (
+                        {!isOnline && (
+                            <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-sm font-medium">
+                                <WifiOff className="h-2.5 w-2.5" />
+                                Guardando localmente
+                            </span>
+                        )}
+                        {isOnline && reporteId && (
                             <span className="text-[10px] text-green-600 font-mono bg-green-50 px-1.5 py-0.5 rounded-sm">
                                 #{reporteId.slice(0, 8)}
                             </span>
