@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ESTADO_REPORTE_CFG } from '@/components/admin/reportes/ReportesTable'
 import type { EstadoReporte } from '@/types'
+import { getReportesBorrador, type ReporteBorrador, type EstadoSync } from '@/lib/offline/db'
+import { useOfflineStatus } from '@/hooks/useOfflineStatus'
 
 // Reutilizamos abreviarId del mock para no romper, o creamos logica propia
 function abreviarId(uuid: string) {
@@ -32,9 +34,23 @@ interface ReporteData {
     tipo?: { nombre: string }
 }
 
+const SYNC_BADGE: Record<Exclude<EstadoSync, 'sincronizado'>, { label: string; cls: string; Icon: React.ElementType }> = {
+    pendiente_sync: { label: 'Pendiente sync',       cls: 'bg-yellow-100 text-yellow-700 border-yellow-200', Icon: Clock },
+    sincronizando:  { label: 'Sincronizando…',       cls: 'bg-blue-100   text-blue-700   border-blue-200',   Icon: Loader2 },
+    error_sync:     { label: 'Error al sincronizar', cls: 'bg-red-100    text-red-700    border-red-200',    Icon: AlertTriangle },
+}
+
 export default function MisReportesClient({ iniciales }: { iniciales: ReporteData[] }) {
     const router = useRouter()
     const [filtro, setFiltro] = useState<FiltroEstado>('todos')
+    const [offline, setOffline] = useState<ReporteBorrador[]>([])
+    const { sync, isSyncing, isOnline } = useOfflineStatus()
+
+    useEffect(() => {
+        getReportesBorrador()
+            .then(all => setOffline(all.filter(r => r.estado !== 'sincronizado')))
+            .catch(() => {})
+    }, [isSyncing])
 
     const misReportes = iniciales
 
@@ -83,6 +99,50 @@ export default function MisReportesClient({ iniciales }: { iniciales: ReporteDat
                     )
                 })}
             </div>
+
+            {/* Reportes offline pendientes de sync */}
+            {offline.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8] px-1">
+                        Guardados localmente · pendientes de sync
+                    </p>
+                    {offline.map((r) => {
+                        const cfg = SYNC_BADGE[r.estado as Exclude<EstadoSync, 'sincronizado'>]
+                        if (!cfg) return null
+                        const { label, cls, Icon } = cfg
+                        return (
+                            <div key={r.id} className="rounded-xl border border-[#E2E8F0] bg-white shadow-sm px-4 py-3.5">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <span className="text-xs font-mono font-bold text-[#94A3B8] tracking-widest">
+                                            #{r.id.slice(-8).toUpperCase()}
+                                        </span>
+                                        <p className="text-xs text-[#64748B] mt-0.5">
+                                            {new Date(r.fecha_inicio).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </p>
+                                        {r.motivo_error && (
+                                            <p className="text-[10px] text-red-500 mt-0.5 truncate">{r.motivo_error}</p>
+                                        )}
+                                    </div>
+                                    <Badge className={`text-[10px] font-medium px-2 py-0.5 rounded-sm whitespace-nowrap shrink-0 border flex items-center gap-1 ${cls}`}>
+                                        <Icon className={`h-3 w-3 ${r.estado === 'sincronizando' ? 'animate-spin' : ''}`} />
+                                        {label}
+                                    </Badge>
+                                </div>
+                                {r.estado === 'error_sync' && (
+                                    <button
+                                        onClick={sync}
+                                        disabled={isSyncing || !isOnline}
+                                        className="mt-2 text-[10px] font-semibold text-[#1E40AF] hover:underline disabled:opacity-40 disabled:no-underline"
+                                    >
+                                        Reintentar
+                                    </button>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
 
             {/* Lista */}
             <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 pr-2 pb-10">

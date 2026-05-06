@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-    ClipboardList, AlertCircle, Clock,
+    AlertCircle,
     CheckCircle2, ChevronRight, Wifi, WifiOff, Plus,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ESTADO_REPORTE_CFG } from '@/components/admin/reportes/ReportesTable'
+import { useOfflineStatus } from '@/hooks/useOfflineStatus'
+import SyncStatus from '@/components/tecnico/SyncStatus'
 
 const TEC_NOMBRE = 'Técnico' // Puedes pasarlo desde el server para ser dinámico
 
@@ -26,19 +27,6 @@ function esHoy(iso: string) {
         && d.getDate() === hoy.getDate()
 }
 
-function useConnectivity() {
-    const [online, setOnline] = useState(true)
-    useEffect(() => {
-        setOnline(navigator.onLine)
-        const on = () => setOnline(true)
-        const off = () => setOnline(false)
-        window.addEventListener('online', on)
-        window.addEventListener('offline', off)
-        return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
-    }, [])
-    return online
-}
-
 function DashCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
         <div className={`rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-4 ${className}`}>
@@ -49,7 +37,7 @@ function DashCard({ children, className = '' }: { children: React.ReactNode; cla
 
 export default function DashboardClient({ reportes, nombreTecnico }: { reportes: any[], nombreTecnico?: string }) {
     const router = useRouter()
-    const online = useConnectivity()
+    const { isOnline: online } = useOfflineStatus()
 
     const reportesEnProgreso = reportes.filter((r) => 
         r.estado_reporte === 'en_progreso' || 
@@ -79,6 +67,9 @@ export default function DashboardClient({ reportes, nombreTecnico }: { reportes:
                     : <><WifiOff className="h-3.5 w-3.5" /> <span>Sin conexión — modo offline activo</span></>
                 }
             </div>
+
+            {/* Sección de sincronización offline */}
+            <SyncStatus />
 
             {/* Card: Reportes en progreso (ahora incluye pendientes de firma) */}
             <DashCard>
