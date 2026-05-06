@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find c:UsersdayanmaintenanceModule -type f \\\\\\(-name *.sql -o -name *supabase* -o -name *migrations* \\\\\\))",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(node --check \"c:/Users/dayan/maintenanceModule/public/sw.js\")"
     ]
   }
 }

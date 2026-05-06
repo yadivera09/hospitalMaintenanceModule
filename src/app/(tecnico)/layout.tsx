@@ -24,6 +24,14 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
     const [tecnico, setTecnico] = useState<{ nombre: string; apellido: string } | null>(null)
     const [loading, setLoading] = useState(true)
 
+    // Registrar Service Worker para soporte offline
+    useEffect(() => {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.warn('[SW] error al registrar:', err)
+        })
+    }, [])
+
     useEffect(() => {
         async function cargarTecnico() {
             const supabase = createClient()
