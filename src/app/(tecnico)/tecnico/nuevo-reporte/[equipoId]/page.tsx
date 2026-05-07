@@ -1281,76 +1281,80 @@ export default function NuevoReporteWizard() {
             : (firmaRef.current?.toDataURL('image/png') ?? null)
         if (!base64Tecnico) { setErrorGlobal('Firma requerida'); return }
 
-        // Sin conexión: guardar reporte completo en IDB con firma y salir
+        // Si el cliente firmó de una vez, obtenemos su firma
+        let base64Cliente: string | null = null
+        if (firmaClienteRef.current && firmaClienteSaved) {
+            base64Cliente = firmaClienteRef.current.isEmpty()
+                ? null
+                : firmaClienteRef.current.toDataURL('image/png')
+        }
+
+        // SIEMPRE guardamos en IDB para asegurar atomicidad (Atomic Firma/Envío)
+        await finalizarReporte({
+            equipo_id: equipoId,
+            tecnico_principal_id: tecnicoActual?.id || '',
+            tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+            fecha_inicio: datos.fecha_ejecucion,
+            hora_entrada: datos.hora_entrada || null,
+            hora_salida: datos.hora_salida || null,
+            ciudad: datos.ciudad || null,
+            solicitado_por: datos.solicitado_por || null,
+            motivo_visita: datos.motivo_visita || null,
+            numero_reporte_fisico: datos.numero_reporte_fisico || null,
+            dispositivo_origen: 'web',
+            diagnostico: datos.diagnostico || null,
+            trabajo_realizado: datos.trabajo_realizado || null,
+            estado_equipo_post: datos.estado_equipo_post || null,
+            actividades: datos.checklist.map((c) => ({
+                actividad_id: c.actividad_id,
+                completada: c.completada,
+                observacion: c.observacion || null,
+            })),
+            insumos_usados: datos.insumos_usados.map((i) => ({
+                insumo_id: i.insumo_id,
+                cantidad: i.cantidad,
+                observacion: null,
+            })),
+            insumos_requeridos: datos.insumos_requeridos.map((i) => ({
+                insumo_id: i.insumo_id,
+                cantidad: i.cantidad,
+                urgente: false,
+                observacion: (i as any).motivo || null,
+            })),
+            accesorios: datos.accesorios.map((a) => ({
+                descripcion: a.descripcion,
+                cantidad: a.cantidad,
+            })),
+            tecnicos_apoyo: datos.tecnicos_apoyo,
+            firma_base64: base64Tecnico,
+            firma_cliente_base64: base64Cliente,
+            nombre_firmante: base64Cliente ? (nombreFirmante || 'Cliente') : null,
+            reporte_server_id: reporteId, // Pasa el ID del servidor si se generó online
+        }, localIdRef.current)
+
+        setErrorGlobal(null)
+        
         if (!isOnline) {
-            await finalizarReporte({
-                equipo_id: equipoId,
-                tecnico_principal_id: tecnicoActual?.id || '',
-                tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-                fecha_inicio: datos.fecha_ejecucion,
-                hora_entrada: datos.hora_entrada || null,
-                hora_salida: datos.hora_salida || null,
-                ciudad: datos.ciudad || null,
-                solicitado_por: datos.solicitado_por || null,
-                motivo_visita: datos.motivo_visita || null,
-                numero_reporte_fisico: datos.numero_reporte_fisico || null,
-                dispositivo_origen: 'web',
-                diagnostico: datos.diagnostico || null,
-                trabajo_realizado: datos.trabajo_realizado || null,
-                estado_equipo_post: datos.estado_equipo_post || null,
-                actividades: datos.checklist.map((c) => ({
-                    actividad_id: c.actividad_id,
-                    completada: c.completada,
-                    observacion: c.observacion || null,
-                })),
-                insumos_usados: datos.insumos_usados.map((i) => ({
-                    insumo_id: i.insumo_id,
-                    cantidad: i.cantidad,
-                    observacion: null,
-                })),
-                insumos_requeridos: datos.insumos_requeridos.map((i) => ({
-                    insumo_id: i.insumo_id,
-                    cantidad: i.cantidad,
-                    urgente: false,
-                    observacion: (i as any).motivo || null,
-                })),
-                accesorios: datos.accesorios.map((a) => ({
-                    descripcion: a.descripcion,
-                    cantidad: a.cantidad,
-                })),
-                tecnicos_apoyo: datos.tecnicos_apoyo,
-                firma_base64: base64Tecnico,
-            }, localIdRef.current)
-            setErrorGlobal(null)
             router.push('/tecnico/mis-reportes')
             return
         }
 
-        // Con conexión: flujo normal de firmas en servidor
-        if (!reporteId) { setErrorGlobal('Reporte no encontrado'); return }
-        startTransition(async () => {
-            const tecnicoOk = await handleFirmarTecnico()
-            if (!tecnicoOk) return
+        // Con conexión: Intentar procesar la cola de sincronización inmediatamente
+        // Esto envía la petición atómica al servidor en segundo plano a través del sync_queue.
+        try {
+            const { sync } = await import('@/lib/offline/sync')
+            // trigger in background to not block UI
+            sync().catch(console.error)
+        } catch(e) {
+            console.error('Error triggering sync', e)
+        }
 
-            if (firmaClienteRef.current && firmaClienteSaved) {
-                const base64Cliente = firmaClienteRef.current.toDataURL('image/png')
-                const { firmarComoCliente } = await import('@/app/actions/reportes')
-                const result = await firmarComoCliente({
-                    reporte_id: reporteId,
-                    firma_base64: base64Cliente,
-                    nombre_firmante: nombreFirmante || 'Cliente',
-                })
-                if (result.error) { setErrorGlobal(result.error); return }
-            } else {
-                setErrorGlobal(null)
-                alert('Firma del técnico guardada. El reporte queda en espera de firma del cliente.')
-                router.push('/tecnico/mis-reportes')
-                return
-            }
-
-            setErrorGlobal(null)
+        if (base64Cliente) {
             router.push('/tecnico/mis-reportes?nueva=1')
-        })
+        } else {
+            alert('Firma del técnico guardada localmente y encolada. El reporte queda en espera de firma del cliente.')
+            router.push('/tecnico/mis-reportes')
+        }
     }
 
     async function handleGuardarBorrador() {

@@ -7,7 +7,7 @@ const DB_VERSION = 2
 
 // ─── Estado de sincronización de un reporte local ─────────────────────────────
 
-export type EstadoSync = 'pendiente_sync' | 'sincronizando' | 'sincronizado' | 'error_sync'
+export type EstadoSync = 'borrador_local' | 'pendiente_sync' | 'sincronizando' | 'sincronizado' | 'error_sync'
 
 // ─── Interfaces de cada store ─────────────────────────────────────────────────
 
@@ -34,6 +34,9 @@ export interface ReporteBorrador {
     accesorios: Array<{ descripcion: string; cantidad: number }>
     tecnicos_apoyo: string[]                // IDs de técnicos de apoyo
     firma_base64: string | null             // canvas base64 — igual que online
+    firma_cliente_base64: string | null     // canvas base64
+    nombre_firmante: string | null          // nombre del cliente
+    reporte_server_id: string | null        // ID real en el servidor (si se inició online)
     estado: EstadoSync
     motivo_error: string | null
     created_at: string                      // ISO 8601

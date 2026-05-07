@@ -57,6 +57,10 @@ const SyncReporteSchema = z.object({
     insumos_requeridos: z.array(InsumoReqSchema).default([]),
     accesorios: z.array(AccesorioSchema).default([]),
     tecnicos_apoyo: z.array(z.string().uuid()).default([]),
+    firma_base64: z.string().nullable().optional(),
+    firma_cliente_base64: z.string().nullable().optional(),
+    nombre_firmante: z.string().nullable().optional(),
+    reporte_server_id: z.string().uuid().nullable().optional(),
 })
 
 // ─── POST /api/sync ───────────────────────────────────────────────────────────
@@ -110,28 +114,51 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        // ── PASO 1: Crear borrador ─────────────────────────────────────────────
-        const borradorRes = await createBorradorReporte({
-            equipo_id: reporte.equipo_id,
-            tecnico_principal_id: reporte.tecnico_principal_id,
-            tipo_mantenimiento_id: reporte.tipo_mantenimiento_id,
-            fecha_inicio: reporte.fecha_inicio,
-            hora_entrada: reporte.hora_entrada ?? null,
-            ciudad: reporte.ciudad ?? null,
-            solicitado_por: reporte.solicitado_por ?? null,
-            motivo_visita: reporte.motivo_visita ?? null,
-            numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
-            dispositivo_origen: reporte.dispositivo_origen ?? 'web',
-        })
+        // ── PASO 1: Crear o actualizar borrador ─────────────────────────────────────────────
+        let reporte_id = reporte.reporte_server_id
+        if (reporte_id) {
+            const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
+            const borradorRes = await actualizarBorradorReporte(reporte_id, {
+                equipo_id: reporte.equipo_id,
+                tecnico_principal_id: reporte.tecnico_principal_id,
+                tipo_mantenimiento_id: reporte.tipo_mantenimiento_id,
+                fecha_inicio: reporte.fecha_inicio,
+                hora_entrada: reporte.hora_entrada ?? null,
+                ciudad: reporte.ciudad ?? null,
+                solicitado_por: reporte.solicitado_por ?? null,
+                motivo_visita: reporte.motivo_visita ?? null,
+                numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
+                dispositivo_origen: reporte.dispositivo_origen ?? 'web',
+            })
 
-        if (borradorRes.error || !borradorRes.data) {
-            return NextResponse.json(
-                { data: null, error: borradorRes.error ?? 'Error al crear el borrador' },
-                { status: 422 },
-            )
+            if (borradorRes.error || !borradorRes.data) {
+                return NextResponse.json(
+                    { data: null, error: borradorRes.error ?? 'Error al actualizar el borrador' },
+                    { status: 422 },
+                )
+            }
+        } else {
+            const borradorRes = await createBorradorReporte({
+                equipo_id: reporte.equipo_id,
+                tecnico_principal_id: reporte.tecnico_principal_id,
+                tipo_mantenimiento_id: reporte.tipo_mantenimiento_id,
+                fecha_inicio: reporte.fecha_inicio,
+                hora_entrada: reporte.hora_entrada ?? null,
+                ciudad: reporte.ciudad ?? null,
+                solicitado_por: reporte.solicitado_por ?? null,
+                motivo_visita: reporte.motivo_visita ?? null,
+                numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
+                dispositivo_origen: reporte.dispositivo_origen ?? 'web',
+            })
+
+            if (borradorRes.error || !borradorRes.data) {
+                return NextResponse.json(
+                    { data: null, error: borradorRes.error ?? 'Error al crear el borrador' },
+                    { status: 422 },
+                )
+            }
+            reporte_id = borradorRes.data.id
         }
-
-        const reporte_id = borradorRes.data.id
 
         // ── PASO 2: Guardar detalle (solo si estado_equipo_post está presente) ─
         if (reporte.estado_equipo_post) {
@@ -188,6 +215,38 @@ export async function POST(req: NextRequest) {
                     { data: null, error: insumosRes.error },
                     { status: 422 },
                 )
+            }
+        }
+
+        // ── PASO 4: Aplicar firma de técnico y cliente ────────────────────────────────────────
+        if (reporte.firma_base64) {
+            const { firmarComoTecnico, firmarComoCliente } = await import('@/app/actions/reportes')
+            
+            const firmaTecnicoRes = await firmarComoTecnico({
+                reporte_id,
+                firma_base64: reporte.firma_base64,
+            })
+
+            if (firmaTecnicoRes.error) {
+                return NextResponse.json(
+                    { data: null, error: firmaTecnicoRes.error },
+                    { status: 422 },
+                )
+            }
+
+            if (reporte.firma_cliente_base64) {
+                const firmaClienteRes = await firmarComoCliente({
+                    reporte_id,
+                    firma_base64: reporte.firma_cliente_base64,
+                    nombre_firmante: reporte.nombre_firmante || 'Cliente',
+                })
+
+                if (firmaClienteRes.error) {
+                    return NextResponse.json(
+                        { data: null, error: firmaClienteRes.error },
+                        { status: 422 },
+                    )
+                }
             }
         }
 

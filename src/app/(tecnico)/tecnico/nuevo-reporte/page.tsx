@@ -45,6 +45,21 @@ export default function BuscarEquipoPage() {
     // Cargar equipos al montar
     useEffect(() => {
         async function fetchEquipos() {
+            if (!navigator.onLine) {
+                setModoOffline(true)
+                try {
+                    const { getCatalogo } = await import('@/lib/offline/db')
+                    const cached = await getCatalogo<EquipoConCliente[]>('equipos_busqueda')
+                    if (cached && cached.length > 0) {
+                        setEquipos(cached)
+                    }
+                } catch {
+                    // IDB no disponible — equipos queda vacío
+                }
+                setCargandoEquipos(false)
+                return
+            }
+
             try {
                 const res = await getEquipos({ activo: true, soloConContrato: true })
                 if (res.data) {
@@ -56,7 +71,8 @@ export default function BuscarEquipoPage() {
                     })
                 }
             } catch {
-                // Sin red: intentar caché de IDB
+                // Si falla la red a pesar de onLine: intentar caché de IDB
+                setModoOffline(true)
                 try {
                     const { getCatalogo } = await import('@/lib/offline/db')
                     const cached = await getCatalogo<EquipoConCliente[]>('equipos_busqueda')
@@ -64,9 +80,8 @@ export default function BuscarEquipoPage() {
                         setEquipos(cached)
                     }
                 } catch {
-                    // IDB no disponible — equipos queda vacío
+                    // IDB no disponible
                 }
-                setModoOffline(true)
             } finally {
                 setCargandoEquipos(false)
             }

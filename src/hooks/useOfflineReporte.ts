@@ -69,8 +69,11 @@ export function useOfflineReporte() {
                     accesorios: [],
                     tecnicos_apoyo: [],
                     firma_base64: null,
+                    firma_cliente_base64: null,
+                    nombre_firmante: null,
+                    reporte_server_id: null,
                     ...datos,
-                    estado: 'pendiente_sync',
+                    estado: 'borrador_local',
                     motivo_error: null,
                     created_at: now,
                     updated_at: now,
@@ -92,10 +95,6 @@ export function useOfflineReporte() {
      */
     const finalizarReporte = useCallback(
         async (datos: DatosReporte, idLocal?: string): Promise<OfflineReporteResult> => {
-            if (isOnline) {
-                return { id: '', modoOffline: false }
-            }
-
             const now = new Date().toISOString()
             const db = await import('@/lib/offline/db')
             const id = idLocal ?? generarIdLocal()
