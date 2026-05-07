@@ -47,7 +47,8 @@ export function useOfflineStatus(): OfflineStatus {
     }, [refreshPendingCount])
 
     useEffect(() => {
-        // Cargar pendientes al montar
+        // Sync after hydration: SSR renders isOnline=true (no navigator), client may be offline
+        setIsOnline(navigator.onLine)
         refreshPendingCount()
 
         function handleOnline() {
