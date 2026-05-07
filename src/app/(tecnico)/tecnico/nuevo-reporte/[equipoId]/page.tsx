@@ -642,7 +642,7 @@ function Paso3({ datos, onChange, insumos, readOnly, errors }: { datos: WizardDa
 }
 
 // ── PASO 4 — Revisión + Firma
-function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, setFirmaSaved, readOnly, errors, tiposMantenimiento, onFirmarEnviar }: {
+function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, setFirmaSaved, readOnly, errors, tiposMantenimiento, onFirmarEnviar, offlineSuccess, onNavigateToReports }: {
     datos: WizardDatos;
     equipo: any;
     tecnicos: TecnicoData[];
@@ -654,6 +654,8 @@ function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, s
     errors?: any;
     tiposMantenimiento: TipoMantenimiento[];
     onFirmarEnviar: () => void;
+    offlineSuccess?: boolean;
+    onNavigateToReports?: () => void;
 }) {
 
     const tipoNombre = tiposMantenimiento.find((t) => t.id === datos.tipo_mantenimiento_id)?.nombre ?? '—'
@@ -758,12 +760,28 @@ function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, s
 
                     {/* Botones finales */}
                     <div className="space-y-2 pt-2">
-                        <Button onClick={onFirmarEnviar} disabled={!firmaSaved}
-                            className="w-full h-12 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 font-semibold"
-                            id="btn-firmar-enviar">
-                            <FileCheck className="h-4 w-4" />
-                            {firmaSaved ? 'Firmar y enviar reporte' : 'Agrega tu firma para enviar'}
-                        </Button>
+                        {offlineSuccess ? (
+                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center space-y-3">
+                                <div className="flex items-center justify-center gap-2 text-green-700 font-medium">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    <span>Firma guardada.</span>
+                                </div>
+                                <p className="text-xs text-green-600">
+                                    Tu reporte se enviará automáticamente cuando tengas conexión.
+                                </p>
+                                <Button onClick={onNavigateToReports}
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-10">
+                                    Ir a mis reportes
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button onClick={onFirmarEnviar} disabled={!firmaSaved}
+                                className="w-full h-12 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 font-semibold"
+                                id="btn-firmar-enviar">
+                                <FileCheck className="h-4 w-4" />
+                                {firmaSaved ? 'Firmar y enviar reporte' : 'Agrega tu firma para enviar'}
+                            </Button>
+                        )}
                     </div>
                 </>
             )}
@@ -818,8 +836,10 @@ export default function NuevoReporteWizard() {
     const [firmaSaved, setFirmaSaved] = useState(false)
     const [modalExitOpen, setModalExitOpen] = useState(false)
     const [firmaClienteSaved, setFirmaClienteSaved] = useState(false)
+    const [offlineSuccess, setOfflineSuccess] = useState(false)
     const [paso, setPaso] = useState(1)
     const [isPending, startTransition] = useTransition()
+    const [isSavingLocal, setIsSavingLocal] = useState(false)
 
     // ── Datos del equipo y contexto (cargados desde Supabase)
     const [equipo, setEquipo] = useState<EquipoData | null>(null)
@@ -1335,7 +1355,7 @@ export default function NuevoReporteWizard() {
         setErrorGlobal(null)
         
         if (!isOnline) {
-            router.push('/tecnico/mis-reportes')
+            setOfflineSuccess(true)
             return
         }
 
@@ -1381,6 +1401,9 @@ export default function NuevoReporteWizard() {
                 insumos_requeridos: datos.insumos_requeridos,
                 accesorios: datos.accesorios,
                 tecnicos_apoyo: datos.tecnicos_apoyo,
+                firma_cliente_base64: null,
+                nombre_firmante: null,
+                reporte_server_id: reporteId,
             })
             alert('Sin conexión. Reporte guardado localmente. Se sincronizará automáticamente.')
             return
@@ -1468,49 +1491,54 @@ export default function NuevoReporteWizard() {
         }
 
         setErrorGlobal(null)
+        setIsSavingLocal(true)
 
-        if (paso === 1) {
-            const ok = await trigger(['tipo_mantenimiento_id', 'fecha_ejecucion', 'motivo_visita', 'ciudad', 'solicitado_por', 'hora_entrada', 'ubicacion_id'])
-            if (!ok) return
+        try {
+            if (paso === 1) {
+                const ok = await trigger(['tipo_mantenimiento_id', 'fecha_ejecucion', 'motivo_visita', 'ciudad', 'solicitado_por', 'hora_entrada', 'ubicacion_id'])
+                if (!ok) return
 
-            if (!tecnicoActual) {
-                setErrorGlobal("Identidad del técnico no detectada, no se puede continuar.")
-                return;
-            }
+                if (!tecnicoActual) {
+                    setErrorGlobal("Identidad del técnico no detectada, no se puede continuar.")
+                    return;
+                }
 
-            handleAvanzarDesdePaso1()
-            return
-        }
-        if (paso === 2) {
-            const ok = await trigger(['diagnostico', 'trabajo_realizado', 'estado_equipo_post', 'checklist'])
-            if (!ok) return
-            handleAvanzarDesdePaso2()
-            return
-        }
-        if (paso === 3) {
-            const ok = await trigger(['insumos_usados'])
-            if (!ok) return
-            handleAvanzarDesdePaso3()
-            return
-        }
-        if (paso === 4) {
-            // Validar firma del técnico
-            const base64 = firmaRef.current?.isEmpty() ? null : firmaRef.current?.toDataURL()
-            if (!base64) {
-                setErrorGlobal("Debe firmar el reporte antes de enviar")
-                setValue('firma_tecnico', null) // Set to null to trigger validation error
-                await trigger('firma_tecnico') // Manually trigger validation for firma_tecnico
+                await handleAvanzarDesdePaso1()
                 return
             }
-            update({ firma_tecnico: base64 })
-            
-            const ok = await trigger(['firma_tecnico'])
-            if (!ok) return
+            if (paso === 2) {
+                const ok = await trigger(['diagnostico', 'trabajo_realizado', 'estado_equipo_post', 'checklist'])
+                if (!ok) return
+                await handleAvanzarDesdePaso2()
+                return
+            }
+            if (paso === 3) {
+                const ok = await trigger(['insumos_usados'])
+                if (!ok) return
+                await handleAvanzarDesdePaso3()
+                return
+            }
+            if (paso === 4) {
+                // Validar firma del técnico
+                const base64 = firmaRef.current?.isEmpty() ? null : firmaRef.current?.toDataURL()
+                if (!base64) {
+                    setErrorGlobal("Debe firmar el reporte antes de enviar")
+                    setValue('firma_tecnico', null) // Set to null to trigger validation error
+                    await trigger('firma_tecnico') // Manually trigger validation for firma_tecnico
+                    return
+                }
+                update({ firma_tecnico: base64 })
+                
+                const ok = await trigger(['firma_tecnico'])
+                if (!ok) return
 
-            handleFirmarEnviar()
-            return
+                await handleFirmarEnviar()
+                return
+            }
+            setPaso(p => p + 1)
+        } finally {
+            setIsSavingLocal(false)
         }
-        setPaso(p => p + 1)
     }
 
     return (
@@ -1601,15 +1629,17 @@ export default function NuevoReporteWizard() {
                         errors={errors}
                         tiposMantenimiento={tiposMantenimiento}
                         onFirmarEnviar={handleSiguiente}
+                        offlineSuccess={offlineSuccess}
+                        onNavigateToReports={() => router.push('/tecnico/mis-reportes')}
                     />
                 )}
             </div>
 
             {/* Botón siguiente (pasos 1-3) */}
             {paso < 4 && (
-                <Button onClick={handleSiguiente} disabled={isPending}
+                <Button onClick={handleSiguiente} disabled={isPending || isSavingLocal}
                     className="w-full h-12 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 font-semibold">
-                    {isPending ? (
+                    {(isPending || isSavingLocal) ? (
                         <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                             Guardando…</>
                     ) : (

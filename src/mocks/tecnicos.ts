@@ -14,6 +14,7 @@ export const MOCK_TECNICOS: Tecnico[] = [
     {
         id: 'tec-0001-0001-0001-0001-000000000001',
         user_id: null,
+        usuario_id: null,
         nombre: 'Marcos',
         apellido: 'Rodríguez',
         cedula: '0912345678',
@@ -31,6 +32,7 @@ export const MOCK_TECNICOS: Tecnico[] = [
     {
         id: 'tec-0002-0002-0002-0002-000000000002',
         user_id: null,
+        usuario_id: null,
         nombre: 'Luis',
         apellido: 'Vera',
         cedula: '1712345678',
@@ -48,6 +50,7 @@ export const MOCK_TECNICOS: Tecnico[] = [
     {
         id: 'tec-0003-0003-0003-0003-000000000003',
         user_id: null,
+        usuario_id: null,
         nombre: 'Ana',
         apellido: 'Pacheco',
         cedula: '0612345678',
@@ -65,6 +68,7 @@ export const MOCK_TECNICOS: Tecnico[] = [
     {
         id: 'tec-0004-0004-0004-0004-000000000004',
         user_id: null,
+        usuario_id: null,
         nombre: 'Pedro',
         apellido: 'Moncayo',
         cedula: '1012345678',

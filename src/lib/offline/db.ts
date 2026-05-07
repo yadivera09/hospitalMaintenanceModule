@@ -287,6 +287,18 @@ export async function guardarEquiposEnCache(equipos: Equipo[]): Promise<void> {
     ])
 }
 
+export async function countEquiposEnCache(): Promise<number> {
+    const db = await getOfflineDB()
+    return db.count('equipos_cache')
+}
+
+export async function getAllEquiposFromCache(): Promise<Equipo[]> {
+    const db = await getOfflineDB()
+    const entries = await db.getAll('equipos_cache')
+    // Filter out expired cache if needed, or return all
+    return entries.filter(e => !estaVencido(e.cached_at, TTL_EQUIPOS_MS)).map(e => e.datos)
+}
+
 // ─── catalogos_cache ──────────────────────────────────────────────────────────
 
 export async function guardarCatalogo(

@@ -2,7 +2,7 @@ import {
     guardarCatalogo,
     guardarEquiposEnCache,
     getCatalogo,
-    buscarEquipoEnCache,
+    countEquiposEnCache,
 } from './db'
 import type { Equipo } from '@/types'
 
@@ -60,9 +60,9 @@ async function precargarCatalogos(): Promise<void> {
 }
 
 async function precargarEquipos(tecnicoId: string): Promise<void> {
-    // Verificar TTL: si el primer equipo conocido sigue vigente, saltar
-    const yaEnCache = await buscarEquipoEnCache('__sentinel__')
-    if (yaEnCache !== null) return
+    // Verificar TTL: si hay equipos cacheados vigentes, saltar
+    const count = await countEquiposEnCache()
+    if (count > 0) return
 
     try {
         const datos = await fetchJSON<{ equipos: Equipo[] }>(
@@ -88,8 +88,8 @@ export async function refrescarCacheVencida(tecnicoId: string): Promise<void> {
         getCatalogo('tipos_mantenimiento').then(v => {
             if (!v) return precargarCatalogos()
         }),
-        buscarEquipoEnCache('__sentinel__').then(v => {
-            if (v === null) return precargarEquipos(tecnicoId)
+        countEquiposEnCache().then(count => {
+            if (count === 0) return precargarEquipos(tecnicoId)
         }),
     ])
 }

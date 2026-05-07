@@ -35,6 +35,7 @@ interface ReporteData {
 }
 
 const SYNC_BADGE: Record<Exclude<EstadoSync, 'sincronizado'>, { label: string; cls: string; Icon: React.ElementType }> = {
+    borrador_local: { label: 'Borrador local',       cls: 'bg-slate-100  text-slate-700  border-slate-200',  Icon: Clock },
     pendiente_sync: { label: 'Pendiente sync',       cls: 'bg-yellow-100 text-yellow-700 border-yellow-200', Icon: Clock },
     sincronizando:  { label: 'Sincronizando…',       cls: 'bg-blue-100   text-blue-700   border-blue-200',   Icon: Loader2 },
     error_sync:     { label: 'Error al sincronizar', cls: 'bg-red-100    text-red-700    border-red-200',    Icon: AlertTriangle },

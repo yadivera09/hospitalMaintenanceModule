@@ -59,14 +59,7 @@ export default function DashboardClient({ reportes, nombreTecnico }: { reportes:
                 </p>
             </div>
 
-            {/* Indicador de conectividad */}
-            <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium
-        ${online ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                {online
-                    ? <><Wifi className="h-3.5 w-3.5" /> <span>En línea</span></>
-                    : <><WifiOff className="h-3.5 w-3.5" /> <span>Sin conexión — modo offline activo</span></>
-                }
-            </div>
+
 
             {/* Sección de sincronización offline */}
             <SyncStatus />

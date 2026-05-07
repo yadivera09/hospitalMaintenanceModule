@@ -48,10 +48,10 @@ export default function BuscarEquipoPage() {
             if (!navigator.onLine) {
                 setModoOffline(true)
                 try {
-                    const { getCatalogo } = await import('@/lib/offline/db')
-                    const cached = await getCatalogo<EquipoConCliente[]>('equipos_busqueda')
+                    const { getAllEquiposFromCache } = await import('@/lib/offline/db')
+                    const cached = await getAllEquiposFromCache()
                     if (cached && cached.length > 0) {
-                        setEquipos(cached)
+                        setEquipos(cached as EquipoConCliente[])
                     }
                 } catch {
                     // IDB no disponible — equipos queda vacío
@@ -65,19 +65,19 @@ export default function BuscarEquipoPage() {
                 if (res.data) {
                     const equiposData = res.data
                     setEquipos(equiposData)
-                    // Cache para offline — fire and forget
-                    import('@/lib/offline/db').then(({ guardarCatalogo }) => {
-                        guardarCatalogo('equipos_busqueda', equiposData).catch(() => {})
+                    // Cache para offline — actualizar equipos_cache
+                    import('@/lib/offline/db').then(({ guardarEquiposEnCache }) => {
+                        guardarEquiposEnCache(equiposData).catch(() => {})
                     })
                 }
             } catch {
                 // Si falla la red a pesar de onLine: intentar caché de IDB
                 setModoOffline(true)
                 try {
-                    const { getCatalogo } = await import('@/lib/offline/db')
-                    const cached = await getCatalogo<EquipoConCliente[]>('equipos_busqueda')
+                    const { getAllEquiposFromCache } = await import('@/lib/offline/db')
+                    const cached = await getAllEquiposFromCache()
                     if (cached && cached.length > 0) {
-                        setEquipos(cached)
+                        setEquipos(cached as EquipoConCliente[])
                     }
                 } catch {
                     // IDB no disponible
@@ -106,6 +106,7 @@ export default function BuscarEquipoPage() {
         if (!q) return []
         return equipos.filter(e =>
             e.codigo_mh.toLowerCase().includes(q) ||
+            (e.nombre?.toLowerCase().includes(q) ?? false) ||
             (e.numero_serie?.toLowerCase().includes(q) ?? false) ||
             (e.activo_fijo?.toLowerCase().includes(q) ?? false)
         )
@@ -178,7 +179,7 @@ export default function BuscarEquipoPage() {
                     <p className="text-xs text-amber-800 font-medium">
                         {equipos.length > 0
                             ? 'Sin conexión. Mostrando equipos guardados localmente.'
-                            : 'Sin conexión y sin caché disponible. Conéctate para ver los equipos.'}
+                            : 'No hay equipos disponibles offline. Abre la app con conexión al menos una vez.'}
                     </p>
                 </div>
             )}

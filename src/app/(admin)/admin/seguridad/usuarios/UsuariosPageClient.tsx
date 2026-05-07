@@ -264,9 +264,9 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                         <TableCell className="py-3.5 hidden lg:table-cell text-center">
                                             <div className="flex justify-center">
                                                 {mfaConfigurado ? (
-                                                    <ShieldCheck className="h-4 w-4 text-green-600" title="MFA configurado" />
+                                                    <ShieldCheck className="h-4 w-4 text-green-600" aria-label="MFA configurado" />
                                                 ) : (
-                                                    <Shield className="h-4 w-4 text-[#94A3B8]" title="MFA no configurado" />
+                                                    <Shield className="h-4 w-4 text-[#94A3B8]" aria-label="MFA no configurado" />
                                                 )}
                                             </div>
                                         </TableCell>

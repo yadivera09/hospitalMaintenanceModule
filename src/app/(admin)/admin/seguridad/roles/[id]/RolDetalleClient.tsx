@@ -118,11 +118,11 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
         const newMatriz = { ...matriz, [moduloEditando.moduloId]: moduloEditando.permisoIds };
         
         const permisos: { moduloId: string; permisoId: string }[] = []
-        for (const [modId, permisoSet] of Object.entries(newMatriz)) {
-            for (const permisoId of permisoSet) {
+        Object.entries(newMatriz).forEach(([modId, permisoSet]) => {
+            Array.from(permisoSet).forEach(permisoId => {
                 permisos.push({ moduloId: modId, permisoId })
-            }
-        }
+            })
+        })
         
         const result = await asignarPermisosRol(rol.id, permisos)
         setGuardando(false)
@@ -152,11 +152,11 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
         delete newMatriz[moduloId];
         
         const permisos: { moduloId: string; permisoId: string }[] = []
-        for (const [modId, permisoSet] of Object.entries(newMatriz)) {
-            for (const permisoId of permisoSet) {
+        Object.entries(newMatriz).forEach(([modId, permisoSet]) => {
+            Array.from(permisoSet).forEach(permisoId => {
                 permisos.push({ moduloId: modId, permisoId })
-            }
-        }
+            })
+        })
         
         const result = await asignarPermisosRol(rol.id, permisos)
         setGuardando(false)

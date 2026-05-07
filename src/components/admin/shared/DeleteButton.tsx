@@ -41,7 +41,7 @@ interface DeleteButtonProps {
     /** Callback después de desactivar exitosamente */
     onExito?: () => void
     /** Lista de técnicos para reasignación */
-    tecnicos?: { id: string; nombre: string; apellido: string }[]
+    tecnicos?: { id: string; nombre: string; apellido: string; activo: boolean }[]
     /** Texto del aria-label y title del botón */
     label?: string
     disabled?: boolean

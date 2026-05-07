@@ -31,6 +31,32 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
         // Evitar doble envío si sync() se llama dos veces en paralelo
         if (reporte.estado === 'sincronizando') continue
 
+        // BUG 1 - FIX: Verificar duplicados en servidor antes de procesar
+        if (!reporte.reporte_server_id) {
+            try {
+                const supabase = createClient()
+                const { data: duplicado } = await supabase
+                    .from('reportes_mantenimiento')
+                    .select('id')
+                    .eq('equipo_id', reporte.equipo_id)
+                    .eq('tecnico_principal_id', reporte.tecnico_principal_id)
+                    .eq('fecha_inicio', reporte.fecha_inicio)
+                    .maybeSingle()
+
+                if (duplicado) {
+                    // Ya existe en el servidor. Asumimos que esta entrada de la cola es un rebote / duplicado
+                    // Limpiamos de la cola y del borrador local sin reportar error
+                    await eliminarReporteBorrador(reporte.id)
+                    await eliminarDeSyncQueue(item.id!)
+                    sincronizados++
+                    continue
+                }
+            } catch (error) {
+                console.error('Error al verificar duplicados:', error)
+                // Continuar de todos modos, si falla el POST lo mandará a error_sync
+            }
+        }
+
         try {
             await actualizarEstadoReporte(reporte.id, 'sincronizando')
 
@@ -73,3 +99,5 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
 
     return { sincronizados, errores }
 }
+
+export { sincronizarReportesPendientes as sync }
