@@ -34,38 +34,44 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
 
     useEffect(() => {
         async function cargarTecnico() {
-            const supabase = createClient()
+            try {
+                const supabase = createClient()
+                const { data: { session } } = await supabase.auth.getSession()
 
-            // Obtener sesión actual
-            const { data: { session } } = await supabase.auth.getSession()
+                if (!session) return
 
-            if (!session) {
+                const { data: tecnicoData } = await supabase
+                    .from('tecnicos')
+                    .select('id, nombre, apellido')
+                    .eq('email', session.user.email)
+                    .single()
+
+                if (tecnicoData) {
+                    setTecnico(tecnicoData)
+                    // Guardar en IDB para que esté disponible offline
+                    import('@/lib/offline/db').then(({ guardarCatalogo }) => {
+                        guardarCatalogo('tecnico_actual', tecnicoData).catch(() => {})
+                    })
+                    import('@/lib/offline/preload').then(({ precargarDatosOffline }) => {
+                        precargarDatosOffline(tecnicoData.id).catch(() => {})
+                    })
+                } else {
+                    setTecnico({
+                        id: '',
+                        nombre: session.user.user_metadata?.nombre || 'Técnico',
+                        apellido: session.user.user_metadata?.apellido || ''
+                    })
+                }
+            } catch {
+                // Offline o error de red: intentar cargar desde IDB
+                try {
+                    const { getCatalogo } = await import('@/lib/offline/db')
+                    const cached = await getCatalogo<{ id: string; nombre: string; apellido: string }>('tecnico_actual')
+                    if (cached) setTecnico(cached)
+                } catch { /* IDB no disponible */ }
+            } finally {
                 setLoading(false)
-                return
             }
-
-            // Buscar en la tabla tecnicos usando el email
-            const { data: tecnicoData } = await supabase
-                .from('tecnicos')
-                .select('id, nombre, apellido')
-                .eq('email', session.user.email)
-                .single()
-
-            if (tecnicoData) {
-                setTecnico(tecnicoData)
-                // Precargar equipos y catálogos en IDB para uso offline (background)
-                import('@/lib/offline/preload').then(({ precargarDatosOffline }) => {
-                    precargarDatosOffline(tecnicoData.id).catch(() => {})
-                })
-            } else {
-                // Fallback: usar metadata de auth (sin id real, no se puede precargar)
-                setTecnico({
-                    id: '',
-                    nombre: session.user.user_metadata?.nombre || 'Técnico',
-                    apellido: session.user.user_metadata?.apellido || ''
-                })
-            }
-            setLoading(false)
         }
 
         cargarTecnico()

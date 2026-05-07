@@ -916,14 +916,35 @@ export default function NuevoReporteWizard() {
 
     // ── Cargar contexto real desde Supabase al montar
     useEffect(() => {
-        console.log('🔵 [PAGE] useEffect disparado, equipoId:', equipoId, 'draftReporteId:', draftReporteId)
-        
         async function cargarContexto() {
-            console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
+                // ── Modo offline: cargar todo desde IndexedDB ─────────────────
+                if (!navigator.onLine) {
+                    const { buscarEquipoEnCache, getCatalogo } = await import('@/lib/offline/db')
+                    const equipoCache = await buscarEquipoEnCache(equipoId)
+                    if (!equipoCache) {
+                        setErrorGlobal('Sin conexión y el equipo no está en caché. Abre la app con internet al menos una vez.')
+                        setCargandoContexto(false)
+                        return
+                    }
+                    setEquipo(equipoCache as any)
 
-                // Cargar equipo primero con manejo de error temprano
+                    const tecCache = await getCatalogo<TecnicoData>('tecnico_actual')
+                    if (tecCache) setTecnicoActual(tecCache)
+
+                    const tipos = await getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento')
+                    if (tipos) setTiposMantenimiento(tipos)
+
+                    const ins = await getCatalogo<any[]>('insumos')
+                    if (ins) setInsumos(ins)
+
+                    // ubicaciones y técnicos de apoyo no están en cache offline → arrays vacíos
+                    setCargandoContexto(false)
+                    return
+                }
+
+                // ── Modo online: cargar desde Supabase ────────────────────────
                 const eqRes = await getEquipoById(equipoId)
 
                 if (eqRes.error || !eqRes.data) {
@@ -955,7 +976,6 @@ export default function NuevoReporteWizard() {
                     setUltimoPreventivo(prevRes.data)
                 }
 
-                // Establecer técnico actual desde server action (más confiable que client-side)
                 if (tecActualRes?.data) {
                     setTecnicoActual(tecActualRes.data as TecnicoData)
                 } else {
@@ -966,9 +986,7 @@ export default function NuevoReporteWizard() {
                     setTecnicos(tecsRes.data as TecnicoData[])
                 }
 
-                // Cargar tipos, ubicaciones e insumos asegurandonos de tener el cliente si aplica
                 const clienteId = eqRes.data.cliente_id || undefined
-                console.log('[cargarContexto] clienteId:', clienteId)
                 const [tiposRes, ubicasRes, insumosRes] = await Promise.all([
                     getTiposMantenimiento(),
                     getUbicaciones(clienteId),
@@ -1136,43 +1154,47 @@ export default function NuevoReporteWizard() {
         }
 
         startTransition(async () => {
-            if (reporteId) {
-                const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
-                const result = await actualizarBorradorReporte(reporteId, {
-                    equipo_id: equipoId,
-                    tecnico_principal_id: tecnicoActual.id,
-                    tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-                    fecha_inicio: datos.fecha_ejecucion,
-                    hora_entrada: datos.hora_entrada || null,
-                    ciudad: datos.ciudad || null,
-                    solicitado_por: datos.solicitado_por || null,
-                    motivo_visita: datos.motivo_visita || null,
-                    numero_reporte_fisico: datos.numero_reporte_fisico || null,
-                    ubicacion_id: datos.ubicacion_id || null,
-                    ubicacion_detalle: datos.ubicacion_detalle || null,
-                    dispositivo_origen: 'web',
-                })
-                if (result.error) { setErrorGlobal(result.error); return }
+            try {
+                if (reporteId) {
+                    const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
+                    const result = await actualizarBorradorReporte(reporteId, {
+                        equipo_id: equipoId,
+                        tecnico_principal_id: tecnicoActual.id,
+                        tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                        fecha_inicio: datos.fecha_ejecucion,
+                        hora_entrada: datos.hora_entrada || null,
+                        ciudad: datos.ciudad || null,
+                        solicitado_por: datos.solicitado_por || null,
+                        motivo_visita: datos.motivo_visita || null,
+                        numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                        ubicacion_id: datos.ubicacion_id || null,
+                        ubicacion_detalle: datos.ubicacion_detalle || null,
+                        dispositivo_origen: 'web',
+                    })
+                    if (result.error) { setErrorGlobal(result.error); return }
+                } else {
+                    const { createBorradorReporte } = await import('@/app/actions/reportes')
+                    const result = await createBorradorReporte({
+                        equipo_id: equipoId,
+                        tecnico_principal_id: tecnicoActual.id,
+                        tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                        fecha_inicio: datos.fecha_ejecucion,
+                        hora_entrada: datos.hora_entrada || null,
+                        ciudad: datos.ciudad || null,
+                        solicitado_por: datos.solicitado_por || null,
+                        motivo_visita: datos.motivo_visita || null,
+                        numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                        ubicacion_id: datos.ubicacion_id || null,
+                        ubicacion_detalle: datos.ubicacion_detalle || null,
+                        dispositivo_origen: 'web',
+                    })
+                    if (result.error) { setErrorGlobal(result.error); return }
+                    setReporteId(result.data!.id)
+                }
                 setErrorGlobal(null)
                 setPaso(2)
-            } else {
-                const { createBorradorReporte } = await import('@/app/actions/reportes')
-                const result = await createBorradorReporte({
-                    equipo_id: equipoId,
-                    tecnico_principal_id: tecnicoActual.id,
-                    tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-                    fecha_inicio: datos.fecha_ejecucion,
-                    hora_entrada: datos.hora_entrada || null,
-                    ciudad: datos.ciudad || null,
-                    solicitado_por: datos.solicitado_por || null,
-                    motivo_visita: datos.motivo_visita || null,
-                    numero_reporte_fisico: datos.numero_reporte_fisico || null,
-                    ubicacion_id: datos.ubicacion_id || null,
-                    ubicacion_detalle: datos.ubicacion_detalle || null,
-                    dispositivo_origen: 'web',
-                })
-                if (result.error) { setErrorGlobal(result.error); return }
-                setReporteId(result.data!.id)
+            } catch {
+                // Conexión perdida durante el POST — el borrador ya está en IDB
                 setErrorGlobal(null)
                 setPaso(2)
             }
@@ -1200,23 +1222,28 @@ export default function NuevoReporteWizard() {
 
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
-            const { guardarDetalleReporte } = await import('@/app/actions/reportes')
-            const result = await guardarDetalleReporte({
-                reporte_id: reporteId,
-                diagnostico: datos.diagnostico || null,
-                trabajo_realizado: datos.trabajo_realizado || null,
-                observaciones: null,
-                hora_salida: datos.hora_salida || null,
-                estado_equipo_post: datos.estado_equipo_post as 'operativo' | 'restringido' | 'no_operativo' | 'almacenado' | 'dado_de_baja',
-                actividades: datos.checklist.map((c) => ({
-                    actividad_id: c.actividad_id,
-                    completada: c.completada,
-                    observacion: c.observacion || null,
-                })),
-            })
-            if (result.error) { setErrorGlobal(result.error); return }
-            setErrorGlobal(null)
-            setPaso(3)
+            try {
+                const { guardarDetalleReporte } = await import('@/app/actions/reportes')
+                const result = await guardarDetalleReporte({
+                    reporte_id: reporteId,
+                    diagnostico: datos.diagnostico || null,
+                    trabajo_realizado: datos.trabajo_realizado || null,
+                    observaciones: null,
+                    hora_salida: datos.hora_salida || null,
+                    estado_equipo_post: datos.estado_equipo_post as 'operativo' | 'restringido' | 'no_operativo' | 'almacenado' | 'dado_de_baja',
+                    actividades: datos.checklist.map((c) => ({
+                        actividad_id: c.actividad_id,
+                        completada: c.completada,
+                        observacion: c.observacion || null,
+                    })),
+                })
+                if (result.error) { setErrorGlobal(result.error); return }
+                setErrorGlobal(null)
+                setPaso(3)
+            } catch {
+                setErrorGlobal(null)
+                setPaso(3)
+            }
         })
     }
 
@@ -1249,34 +1276,39 @@ export default function NuevoReporteWizard() {
 
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
-            const { guardarInsumosTecnicos } = await import('@/app/actions/reportes')
-            const result = await guardarInsumosTecnicos({
-                reporte_id: reporteId,
-                insumos_usados: datos.insumos_usados.map((i) => ({
-                    insumo_id: i.insumo_id,
-                    nombre: i.nombre,
-                    cantidad: i.cantidad,
-                    es_nuevo: i.es_nuevo,
-                    observacion: null,
-                })),
-                insumos_requeridos: datos.insumos_requeridos.map((i) => ({
-                    insumo_id: i.insumo_id,
-                    nombre: i.nombre,
-                    cantidad: i.cantidad,
-                    es_nuevo: i.es_nuevo,
-                    urgente: false,
-                    observacion: (i as any).motivo || null,
-                })),
-                accesorios: datos.accesorios.map((a) => ({
-                    descripcion: a.descripcion,
-                    cantidad: a.cantidad,
-                    estado_equipo_contexto: a.estado_equipo_contexto,
-                })),
-                tecnicos_apoyo: datos.tecnicos_apoyo.map((id) => ({ tecnico_id: id })),
-            })
-            if (result.error) { setErrorGlobal(result.error); return }
-            setErrorGlobal(null)
-            setPaso(4)
+            try {
+                const { guardarInsumosTecnicos } = await import('@/app/actions/reportes')
+                const result = await guardarInsumosTecnicos({
+                    reporte_id: reporteId,
+                    insumos_usados: datos.insumos_usados.map((i) => ({
+                        insumo_id: i.insumo_id,
+                        nombre: i.nombre,
+                        cantidad: i.cantidad,
+                        es_nuevo: i.es_nuevo,
+                        observacion: null,
+                    })),
+                    insumos_requeridos: datos.insumos_requeridos.map((i) => ({
+                        insumo_id: i.insumo_id,
+                        nombre: i.nombre,
+                        cantidad: i.cantidad,
+                        es_nuevo: i.es_nuevo,
+                        urgente: false,
+                        observacion: (i as any).motivo || null,
+                    })),
+                    accesorios: datos.accesorios.map((a) => ({
+                        descripcion: a.descripcion,
+                        cantidad: a.cantidad,
+                        estado_equipo_contexto: a.estado_equipo_contexto,
+                    })),
+                    tecnicos_apoyo: datos.tecnicos_apoyo.map((id) => ({ tecnico_id: id })),
+                })
+                if (result.error) { setErrorGlobal(result.error); return }
+                setErrorGlobal(null)
+                setPaso(4)
+            } catch {
+                setErrorGlobal(null)
+                setPaso(4)
+            }
         })
     }
 
