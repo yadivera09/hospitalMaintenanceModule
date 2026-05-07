@@ -82,33 +82,46 @@ export function useOfflineReporte() {
 
     /**
      * Finaliza el reporte.
-     * - Online: delega al servidor (el wizard llama sus propias server actions).
-     *   Devuelve modoOffline = false para que el wizard continúe con su flujo normal.
-     * - Offline: guarda en IndexedDB + encola en sync_queue.
-     *   Devuelve modoOffline = true y el id local para que el wizard muestre confirmación.
+     * - Online: el wizard continúa con su flujo normal (modoOffline: false).
+     * - Offline: actualiza la entrada existente de crash-recovery (o crea una nueva)
+     *   y la encola en sync_queue. Solo esta función añade a sync_queue — guardarPaso
+     *   nunca lo hace.
+     *
+     * @param idLocal ID del borrador creado por guardarPaso(). Si se provee y existe
+     *   en IDB, esa entrada se actualiza en lugar de crear una nueva, evitando duplicados.
      */
     const finalizarReporte = useCallback(
-        async (datos: DatosReporte): Promise<OfflineReporteResult> => {
+        async (datos: DatosReporte, idLocal?: string): Promise<OfflineReporteResult> => {
             if (isOnline) {
-                // El wizard maneja el envío al servidor directamente.
-                // Solo generamos un id placeholder; el id real viene del servidor.
                 return { id: '', modoOffline: false }
             }
 
-            const id = generarIdLocal()
             const now = new Date().toISOString()
+            const db = await import('@/lib/offline/db')
+            const id = idLocal ?? generarIdLocal()
+            const existing = idLocal ? await db.getReporteBorradorById(idLocal) : undefined
 
-            await guardarReporteBorrador({
-                ...datos,
-                id,
-                estado: 'pendiente_sync',
-                motivo_error: null,
-                created_at: now,
-                updated_at: now,
-            })
+            if (existing) {
+                await guardarReporteBorrador({
+                    ...existing,
+                    ...datos,
+                    id,
+                    estado: 'pendiente_sync',
+                    motivo_error: null,
+                    updated_at: now,
+                })
+            } else {
+                await guardarReporteBorrador({
+                    ...datos,
+                    id,
+                    estado: 'pendiente_sync',
+                    motivo_error: null,
+                    created_at: now,
+                    updated_at: now,
+                })
+            }
 
             await agregarASyncQueue(id)
-
             return { id, modoOffline: true }
         },
         [isOnline],

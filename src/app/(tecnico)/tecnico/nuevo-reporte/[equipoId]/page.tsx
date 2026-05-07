@@ -1320,7 +1320,7 @@ export default function NuevoReporteWizard() {
                 })),
                 tecnicos_apoyo: datos.tecnicos_apoyo,
                 firma_base64: base64Tecnico,
-            })
+            }, localIdRef.current)
             setErrorGlobal(null)
             router.push('/tecnico/mis-reportes')
             return

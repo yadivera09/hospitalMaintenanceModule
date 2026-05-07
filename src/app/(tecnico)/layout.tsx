@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const router = useRouter()
-    const [tecnico, setTecnico] = useState<{ nombre: string; apellido: string } | null>(null)
+    const [tecnico, setTecnico] = useState<{ id: string; nombre: string; apellido: string } | null>(null)
     const [loading, setLoading] = useState(true)
 
     // Registrar Service Worker para soporte offline
@@ -47,15 +47,20 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
             // Buscar en la tabla tecnicos usando el email
             const { data: tecnicoData } = await supabase
                 .from('tecnicos')
-                .select('nombre, apellido')
+                .select('id, nombre, apellido')
                 .eq('email', session.user.email)
                 .single()
 
             if (tecnicoData) {
                 setTecnico(tecnicoData)
+                // Precargar equipos y catálogos en IDB para uso offline (background)
+                import('@/lib/offline/preload').then(({ precargarDatosOffline }) => {
+                    precargarDatosOffline(tecnicoData.id).catch(() => {})
+                })
             } else {
-                // Fallback: usar metadata de auth
+                // Fallback: usar metadata de auth (sin id real, no se puede precargar)
                 setTecnico({
+                    id: '',
                     nombre: session.user.user_metadata?.nombre || 'Técnico',
                     apellido: session.user.user_metadata?.apellido || ''
                 })

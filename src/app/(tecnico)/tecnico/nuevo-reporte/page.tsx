@@ -6,7 +6,7 @@
  */
 import { useState, useMemo, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, AlertTriangle, ChevronRight, Tag, Building2, Calendar, Play, FileEdit, Trash2, CheckCircle2 } from 'lucide-react'
+import { Search, AlertTriangle, ChevronRight, Tag, Building2, Calendar, Play, FileEdit, Trash2, CheckCircle2, WifiOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +31,7 @@ export default function BuscarEquipoPage() {
     // Estado de equipos reales
     const [equipos, setEquipos] = useState<EquipoConCliente[]>([])
     const [cargandoEquipos, setCargandoEquipos] = useState(true)
+    const [modoOffline, setModoOffline] = useState(false)
 
     // Estado de selección y borrador
     const [seleccionado, setSeleccionado] = useState<EquipoConCliente | null>(null)
@@ -45,11 +46,27 @@ export default function BuscarEquipoPage() {
     useEffect(() => {
         async function fetchEquipos() {
             try {
-                // Solo traemos equipos activos y con contrato vigente
                 const res = await getEquipos({ activo: true, soloConContrato: true })
-                if (res.data) setEquipos(res.data)
-            } catch (err) {
-                console.error(err)
+                if (res.data) {
+                    const equiposData = res.data
+                    setEquipos(equiposData)
+                    // Cache para offline — fire and forget
+                    import('@/lib/offline/db').then(({ guardarCatalogo }) => {
+                        guardarCatalogo('equipos_busqueda', equiposData).catch(() => {})
+                    })
+                }
+            } catch {
+                // Sin red: intentar caché de IDB
+                try {
+                    const { getCatalogo } = await import('@/lib/offline/db')
+                    const cached = await getCatalogo<EquipoConCliente[]>('equipos_busqueda')
+                    if (cached && cached.length > 0) {
+                        setEquipos(cached)
+                    }
+                } catch {
+                    // IDB no disponible — equipos queda vacío
+                }
+                setModoOffline(true)
             } finally {
                 setCargandoEquipos(false)
             }
@@ -57,12 +74,17 @@ export default function BuscarEquipoPage() {
         fetchEquipos()
     }, [])
 
+    // Detectar si la app va offline mientras la página está abierta
     useEffect(() => {
-        if (!cargandoEquipos && equipos.length === 0 && query.trim()) {
-            console.log('[BuscarEquipo] No se encontraron equipos para:', query)
-            console.log('[BuscarEquipo] Total equipos en estado:', equipos.length)
+        function onOffline() { setModoOffline(true) }
+        function onOnline() { setModoOffline(false) }
+        window.addEventListener('offline', onOffline)
+        window.addEventListener('online', onOnline)
+        return () => {
+            window.removeEventListener('offline', onOffline)
+            window.removeEventListener('online', onOnline)
         }
-    }, [equipos, cargandoEquipos, query])
+    }, [])
 
     const resultados = useMemo(() => {
         const q = query.trim().toLowerCase()
@@ -85,10 +107,14 @@ export default function BuscarEquipoPage() {
         setConfirmandoEliminar(false)
         setBorradorExistente(null)
         setErrorBorrador(null)
-        setCargandoBorrador(true)
 
-        // Consultar a Supabase si existe un borrador para este equipo 
-        // y el técnico actualmente logueado
+        // Sin conexión: mostrar card básica y navegar directo al wizard
+        if (!navigator.onLine) {
+            setCargandoBorrador(false)
+            return
+        }
+
+        setCargandoBorrador(true)
         try {
             const [resBorrador, resUltimo] = await Promise.all([
                 getBorradorReporte(e.id),
@@ -102,7 +128,7 @@ export default function BuscarEquipoPage() {
             }
 
             setSeleccionado(prev => prev ? { ...prev, fecha_ultimo_mantenimiento: resUltimo.data ?? null } : null)
-        } catch (err) {
+        } catch {
             setErrorBorrador('Error de red al consultar datos')
         } finally {
             setCargandoBorrador(false)
@@ -130,6 +156,17 @@ export default function BuscarEquipoPage() {
                 <h1 className="text-lg font-bold text-[#0F172A]">Nuevo reporte</h1>
                 <p className="text-xs text-[#94A3B8]">Busca el equipo a intervenir</p>
             </div>
+
+            {modoOffline && (
+                <div className="flex items-center gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3">
+                    <WifiOff className="h-4 w-4 text-amber-600 shrink-0" />
+                    <p className="text-xs text-amber-800 font-medium">
+                        {equipos.length > 0
+                            ? 'Sin conexión. Mostrando equipos guardados localmente.'
+                            : 'Sin conexión y sin caché disponible. Conéctate para ver los equipos.'}
+                    </p>
+                </div>
+            )}
 
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#94A3B8] pointer-events-none" />
