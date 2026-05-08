@@ -53,13 +53,17 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
 
             if (tecnicoData) {
                 setTecnico(tecnicoData)
-                // Cachear datos del técnico en IDB para resolución offline
+
+                // Cachear técnico actual
                 import('@/lib/offline/db').then(({ guardarCatalogo }) => {
                     guardarCatalogo('tecnico_actual', tecnicoData).catch(() => {})
                 })
-                // Precargar equipos y catálogos en IDB para uso offline (background)
-                import('@/lib/offline/preload').then(({ precargarDatosOffline }) => {
-                    precargarDatosOffline(tecnicoData.id).catch(() => {})
+
+                // Precargar datos offline — refrescar TTL vencido, luego llenar lo que falte
+                import('@/lib/offline/preload').then(({ precargarDatosOffline, refrescarCacheVencida }) => {
+                    refrescarCacheVencida(tecnicoData.id)
+                        .then(() => precargarDatosOffline(tecnicoData.id))
+                        .catch((err) => console.warn('[layout] preload falló:', err))
                 })
             } else {
                 // Fallback: usar metadata de auth (sin id real, no se puede precargar)

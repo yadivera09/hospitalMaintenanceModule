@@ -2,7 +2,6 @@ import {
     guardarCatalogo,
     guardarEquiposEnCache,
     getCatalogo,
-    countEquiposEnCache,
 } from './db'
 import type { Equipo } from '@/types'
 
@@ -36,7 +35,6 @@ export async function precargarDatosOffline(tecnicoId: string): Promise<void> {
 }
 
 async function precargarCatalogos(): Promise<void> {
-    // Verificar si algún catálogo ya tiene caché válida para evitar la petición
     const yaEnCache = await getCatalogo('tipos_mantenimiento')
     if (yaEnCache) return
 
@@ -60,9 +58,9 @@ async function precargarCatalogos(): Promise<void> {
 }
 
 async function precargarEquipos(tecnicoId: string): Promise<void> {
-    // Verificar TTL: si hay equipos cacheados vigentes, saltar
-    const count = await countEquiposEnCache()
-    if (count > 0) return
+    const { getAllEquiposFromCache } = await import('./db')
+    const equiposVigentes = await getAllEquiposFromCache()
+    if (equiposVigentes.length > 0) return
 
     try {
         const datos = await fetchJSON<{ equipos: Equipo[] }>(
@@ -83,13 +81,14 @@ async function precargarEquipos(tecnicoId: string): Promise<void> {
 export async function refrescarCacheVencida(tecnicoId: string): Promise<void> {
     if (!navigator.onLine) return
 
+    const { getAllEquiposFromCache } = await import('./db')
+
     await Promise.allSettled([
-        // getCatalogo devuelve null si TTL venció → precargarCatalogos lo recargará
         getCatalogo('tipos_mantenimiento').then(v => {
             if (!v) return precargarCatalogos()
         }),
-        countEquiposEnCache().then(count => {
-            if (count === 0) return precargarEquipos(tecnicoId)
+        getAllEquiposFromCache().then(equipos => {
+            if (equipos.length === 0) return precargarEquipos(tecnicoId)
         }),
     ])
 }
