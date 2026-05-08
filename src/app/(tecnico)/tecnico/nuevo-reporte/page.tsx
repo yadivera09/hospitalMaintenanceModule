@@ -32,7 +32,7 @@ export default function BuscarEquipoPage() {
 
     // Estado de equipos reales
     const [equipos, setEquipos] = useState<EquipoConCliente[]>([])
-    const [cargandoEquipos, setCargandoEquipos] = useState(true)
+    const [cargandoEquipos, setCargandoEquipos] = useState(isOnline)
     // modoOffline: true cuando isOnline=false O cuando el fetch falla pese a isOnline=true
     const [modoOffline, setModoOffline] = useState(!isOnline)
 
@@ -131,9 +131,15 @@ export default function BuscarEquipoPage() {
 
         setCargandoBorrador(true)
         try {
-            const [resBorrador, resUltimo] = await Promise.all([
-                getBorradorReporte(e.id),
-                getUltimoMantenimientoPreventivo(e.id)
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('timeout')), 3000)
+            )
+            const [resBorrador, resUltimo] = await Promise.race([
+                Promise.all([
+                    getBorradorReporte(e.id),
+                    getUltimoMantenimientoPreventivo(e.id)
+                ]),
+                timeout,
             ])
 
             if (resBorrador.error) {

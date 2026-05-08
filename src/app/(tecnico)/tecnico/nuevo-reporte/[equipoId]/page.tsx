@@ -946,31 +946,30 @@ export default function NuevoReporteWizard() {
             console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
-                // ── IDB-first: resolver datos críticos sin tocar la red ────────
-                // tecnico_actual se guarda en layout.tsx cada vez que el técnico
-                // carga online; tipos_mantenimiento e insumos vienen del preload.
-                {
-                    const { buscarEquipoEnCache, getCatalogo } = await import('@/lib/offline/db')
-                    const [equipoIDB, tecnicoIDB, tiposIDB, insumosIDB] = await Promise.allSettled([
-                        buscarEquipoEnCache(equipoId),
-                        getCatalogo<TecnicoData>('tecnico_actual'),
-                        getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento'),
-                        getCatalogo<Insumo[]>('insumos'),
-                    ])
-                    if (equipoIDB.status === 'fulfilled' && equipoIDB.value) setEquipo(equipoIDB.value as any)
-                    if (tecnicoIDB.status === 'fulfilled' && tecnicoIDB.value) setTecnicoActual(tecnicoIDB.value)
-                    if (tiposIDB.status === 'fulfilled' && tiposIDB.value) setTiposMantenimiento(tiposIDB.value)
-                    if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
-                }
+                // ── IDB-first ────────────────────────────────────────────────
+                const { buscarEquipoEnCache, getCatalogo } = await import('@/lib/offline/db')
+                const [equipoIDB, tecnicoIDB, tiposIDB, insumosIDB] = await Promise.allSettled([
+                    buscarEquipoEnCache(equipoId),
+                    getCatalogo<TecnicoData>('tecnico_actual'),
+                    getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento'),
+                    getCatalogo<Insumo[]>('insumos'),
+                ])
+                if (equipoIDB.status === 'fulfilled' && equipoIDB.value) setEquipo(equipoIDB.value as any)
+                if (tecnicoIDB.status === 'fulfilled' && tecnicoIDB.value) setTecnicoActual(tecnicoIDB.value)
+                if (tiposIDB.status === 'fulfilled' && tiposIDB.value) setTiposMantenimiento(tiposIDB.value)
+                if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
 
-                // Sin conexión: los datos de IDB son todo lo que tenemos — el
-                // wizard funciona con ellos y sincroniza cuando haya red.
+                // Sin conexión: si tenemos el equipo en IDB, el wizard funciona completo.
+                // Si no está en IDB, mostrar error explicativo — NO redirigir.
                 if (!isOnline) {
+                    if (equipoIDB.status !== 'fulfilled' || !equipoIDB.value) {
+                        setErrorGlobal('Sin conexión y el equipo no está en caché local. Abre la app con conexión al menos una vez.')
+                    }
                     setCargandoContexto(false)
-                    return
+                    return  // salir aquí, nunca llegar al fetch de Supabase
                 }
 
-                // Cargar equipo primero con manejo de error temprano
+                // A partir de aquí: solo se ejecuta si isOnline === true
                 const eqRes = await getEquipoById(equipoId)
 
                 if (eqRes.error || !eqRes.data) {
@@ -1363,72 +1362,71 @@ export default function NuevoReporteWizard() {
                 : firmaClienteRef.current.toDataURL('image/png')
         }
 
-        // SIEMPRE guardamos en IDB para asegurar atomicidad (Atomic Firma/Envío)
-        await finalizarReporte({
-            equipo_id: equipoId,
-            tecnico_principal_id: tecnicoActual?.id || '',
-            tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-            fecha_inicio: datos.fecha_ejecucion,
-            hora_entrada: datos.hora_entrada || null,
-            hora_salida: datos.hora_salida || null,
-            ciudad: datos.ciudad || null,
-            solicitado_por: datos.solicitado_por || null,
-            motivo_visita: datos.motivo_visita || null,
-            numero_reporte_fisico: datos.numero_reporte_fisico || null,
-            dispositivo_origen: 'web',
-            diagnostico: datos.diagnostico || null,
-            trabajo_realizado: datos.trabajo_realizado || null,
-            estado_equipo_post: datos.estado_equipo_post || null,
-            actividades: datos.checklist.map((c) => ({
-                actividad_id: c.actividad_id,
-                completada: c.completada,
-                observacion: c.observacion || null,
-            })),
-            insumos_usados: datos.insumos_usados.map((i) => ({
-                insumo_id: i.insumo_id,
-                cantidad: i.cantidad,
-                observacion: null,
-            })),
-            insumos_requeridos: datos.insumos_requeridos.map((i) => ({
-                insumo_id: i.insumo_id,
-                cantidad: i.cantidad,
-                urgente: false,
-                observacion: (i as any).motivo || null,
-            })),
-            accesorios: datos.accesorios.map((a) => ({
-                descripcion: a.descripcion,
-                cantidad: a.cantidad,
-            })),
-            tecnicos_apoyo: datos.tecnicos_apoyo,
-            firma_base64: base64Tecnico,
-            firma_cliente_base64: base64Cliente,
-            nombre_firmante: base64Cliente ? (nombreFirmante || 'Cliente') : null,
-            reporte_server_id: reporteId, // Pasa el ID del servidor si se generó online
-        }, localIdRef.current)
+        // Guardar en IDB — offline o online, siempre
+        try {
+            await finalizarReporte({
+                equipo_id: equipoId,
+                tecnico_principal_id: tecnicoActual?.id || '',
+                tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                fecha_inicio: datos.fecha_ejecucion,
+                hora_entrada: datos.hora_entrada || null,
+                hora_salida: datos.hora_salida || null,
+                ciudad: datos.ciudad || null,
+                solicitado_por: datos.solicitado_por || null,
+                motivo_visita: datos.motivo_visita || null,
+                numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                dispositivo_origen: 'web',
+                diagnostico: datos.diagnostico || null,
+                trabajo_realizado: datos.trabajo_realizado || null,
+                estado_equipo_post: datos.estado_equipo_post || null,
+                actividades: datos.checklist.map((c) => ({
+                    actividad_id: c.actividad_id,
+                    completada: c.completada,
+                    observacion: c.observacion || null,
+                })),
+                insumos_usados: datos.insumos_usados.map((i) => ({
+                    insumo_id: i.insumo_id,
+                    cantidad: i.cantidad,
+                    observacion: null,
+                })),
+                insumos_requeridos: datos.insumos_requeridos.map((i) => ({
+                    insumo_id: i.insumo_id,
+                    cantidad: i.cantidad,
+                    urgente: false,
+                    observacion: (i as any).motivo || null,
+                })),
+                accesorios: datos.accesorios.map((a) => ({
+                    descripcion: a.descripcion,
+                    cantidad: a.cantidad,
+                })),
+                tecnicos_apoyo: datos.tecnicos_apoyo,
+                firma_base64: base64Tecnico,
+                firma_cliente_base64: base64Cliente,
+                nombre_firmante: base64Cliente ? (nombreFirmante || 'Cliente') : null,
+                reporte_server_id: reporteId,
+            }, localIdRef.current)
+        } catch (e) {
+            console.error('[handleFirmarEnviar] Error guardando en IDB:', e)
+            // Continuar de todas formas — el técnico no debe quedar bloqueado
+        }
 
         setErrorGlobal(null)
-        
+
         if (!isOnline) {
             setOfflineSuccess(true)
+            // El countdown en useEffect ya maneja router.push('/tecnico/dashboard')
             return
         }
 
-        // Con conexión: Intentar procesar la cola de sincronización inmediatamente
-        // Esto envía la petición atómica al servidor en segundo plano a través del sync_queue.
+        // Online: sync en background + redirect
         try {
             const { sync } = await import('@/lib/offline/sync')
-            // trigger in background to not block UI
             sync().catch(console.error)
         } catch(e) {
             console.error('Error triggering sync', e)
         }
 
-        if (base64Cliente) {
-            router.push('/tecnico/mis-reportes?nueva=1')
-        } else {
-            alert('Firma del técnico guardada localmente y encolada. El reporte queda en espera de firma del cliente.')
-            router.push('/tecnico/mis-reportes')
-        }
+        router.push(base64Cliente ? '/tecnico/mis-reportes?nueva=1' : '/tecnico/mis-reportes')
     }
 
     async function handleGuardarBorrador() {

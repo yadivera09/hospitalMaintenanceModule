@@ -35,12 +35,18 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
         if (!reporte.reporte_server_id) {
             try {
                 const supabase = createClient()
+                const fechaDia = reporte.fecha_inicio.split('T')[0]
+                const nextDay = new Date(fechaDia)
+                nextDay.setDate(nextDay.getDate() + 1)
+                const nextDayStr = nextDay.toISOString().split('T')[0]
+
                 const { data: duplicado } = await supabase
                     .from('reportes_mantenimiento')
                     .select('id')
                     .eq('equipo_id', reporte.equipo_id)
                     .eq('tecnico_principal_id', reporte.tecnico_principal_id)
-                    .eq('fecha_inicio', reporte.fecha_inicio)
+                    .gte('fecha_inicio', fechaDia)
+                    .lt('fecha_inicio', nextDayStr)
                     .maybeSingle()
 
                 if (duplicado) {
