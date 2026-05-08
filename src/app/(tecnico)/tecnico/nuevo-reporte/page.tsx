@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getEquipos, type EquipoConCliente } from '@/app/actions/equipos'
 import { getBorradorReporte, eliminarBorradorReporte, getUltimoMantenimientoPreventivo } from '@/app/actions/reportes'
+import { useOfflineStatus } from '@/hooks/useOfflineStatus'
 
 interface DraftExistente { id: string; fecha_inicio: string }
 
@@ -27,11 +28,13 @@ function formatFecha(iso: string) {
 export default function BuscarEquipoPage() {
     const router = useRouter()
     const [query, setQuery] = useState('')
+    const { isOnline } = useOfflineStatus()
 
     // Estado de equipos reales
     const [equipos, setEquipos] = useState<EquipoConCliente[]>([])
     const [cargandoEquipos, setCargandoEquipos] = useState(true)
-    const [modoOffline, setModoOffline] = useState(false)
+    // modoOffline: true cuando isOnline=false O cuando el fetch falla pese a isOnline=true
+    const [modoOffline, setModoOffline] = useState(!isOnline)
 
     // Estado de selección y borrador
     const [seleccionado, setSeleccionado] = useState<EquipoConCliente | null>(null)
@@ -42,10 +45,11 @@ export default function BuscarEquipoPage() {
     const [confirmandoEliminar, setConfirmandoEliminar] = useState(false)
     const [isPending, startTransition] = useTransition()
 
-    // Cargar equipos al montar
+    // Cargar equipos al montar; re-ejecutar cuando cambia isOnline para refrescar al reconectar
     useEffect(() => {
         async function fetchEquipos() {
-            if (!navigator.onLine) {
+            // Offline confirmado: leer IDB directo, sin tocar la red
+            if (!isOnline) {
                 setModoOffline(true)
                 try {
                     const { getAllEquiposFromCache } = await import('@/lib/offline/db')
@@ -54,24 +58,31 @@ export default function BuscarEquipoPage() {
                         setEquipos(cached as EquipoConCliente[])
                     }
                 } catch {
-                    // IDB no disponible — equipos queda vacío
+                    // IDB no disponible
                 }
                 setCargandoEquipos(false)
                 return
             }
 
+            // Online: race contra timeout de 2.5s para cubrir el caso
+            // navigator.onLine=true pero sin internet real (WiFi sin salida)
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('timeout')), 2500)
+            )
             try {
-                const res = await getEquipos({ activo: true, soloConContrato: true })
+                const res = await Promise.race([
+                    getEquipos({ activo: true, soloConContrato: true }),
+                    timeoutPromise,
+                ])
                 if (res.data) {
                     const equiposData = res.data
                     setEquipos(equiposData)
-                    // Cache para offline — actualizar equipos_cache
                     import('@/lib/offline/db').then(({ guardarEquiposEnCache }) => {
                         guardarEquiposEnCache(equiposData).catch(() => {})
                     })
                 }
             } catch {
-                // Si falla la red a pesar de onLine: intentar caché de IDB
+                // Timeout o error de red: caer a IDB sin importar la causa
                 setModoOffline(true)
                 try {
                     const { getAllEquiposFromCache } = await import('@/lib/offline/db')
@@ -87,19 +98,7 @@ export default function BuscarEquipoPage() {
             }
         }
         fetchEquipos()
-    }, [])
-
-    // Detectar si la app va offline mientras la página está abierta
-    useEffect(() => {
-        function onOffline() { setModoOffline(true) }
-        function onOnline() { setModoOffline(false) }
-        window.addEventListener('offline', onOffline)
-        window.addEventListener('online', onOnline)
-        return () => {
-            window.removeEventListener('offline', onOffline)
-            window.removeEventListener('online', onOnline)
-        }
-    }, [])
+    }, [isOnline])
 
     const resultados = useMemo(() => {
         const q = query.trim().toLowerCase()
@@ -125,7 +124,7 @@ export default function BuscarEquipoPage() {
         setErrorBorrador(null)
 
         // Sin conexión: mostrar card básica y navegar directo al wizard
-        if (!navigator.onLine) {
+        if (!isOnline) {
             setCargandoBorrador(false)
             return
         }

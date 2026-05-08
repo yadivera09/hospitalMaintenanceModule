@@ -642,7 +642,7 @@ function Paso3({ datos, onChange, insumos, readOnly, errors }: { datos: WizardDa
 }
 
 // ── PASO 4 — Revisión + Firma
-function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, setFirmaSaved, readOnly, errors, tiposMantenimiento, onFirmarEnviar, offlineSuccess, onNavigateToReports }: {
+function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, setFirmaSaved, readOnly, errors, tiposMantenimiento, onFirmarEnviar, offlineSuccess, onNavigateToReports, countdown }: {
     datos: WizardDatos;
     equipo: any;
     tecnicos: TecnicoData[];
@@ -656,6 +656,7 @@ function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, s
     onFirmarEnviar: () => void;
     offlineSuccess?: boolean;
     onNavigateToReports?: () => void;
+    countdown?: number;
 }) {
 
     const tipoNombre = tiposMantenimiento.find((t) => t.id === datos.tipo_mantenimiento_id)?.nombre ?? '—'
@@ -769,9 +770,14 @@ function Paso4({ datos, equipo, tecnicos, tecnicoActual, firmaRef, firmaSaved, s
                                 <p className="text-xs text-green-600">
                                     Tu reporte se enviará automáticamente cuando tengas conexión.
                                 </p>
+                                {countdown !== undefined && countdown > 0 && (
+                                    <p className="text-[11px] text-green-500">
+                                        Redirigiendo al dashboard en {countdown}…
+                                    </p>
+                                )}
                                 <Button onClick={onNavigateToReports}
                                     className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-10">
-                                    Ir a mis reportes
+                                    Ir al dashboard
                                 </Button>
                             </div>
                         ) : (
@@ -864,6 +870,24 @@ export default function NuevoReporteWizard() {
     // ── Bandera modo Solo-Avanzar (no permite Volver cuando ya no es borrador)
     const [soloAvanzar, setSoloAvanzar] = useState(false)
 
+    // ── Countdown post-firma offline: muestra 3→2→1 y redirige al dashboard
+    const [redirectCountdown, setRedirectCountdown] = useState(3)
+    useEffect(() => {
+        if (!offlineSuccess) return
+        setRedirectCountdown(3)
+        const interval = setInterval(() => {
+            setRedirectCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval)
+                    router.push('/tecnico/dashboard')
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [offlineSuccess, router])
+
     // ── Nombre del firmante cliente (para PASO 5)
     const [nombreFirmante, setNombreFirmante] = useState('')
 
@@ -922,6 +946,29 @@ export default function NuevoReporteWizard() {
             console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
+                // ── IDB-first: resolver datos críticos sin tocar la red ────────
+                // tecnico_actual se guarda en layout.tsx cada vez que el técnico
+                // carga online; tipos_mantenimiento e insumos vienen del preload.
+                {
+                    const { buscarEquipoEnCache, getCatalogo } = await import('@/lib/offline/db')
+                    const [equipoIDB, tecnicoIDB, tiposIDB, insumosIDB] = await Promise.allSettled([
+                        buscarEquipoEnCache(equipoId),
+                        getCatalogo<TecnicoData>('tecnico_actual'),
+                        getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento'),
+                        getCatalogo<Insumo[]>('insumos'),
+                    ])
+                    if (equipoIDB.status === 'fulfilled' && equipoIDB.value) setEquipo(equipoIDB.value as any)
+                    if (tecnicoIDB.status === 'fulfilled' && tecnicoIDB.value) setTecnicoActual(tecnicoIDB.value)
+                    if (tiposIDB.status === 'fulfilled' && tiposIDB.value) setTiposMantenimiento(tiposIDB.value)
+                    if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
+                }
+
+                // Sin conexión: los datos de IDB son todo lo que tenemos — el
+                // wizard funciona con ellos y sincroniza cuando haya red.
+                if (!isOnline) {
+                    setCargandoContexto(false)
+                    return
+                }
 
                 // Cargar equipo primero con manejo de error temprano
                 const eqRes = await getEquipoById(equipoId)
@@ -1136,43 +1183,50 @@ export default function NuevoReporteWizard() {
         }
 
         startTransition(async () => {
-            if (reporteId) {
-                const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
-                const result = await actualizarBorradorReporte(reporteId, {
-                    equipo_id: equipoId,
-                    tecnico_principal_id: tecnicoActual.id,
-                    tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-                    fecha_inicio: datos.fecha_ejecucion,
-                    hora_entrada: datos.hora_entrada || null,
-                    ciudad: datos.ciudad || null,
-                    solicitado_por: datos.solicitado_por || null,
-                    motivo_visita: datos.motivo_visita || null,
-                    numero_reporte_fisico: datos.numero_reporte_fisico || null,
-                    ubicacion_id: datos.ubicacion_id || null,
-                    ubicacion_detalle: datos.ubicacion_detalle || null,
-                    dispositivo_origen: 'web',
-                })
-                if (result.error) { setErrorGlobal(result.error); return }
-                setErrorGlobal(null)
-                setPaso(2)
-            } else {
-                const { createBorradorReporte } = await import('@/app/actions/reportes')
-                const result = await createBorradorReporte({
-                    equipo_id: equipoId,
-                    tecnico_principal_id: tecnicoActual.id,
-                    tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
-                    fecha_inicio: datos.fecha_ejecucion,
-                    hora_entrada: datos.hora_entrada || null,
-                    ciudad: datos.ciudad || null,
-                    solicitado_por: datos.solicitado_por || null,
-                    motivo_visita: datos.motivo_visita || null,
-                    numero_reporte_fisico: datos.numero_reporte_fisico || null,
-                    ubicacion_id: datos.ubicacion_id || null,
-                    ubicacion_detalle: datos.ubicacion_detalle || null,
-                    dispositivo_origen: 'web',
-                })
-                if (result.error) { setErrorGlobal(result.error); return }
-                setReporteId(result.data!.id)
+            try {
+                if (reporteId) {
+                    const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
+                    const result = await actualizarBorradorReporte(reporteId, {
+                        equipo_id: equipoId,
+                        tecnico_principal_id: tecnicoActual.id,
+                        tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                        fecha_inicio: datos.fecha_ejecucion,
+                        hora_entrada: datos.hora_entrada || null,
+                        ciudad: datos.ciudad || null,
+                        solicitado_por: datos.solicitado_por || null,
+                        motivo_visita: datos.motivo_visita || null,
+                        numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                        ubicacion_id: datos.ubicacion_id || null,
+                        ubicacion_detalle: datos.ubicacion_detalle || null,
+                        dispositivo_origen: 'web',
+                    })
+                    if (result.error) { setErrorGlobal(result.error); return }
+                    setErrorGlobal(null)
+                    setPaso(2)
+                } else {
+                    const { createBorradorReporte } = await import('@/app/actions/reportes')
+                    const result = await createBorradorReporte({
+                        equipo_id: equipoId,
+                        tecnico_principal_id: tecnicoActual.id,
+                        tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
+                        fecha_inicio: datos.fecha_ejecucion,
+                        hora_entrada: datos.hora_entrada || null,
+                        ciudad: datos.ciudad || null,
+                        solicitado_por: datos.solicitado_por || null,
+                        motivo_visita: datos.motivo_visita || null,
+                        numero_reporte_fisico: datos.numero_reporte_fisico || null,
+                        ubicacion_id: datos.ubicacion_id || null,
+                        ubicacion_detalle: datos.ubicacion_detalle || null,
+                        dispositivo_origen: 'web',
+                    })
+                    if (result.error) { setErrorGlobal(result.error); return }
+                    setReporteId(result.data!.id)
+                    setErrorGlobal(null)
+                    setPaso(2)
+                }
+            } catch {
+                // Red perdida mid-flight — IDB ya tiene el borrador, avanzar
+                console.error('[handleAvanzarDesdePaso1] error de red, avanzando con IDB')
                 setErrorGlobal(null)
                 setPaso(2)
             }
@@ -1630,7 +1684,8 @@ export default function NuevoReporteWizard() {
                         tiposMantenimiento={tiposMantenimiento}
                         onFirmarEnviar={handleSiguiente}
                         offlineSuccess={offlineSuccess}
-                        onNavigateToReports={() => router.push('/tecnico/mis-reportes')}
+                        onNavigateToReports={() => router.push('/tecnico/dashboard')}
+                        countdown={redirectCountdown}
                     />
                 )}
             </div>

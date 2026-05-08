@@ -53,6 +53,10 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
 
             if (tecnicoData) {
                 setTecnico(tecnicoData)
+                // Cachear datos del técnico en IDB para resolución offline
+                import('@/lib/offline/db').then(({ guardarCatalogo }) => {
+                    guardarCatalogo('tecnico_actual', tecnicoData).catch(() => {})
+                })
                 // Precargar equipos y catálogos en IDB para uso offline (background)
                 import('@/lib/offline/preload').then(({ precargarDatosOffline }) => {
                     precargarDatosOffline(tecnicoData.id).catch(() => {})
