@@ -960,10 +960,21 @@ export default function NuevoReporteWizard() {
                 if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
 
                 // Sin conexión: si tenemos el equipo en IDB, el wizard funciona completo.
-                // Si no está en IDB, mostrar error explicativo — NO redirigir.
+                // Si no está en IDB, intentar fallback a todos los equipos cacheados.
                 if (!isOnline) {
                     if (equipoIDB.status !== 'fulfilled' || !equipoIDB.value) {
-                        setErrorGlobal('Sin conexión y el equipo no está en caché local. Abre la app con conexión al menos una vez.')
+                        try {
+                            const { getAllEquiposFromCache } = await import('@/lib/offline/db')
+                            const todos = await getAllEquiposFromCache()
+                            const encontrado = todos.find(e => e.id === equipoId)
+                            if (encontrado) {
+                                setEquipo(encontrado as any)
+                            } else {
+                                setErrorGlobal('Equipo no disponible offline. Abre la app con conexión para cachear los equipos.')
+                            }
+                        } catch {
+                            setErrorGlobal('Error al leer el caché local.')
+                        }
                     }
                     setCargandoContexto(false)
                     return  // salir aquí, nunca llegar al fetch de Supabase
@@ -1518,8 +1529,17 @@ export default function NuevoReporteWizard() {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
                 <AlertTriangle className="h-10 w-10 text-amber-400" />
-                <p className="text-sm font-semibold text-[#0F172A]">Equipo no encontrado</p>
-                <Button variant="outline" onClick={() => router.push('/tecnico/nuevo-reporte')}>Volver</Button>
+                <p className="text-sm font-semibold text-[#0F172A]">
+                    {errorGlobal ?? 'Equipo no disponible offline'}
+                </p>
+                <p className="text-xs text-[#94A3B8] max-w-xs">
+                    {!isOnline
+                        ? 'Abre la app con conexión al menos una vez para cachear este equipo.'
+                        : 'El equipo no existe o no tiene contrato vigente.'}
+                </p>
+                <Button variant="outline" onClick={() => router.push('/tecnico/nuevo-reporte')}>
+                    Cambiar equipo
+                </Button>
             </div>
         )
     }
