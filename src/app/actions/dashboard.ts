@@ -8,6 +8,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 
 export interface DashboardStats {
     equiposActivos: number
@@ -29,6 +31,10 @@ export interface ActividadReciente {
  * Obtiene las 4 KPIs del dashboard admin de forma paralela.
  */
 export async function getDashboardStats(): Promise<{ data: DashboardStats; error: null } | { data: null; error: string }> {
+    if (!await requirePermiso([MODULO.DASHBOARD, PERMISO.VER])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -77,6 +83,10 @@ export async function getDashboardStats(): Promise<{ data: DashboardStats; error
  * JOIN: equipos (codigo_mh), tecnicos (nombre+apellido), tipos_mantenimiento (nombre)
  */
 export async function getActividadReciente(): Promise<{ data: ActividadReciente[]; error: null } | { data: null; error: string }> {
+    if (!await requirePermiso([MODULO.DASHBOARD, PERMISO.VER])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         // Admin client para evitar restricciones RLS sobre la tabla tecnicos
         const supabase = createAdminClient()

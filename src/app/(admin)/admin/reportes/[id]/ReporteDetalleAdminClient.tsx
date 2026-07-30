@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { ESTADO_REPORTE_CFG } from '@/components/admin/reportes/ReportesTable'
 import { anularReporte } from '@/app/actions/reportes'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { EstadoReporte } from '@/types'
 
 function formatFechaHora(iso: string) {
@@ -73,11 +75,15 @@ function FichaFila({ label, children }: { label: string; children: React.ReactNo
 }
 
 function SeccionHeader({ reporte, onAnularClick }: { reporte: any; onAnularClick: () => void }) {
+    const puede = usePuede()
     const estadoCfg = ESTADO_REPORTE_CFG[reporte.estado_reporte as EstadoReporte] ?? {
         label: reporte.estado_reporte ?? '—',
         className: 'bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0]',
     }
-    const puedeAnular = reporte.estado_reporte === 'en_progreso' || reporte.estado_reporte === 'pendiente_firma_cliente'
+    // Dos condiciones distintas: que el estado lo admita y que el usuario
+    // tenga el permiso 'anular', que es propio y no se deriva de 'editar'.
+    const estadoAnulable = reporte.estado_reporte === 'en_progreso' || reporte.estado_reporte === 'pendiente_firma_cliente'
+    const puedeAnular = estadoAnulable && puede(MODULO.REPORTES, PERMISO.ANULAR)
 
     return (
         <div className="flex flex-wrap items-start justify-between gap-4">

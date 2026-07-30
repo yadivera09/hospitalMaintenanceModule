@@ -28,7 +28,8 @@ import type { Cliente } from '@/types'
 interface ClientesTableProps {
     clientes: Cliente[]
     onVerDetalle: (id: string) => void
-    onEditar: (cliente: Cliente) => void
+    /** Omitir para ocultar la acción cuando el usuario no tiene permiso de editar */
+    onEditar?: (cliente: Cliente) => void
     onDesactivar?: (cliente: Cliente) => Promise<{ error: string | null }>
     onDesactivarExito?: (id: string) => void
 }
@@ -150,16 +151,18 @@ export default function ClientesTable({
                             {/* Acciones */}
                             <TableCell className="py-3.5 pr-4">
                                 <div className="flex items-center justify-end gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onEditar(cliente)}
-                                        className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
-                                        aria-label={`Editar ${cliente.razon_social}`}
-                                        title="Editar"
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
+                                    {onEditar && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => onEditar(cliente)}
+                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                            aria-label={`Editar ${cliente.razon_social}`}
+                                            title="Editar"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    )}
                                     {onDesactivar && cliente.activo && (
                                         <DeleteButton
                                             nombreRegistro={cliente.razon_social}

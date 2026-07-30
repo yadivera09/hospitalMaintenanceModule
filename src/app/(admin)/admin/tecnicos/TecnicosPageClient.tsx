@@ -25,6 +25,8 @@ import { Pencil } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import TecnicoForm from '@/components/admin/tecnicos/TecnicoForm'
 import { createTecnico, updateTecnico, getTecnicos, toggleActivoTecnico, desactivarTecnico } from '@/app/actions/tecnicos'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import DeleteButton from '@/components/admin/shared/DeleteButton'
 import type { Tecnico } from '@/types'
 import type { TecnicoFormValues } from '@/components/admin/tecnicos/TecnicoForm'
@@ -43,6 +45,13 @@ function EstadoBadge({ activo }: { activo: boolean }) {
 export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+    const puedeCrear    = puede(MODULO.TECNICOS, PERMISO.CREAR)
+    const puedeEditar   = puede(MODULO.TECNICOS, PERMISO.EDITAR)
+    const puedeEliminar = puede(MODULO.TECNICOS, PERMISO.ELIMINAR)
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activo' | 'inactivo'>('todos')
     const [lista, setLista] = useState(tecnicosIniciales)
@@ -169,19 +178,23 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                        id="btn-exportar-tecnicos"
-                    >
-                        <Download className="h-4 w-4" />
-                        Exportar Excel
-                    </Button>
-                    <Button onClick={() => { setModoForm('crear'); setTecnicoEditando(undefined); setErrorForm(null); setModalAbierto(true) }}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0" id="btn-nuevo-tecnico">
-                        <Plus className="h-4 w-4" /> Nuevo Técnico
-                    </Button>
+                    {puede(MODULO.TECNICOS, PERMISO.EXPORTAR) && (
+                        <Button
+                            variant="outline"
+                            onClick={handleExportar}
+                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            id="btn-exportar-tecnicos"
+                        >
+                            <Download className="h-4 w-4" />
+                            Exportar Excel
+                        </Button>
+                    )}
+                    {puedeCrear && (
+                        <Button onClick={() => { setModoForm('crear'); setTecnicoEditando(undefined); setErrorForm(null); setModalAbierto(true) }}
+                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0" id="btn-nuevo-tecnico">
+                            <Plus className="h-4 w-4" /> Nuevo Técnico
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -253,17 +266,23 @@ export default function TecnicosPageClient({ tecnicosIniciales, errorInicial }: 
                                     <span className="text-sm text-[#334155]">{t.telefono ?? '—'}</span>
                                 </TableCell>
                                 <TableCell className="py-3">
-                                    <Switch checked={t.activo} onCheckedChange={() => handleToggle(t)} />
+                                    <Switch
+                                        checked={t.activo}
+                                        onCheckedChange={() => handleToggle(t)}
+                                        disabled={!puedeEditar}
+                                    />
                                 </TableCell>
                                 <TableCell className="py-3 pr-4 text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => {
-                                            setTecnicoEditando(t); setModoForm('editar'); setErrorForm(null); setModalAbierto(true)
-                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
-                                            title="Editar técnico">
-                                            <Pencil className="h-3.5 w-3.5" />
-                                        </Button>
-                                        {t.activo && (
+                                        {puedeEditar && (
+                                            <Button variant="ghost" size="sm" onClick={() => {
+                                                setTecnicoEditando(t); setModoForm('editar'); setErrorForm(null); setModalAbierto(true)
+                                            }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                                title="Editar técnico">
+                                                <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                        )}
+                                        {puedeEliminar && t.activo && (
                                             <DeleteButton
                                                 nombreRegistro={`${t.nombre} ${t.apellido}`}
                                                 onDesactivar={() => desactivarTecnico(t.id)}

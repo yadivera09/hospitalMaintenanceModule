@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/dialog'
 import ClienteForm from '@/components/admin/clientes/ClienteForm'
 import { updateCliente } from '@/app/actions/clientes'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { Cliente, Contrato } from '@/types'
 import type { ClienteFormValues } from '@/components/admin/clientes/ClienteForm'
 
@@ -69,6 +71,10 @@ function FichaFila({
 export default function ClienteDetalleClient({ clienteInicial, errorInicial }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Antes del return temprano de más abajo: los hooks deben ejecutarse
+    // siempre en el mismo orden, sin condicionales de por medio.
+    const puede = usePuede()
 
     const [modalAbierto, setModalAbierto] = useState(false)
     const [errorForm, setErrorForm] = useState<string | null>(null)
@@ -162,14 +168,16 @@ export default function ClienteDetalleClient({ clienteInicial, errorInicial }: P
                     </div>
                 </div>
 
-                <Button
-                    onClick={() => setModalAbierto(true)}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
-                    id="btn-editar-cliente"
-                >
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                </Button>
+                {puede(MODULO.CLIENTES, PERMISO.EDITAR) && (
+                    <Button
+                        onClick={() => setModalAbierto(true)}
+                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
+                        id="btn-editar-cliente"
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Editar
+                    </Button>
+                )}
             </div>
 
             {/* ── Cuerpo ──────────── */}

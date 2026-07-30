@@ -3,24 +3,35 @@
 /**
  * src/app/login/page.tsx
  * Página de Login — autenticación real con Supabase Auth.
- * BLOQUE 2 — Post-login redirige según rol en user_metadata.
+ * El destino post-login lo decide el middleware, que lee usuario_roles.
  */
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Activity, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
+/** Motivos con los que el middleware puede devolver al usuario a /login. */
+const MOTIVOS: Record<string, string> = {
+    'sin-acceso':
+        'Tu cuenta no tiene acceso al sistema: está desactivada o no tiene un rol asignado. Contacta al administrador.',
+}
+
 export default function LoginPage() {
-    const router = useRouter()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPass, setShowPass] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Se lee de window en vez de useSearchParams() para no obligar a envolver
+    // la página en un <Suspense> (requisito de Next 14 al prerenderizar).
+    useEffect(() => {
+        const motivo = new URLSearchParams(window.location.search).get('motivo')
+        if (motivo && MOTIVOS[motivo]) setError(MOTIVOS[motivo])
+    }, [])
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault()
@@ -39,16 +50,16 @@ export default function LoginPage() {
                 return
             }
 
-            const rol = data.user.user_metadata?.rol as string | undefined
-            if (rol === 'administrador') {
-                router.push('/admin/dashboard')
-            } else if (rol === 'tecnico') {
-                router.push('/tecnico/dashboard')
-            } else {
-                // Usuario sin rol asignado — no debería ocurrir en producción
-                setError('Tu usuario no tiene un rol asignado. Contacta al administrador.')
-                await supabase.auth.signOut()
-            }
+            // El destino lo decide el middleware, que ya tiene toda la lógica
+            // (MFA pendiente, rol, cuenta activa) y lee usuario_roles.
+            //
+            // No llamar aquí a una server action: sería un POST a /login y el
+            // gate de MFA del middleware lo intercepta con un 303 antes de que
+            // se ejecute, devolviendo HTML en vez de la respuesta de la action.
+            //
+            // Se recarga /login en vez de usar router.push para forzar un request
+            // HTTP real con las cookies de sesión ya escritas por signInWithPassword.
+            window.location.href = '/login'
         } catch {
             setError('Ocurrió un error inesperado. Intenta de nuevo.')
         } finally {

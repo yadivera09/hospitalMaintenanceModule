@@ -7,9 +7,23 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { z } from 'zod'
 
 type ActionResult<T> = { data: T | null; error: string | null }
+
+/**
+ * Lectura de catálogos: tipos, categorías, insumos, ubicaciones y actividades
+ * alimentan el formulario de reporte del técnico, no solo su pantalla de
+ * administración. Bloquearlas aquí dejaría al técnico sin poder trabajar.
+ */
+const VER_CATALOGOS = [
+    [MODULO.CATALOGOS, PERMISO.VER],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.VER],
+    [MODULO.TEC_MIS_REPORTES, PERMISO.VER],
+    [MODULO.EQUIPOS, PERMISO.VER],
+] as const
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -109,6 +123,8 @@ const ActividadSchema = z.object({
 // TIPOS MANTENIMIENTO
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getTiposMantenimiento(): Promise<ActionResult<TipoMantenimiento[]>> {
+    if (!await requirePermiso(...VER_CATALOGOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const { data, error } = await supabase
@@ -130,6 +146,8 @@ export async function getTiposMantenimiento(): Promise<ActionResult<TipoMantenim
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCategorias(soloActivas?: boolean): Promise<ActionResult<Categoria[]>> {
+    if (!await requirePermiso(...VER_CATALOGOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         let query = supabase
@@ -151,6 +169,10 @@ export async function getCategorias(soloActivas?: boolean): Promise<ActionResult
 }
 
 export async function createCategoria(raw: unknown): Promise<ActionResult<Categoria>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = CategoriaSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -173,6 +195,10 @@ export async function createCategoria(raw: unknown): Promise<ActionResult<Catego
 }
 
 export async function updateCategoria(id: string, raw: unknown): Promise<ActionResult<Categoria>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = CategoriaSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -198,6 +224,10 @@ export async function updateCategoria(id: string, raw: unknown): Promise<ActionR
  * NUNCA elimina físicamente — solo cambia activa = false.
  */
 export async function desactivarCategoria(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -231,6 +261,10 @@ export async function desactivarCategoria(id: string): Promise<ActionResult<bool
 
 /** Alterna el estado activa/inactiva de una categoría */
 export async function toggleActivaCategoria(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         const { data: current, error: fetchErr } = await supabase.from('categorias_equipo').select('activa').eq('id', id).single()
@@ -250,6 +284,8 @@ export async function toggleActivaCategoria(id: string): Promise<ActionResult<bo
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getInsumos(filtros?: { activo?: boolean, search?: string }): Promise<ActionResult<Insumo[]>> {
+    if (!await requirePermiso(...VER_CATALOGOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         let query = supabase
@@ -272,6 +308,10 @@ export async function getInsumos(filtros?: { activo?: boolean, search?: string }
 }
 
 export async function createInsumo(raw: unknown): Promise<ActionResult<Insumo>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = InsumoSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -294,6 +334,10 @@ export async function createInsumo(raw: unknown): Promise<ActionResult<Insumo>> 
 }
 
 export async function updateInsumo(id: string, raw: unknown): Promise<ActionResult<Insumo>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = InsumoSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -319,6 +363,10 @@ export async function updateInsumo(id: string, raw: unknown): Promise<ActionResu
  * NUNCA elimina físicamente — solo cambia activo = false.
  */
 export async function desactivarInsumo(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -352,6 +400,10 @@ export async function desactivarInsumo(id: string): Promise<ActionResult<boolean
 }
 
 export async function toggleActivoInsumo(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         const { data: current, error: fetchErr } = await supabase.from('insumos').select('activo').eq('id', id).single()
@@ -371,6 +423,8 @@ export async function toggleActivoInsumo(id: string): Promise<ActionResult<boole
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getUbicaciones(clienteId?: string): Promise<ActionResult<UbicacionConCliente[]>> {
+    if (!await requirePermiso(...VER_CATALOGOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         let query = supabase
@@ -392,6 +446,10 @@ export async function getUbicaciones(clienteId?: string): Promise<ActionResult<U
 }
 
 export async function createUbicacion(raw: unknown): Promise<ActionResult<Ubicacion>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = UbicacionSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -411,6 +469,10 @@ export async function createUbicacion(raw: unknown): Promise<ActionResult<Ubicac
 }
 
 export async function updateUbicacion(id: string, raw: unknown): Promise<ActionResult<Ubicacion>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = UbicacionSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -437,6 +499,10 @@ export async function updateUbicacion(id: string, raw: unknown): Promise<ActionR
  * NUNCA elimina físicamente — solo cambia activa = false.
  */
 export async function desactivarUbicacion(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -469,6 +535,10 @@ export async function desactivarUbicacion(id: string): Promise<ActionResult<bool
 }
 
 export async function toggleActivaUbicacion(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         const { data: current, error: fetchErr } = await supabase.from('ubicaciones').select('activa').eq('id', id).single()
@@ -490,6 +560,8 @@ export async function toggleActivaUbicacion(id: string): Promise<ActionResult<bo
 export async function getActividadesByCategoria(
     categoriaId: string
 ): Promise<ActionResult<ActividadChecklist[]>> {
+    if (!await requirePermiso(...VER_CATALOGOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const { data, error } = await supabase
@@ -506,6 +578,10 @@ export async function getActividadesByCategoria(
 }
 
 export async function createActividad(raw: unknown): Promise<ActionResult<ActividadChecklist>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ActividadSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -525,6 +601,10 @@ export async function createActividad(raw: unknown): Promise<ActionResult<Activi
 }
 
 export async function updateActividad(id: string, raw: unknown): Promise<ActionResult<ActividadChecklist>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ActividadSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
@@ -545,6 +625,10 @@ export async function updateActividad(id: string, raw: unknown): Promise<ActionR
 }
 
 export async function toggleActivaActividad(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         const { data: current, error: fetchErr } = await supabase.from('actividades_checklist').select('activa').eq('id', id).single()
@@ -560,6 +644,10 @@ export async function toggleActivaActividad(id: string): Promise<ActionResult<bo
 }
 
 export async function reordenarActividades(items: { id: string, orden: number }[]): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CATALOGOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         if (!items || items.length === 0) return { data: true, error: null }
 

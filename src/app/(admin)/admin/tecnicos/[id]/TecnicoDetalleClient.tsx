@@ -15,7 +15,10 @@ import {
 } from '@/components/ui/dialog'
 import TecnicoForm from '@/components/admin/tecnicos/TecnicoForm'
 import { updateTecnico } from '@/app/actions/tecnicos'
-import { resetMfaTecnico } from '@/app/actions/mfa'
+import { resetMfaUsuario } from '@/app/actions/mfa'
+import ResetPasswordButton from '@/components/seguridad/ResetPasswordButton'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { Tecnico } from '@/types'
 import type { TecnicoFormValues } from '@/components/admin/tecnicos/TecnicoForm'
 
@@ -48,6 +51,12 @@ const ESTADO_REPORTE_CONFIG: Record<string, { icon: React.ComponentType<{ classN
 
 export default function TecnicoDetalleClient({ tecnicoInicial, errorInicial }: Props) {
     const router = useRouter()
+
+    // Antes del return temprano de más abajo: los hooks deben ejecutarse
+    // siempre en el mismo orden, sin condicionales de por medio.
+    const puede = usePuede()
+    const puedeEditar = puede(MODULO.TECNICOS, PERMISO.EDITAR)
+
     const [tecnico, setTecnico] = useState(tecnicoInicial)
     const [modal, setModal] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
@@ -75,7 +84,7 @@ export default function TecnicoDetalleClient({ tecnicoInicial, errorInicial }: P
         if (!tecnico?.user_id) return
         setIsResetting(true)
         setResetError(null)
-        const { error } = await resetMfaTecnico(tecnico.id, tecnico.user_id)
+        const { error } = await resetMfaUsuario(tecnico.user_id)
         setIsResetting(false)
         if (error) {
             setResetError(error)
@@ -135,9 +144,11 @@ export default function TecnicoDetalleClient({ tecnicoInicial, errorInicial }: P
                         <p className="text-sm text-[#94A3B8] mt-0.5">{tecnico.cedula ?? 'Sin cédula'}</p>
                     </div>
                 </div>
-                <Button onClick={() => setModal(true)} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2">
-                    <Pencil className="h-4 w-4" /> Editar
-                </Button>
+                {puedeEditar && (
+                    <Button onClick={() => setModal(true)} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2">
+                        <Pencil className="h-4 w-4" /> Editar
+                    </Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,19 +219,30 @@ export default function TecnicoDetalleClient({ tecnicoInicial, errorInicial }: P
 
             {/* ── Sección Seguridad ── */}
             <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-2">
                     <h2 className="text-sm font-semibold text-[#0F172A]">Seguridad</h2>
-                    {tecnico.mfa_configurado && tecnico.user_id && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setResetError(null); setModalReset(true) }}
-                            className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 text-xs"
-                        >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                            Restablecer MFA
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {/* Resetear credenciales y MFA son intervenciones sobre la
+                            cuenta de otra persona: exigen permiso de edición. */}
+                        {puedeEditar && tecnico.user_id && (
+                            <ResetPasswordButton
+                                userId={tecnico.user_id}
+                                nombre={`${tecnico.nombre} ${tecnico.apellido}`}
+                                className="border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC] text-xs"
+                            />
+                        )}
+                        {puedeEditar && tecnico.mfa_configurado && tecnico.user_id && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { setResetError(null); setModalReset(true) }}
+                                className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 text-xs"
+                            >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                Restablecer MFA
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3">

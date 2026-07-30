@@ -7,8 +7,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { getRolesUsuario } from '@/lib/seguridad/permisos'
+import { requireAdmin, ACCESO_DENEGADO } from '@/lib/seguridad/guard'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
@@ -52,36 +51,18 @@ const GrupoSchema = z.object({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: verificar que el usuario actual es administrador
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } | null> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return null
-
-    const roles = await getRolesUsuario(session.user.id)
-    if (!roles.includes('administrador')) return null
-
-    const admin = createAdminClient()
-    const { data: usuario } = await admin
-        .from('usuarios')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single()
-
-    return { userId: session.user.id, usuarioId: usuario?.id ?? '' }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // getGrupos — lista con responsable y cantidad de miembros
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Lista todos los grupos de trabajo con el nombre del responsable y
  * la cantidad total de miembros.
+ * Solo administradores.
  */
 export async function getGrupos(): Promise<ActionResult<GrupoResumen[]>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
 
@@ -124,8 +105,12 @@ export async function getGrupos(): Promise<ActionResult<GrupoResumen[]>> {
 
 /**
  * Obtiene el detalle de un grupo con la lista completa de miembros.
+ * Solo administradores.
  */
 export async function getGrupoById(id: string): Promise<ActionResult<GrupoDetalle>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
 
@@ -182,8 +167,8 @@ export async function getGrupoById(id: string): Promise<ActionResult<GrupoDetall
  * Crea un nuevo grupo de trabajo. Solo administradores.
  */
 export async function crearGrupo(raw: unknown): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = GrupoSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -232,8 +217,8 @@ export async function editarGrupo(
     id: string,
     raw: unknown
 ): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = GrupoSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -282,8 +267,8 @@ export async function editarGrupo(
  * Bloqueado si el grupo tiene miembros activos.
  */
 export async function eliminarGrupo(id: string): Promise<ActionResult<boolean>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()
@@ -340,8 +325,8 @@ export async function agregarMiembro(
     grupoId: string,
     usuarioId: string
 ): Promise<ActionResult<boolean>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()
@@ -383,8 +368,8 @@ export async function removerMiembro(
     grupoId: string,
     usuarioId: string
 ): Promise<ActionResult<boolean>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()

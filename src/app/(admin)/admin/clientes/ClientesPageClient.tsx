@@ -26,6 +26,8 @@ import {
 import ClientesTable from '@/components/admin/clientes/ClientesTable'
 import ClienteForm from '@/components/admin/clientes/ClienteForm'
 import { createCliente, updateCliente, desactivarCliente } from '@/app/actions/clientes'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { Cliente } from '@/types'
 import type { ClienteFormValues } from '@/components/admin/clientes/ClienteForm'
 
@@ -37,6 +39,14 @@ interface Props {
 export default function ClientesPageClient({ clientesIniciales, errorInicial }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+    const puedeCrear    = puede(MODULO.CLIENTES, PERMISO.CREAR)
+    const puedeEditar   = puede(MODULO.CLIENTES, PERMISO.EDITAR)
+    const puedeEliminar = puede(MODULO.CLIENTES, PERMISO.ELIMINAR)
+    const puedeExportar = puede(MODULO.CLIENTES, PERMISO.EXPORTAR)
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activo' | 'inactivo'>('todos')
@@ -146,23 +156,27 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                        id="btn-exportar-clientes"
-                    >
-                        <Download className="h-4 w-4" />
-                        Exportar Excel
-                    </Button>
-                    <Button
-                        onClick={abrirCrear}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
-                        id="btn-nuevo-cliente"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Nuevo Cliente
-                    </Button>
+                    {puedeExportar && (
+                        <Button
+                            variant="outline"
+                            onClick={handleExportar}
+                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            id="btn-exportar-clientes"
+                        >
+                            <Download className="h-4 w-4" />
+                            Exportar Excel
+                        </Button>
+                    )}
+                    {puedeCrear && (
+                        <Button
+                            onClick={abrirCrear}
+                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                            id="btn-nuevo-cliente"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nuevo Cliente
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -213,8 +227,8 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                 <ClientesTable
                     clientes={clientesFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/clientes/${id}`)}
-                    onEditar={abrirEditar}
-                    onDesactivar={(cliente) => desactivarCliente(cliente.id)}
+                    onEditar={puedeEditar ? abrirEditar : undefined}
+                    onDesactivar={puedeEliminar ? (cliente) => desactivarCliente(cliente.id) : undefined}
                     onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
                 <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">

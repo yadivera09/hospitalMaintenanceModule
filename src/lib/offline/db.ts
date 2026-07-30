@@ -309,9 +309,10 @@ export async function guardarCatalogo(
     await db.put('catalogos_cache', { key, datos, cached_at: new Date().toISOString() })
 }
 
-export async function getCatalogo<T = any>(key: string): Promise<T | null> {
+export async function getCatalogo<T = any>(key: string, ignoreExpiry = false): Promise<T | null> {
     const db = await getOfflineDB()
     const entry = await db.get('catalogos_cache', key)
-    if (!entry || estaVencido(entry.cached_at, TTL_CATALOGOS_MS)) return null
+    if (!entry) return null
+    if (!ignoreExpiry && estaVencido(entry.cached_at, TTL_CATALOGOS_MS)) return null
     return entry.datos as T
 }

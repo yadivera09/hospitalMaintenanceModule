@@ -11,6 +11,7 @@ import { LayoutDashboard, Plus, ClipboardList, HardHat, LogOut } from 'lucide-re
 import OfflineBanner from '@/components/tecnico/OfflineBanner'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { registerServiceWorker } from '@/lib/pwa/register-sw'
 
 const NAV_ITEMS = [
     { href: '/tecnico/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,12 +25,8 @@ export default function TecnicoLayout({ children }: { children: React.ReactNode 
     const [tecnico, setTecnico] = useState<{ id: string; nombre: string; apellido: string } | null>(null)
     const [loading, setLoading] = useState(true)
 
-    // Registrar Service Worker para soporte offline
     useEffect(() => {
-        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
-        navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.warn('[SW] error al registrar:', err)
-        })
+        registerServiceWorker()
     }, [])
 
     useEffect(() => {

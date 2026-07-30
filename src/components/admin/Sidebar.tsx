@@ -3,8 +3,14 @@
 /**
  * src/components/admin/Sidebar.tsx
  * Sidebar fijo del panel administrador.
- * Muestra navegación jerárquica por módulos con grupos desplegables.
- * Resalta la ruta activa con el color brand (#1E40AF).
+ *
+ * La estructura llega ya filtrada por permisos desde el layout (server):
+ * solo contiene los módulos sobre los que el usuario tiene permiso 'ver'.
+ * Antes era una constante en el código y todos veían lo mismo.
+ *
+ * Los iconos no se guardan en la base: la columna 'icono' trae un nombre y
+ * aquí se resuelve al componente. Guardar componentes en la base es imposible,
+ * y guardar clases CSS ataría el esquema a una librería concreta.
  */
 
 import { useState } from 'react'
@@ -14,6 +20,7 @@ import {
     LayoutDashboard,
     Building2,
     FileText,
+    FilePlus,
     Stethoscope,
     HardHat,
     BookOpen,
@@ -22,95 +29,143 @@ import {
     Activity,
     X,
     Wrench,
+    Settings,
     ShieldCheck,
     KeyRound,
     Users,
     UsersRound,
+    Network,
     ScrollText,
     ChevronDown,
+    Circle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { MenuNav } from '@/lib/seguridad/navegacion'
 
 // =============================================================================
 // TIPOS
 // =============================================================================
 
-interface NavItem {
-    label: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-}
-
-interface NavModule {
-    label: string
-    icon: React.ComponentType<{ className?: string }>
-    /** Prefijo de ruta para determinar si el módulo está activo */
-    prefix: string
-    items: NavItem[]
-}
-
 interface SidebarProps {
+    /** Menús y módulos visibles para el usuario, ya filtrados por permisos */
+    navegacion: MenuNav[]
     /** Controla si el sidebar está abierto en móvil */
     mobileOpen: boolean
     /** Callback para cerrar el sidebar en móvil */
     onClose: () => void
 }
 
+type IconoComponente = React.ComponentType<{ className?: string }>
+
 // =============================================================================
-// CONFIGURACIÓN DE MÓDULOS
+// ICONOS
 // =============================================================================
 
-const NAV_MODULES: NavModule[] = [
-    {
-        label: 'Mantenimiento',
-        icon: Wrench,
-        prefix: '/admin/dashboard,/admin/clientes,/admin/contratos,/admin/equipos,/admin/tecnicos,/admin/catalogos,/admin/reportes',
-        items: [
-            { label: 'Dashboard',  href: '/admin/dashboard',          icon: LayoutDashboard },
-            { label: 'Clientes',   href: '/admin/clientes',           icon: Building2 },
-            { label: 'Contratos',  href: '/admin/contratos',          icon: FileText },
-            { label: 'Equipos',    href: '/admin/equipos',            icon: Stethoscope },
-            { label: 'Técnicos',   href: '/admin/tecnicos',           icon: HardHat },
-            { label: 'Catálogos',  href: '/admin/catalogos',          icon: BookOpen },
-            { label: 'Reportes',   href: '/admin/reportes',           icon: ClipboardList },
-            { label: 'Análisis',   href: '/admin/reportes/analisis',  icon: BarChart2 },
-        ],
-    },
-    {
-        label: 'Seguridad',
-        icon: ShieldCheck,
-        prefix: '/admin/seguridad',
-        items: [
-            { label: 'Roles',      href: '/admin/seguridad/roles',     icon: KeyRound },
-            { label: 'Usuarios',   href: '/admin/seguridad/usuarios',  icon: Users },
-            { label: 'Grupos',     href: '/admin/seguridad/grupos',    icon: UsersRound },
-            { label: 'Auditoría',  href: '/admin/seguridad/auditoria', icon: ScrollText },
-        ],
-    },
-]
+const ICONOS: Record<string, IconoComponente> = {
+    LayoutDashboard,
+    Building2,
+    FileText,
+    FilePlus,
+    Stethoscope,
+    HardHat,
+    BookOpen,
+    ClipboardList,
+    BarChart2,
+    Wrench,
+    Settings,
+    ShieldCheck,
+    KeyRound,
+    Users,
+    UsersRound,
+    Network,
+    ScrollText,
+}
+
+/**
+ * Nombres de Bootstrap Icons traducidos al icono equivalente de lucide.
+ *
+ * La columna 'icono' convive con dos convenciones: los módulos de /admin/* se
+ * sembraron con clases de Bootstrap Icons ('bi bi-speedometer2') y los de
+ * /tecnico/* con nombres de lucide ('LayoutDashboard'). El seed de la migración
+ * 018 no pudo unificarlos porque su ON CONFLICT (url) DO NOTHING respetaba las
+ * filas que ya existían.
+ *
+ * Resultado: 12 de los 15 módulos no encontraban componente y caían al círculo
+ * genérico. Traducirlos aquí arregla la vista sin depender de que los datos se
+ * normalicen, y sigue funcionando si alguien vuelve a dar de alta un módulo con
+ * la convención antigua.
+ */
+const ALIAS_BOOTSTRAP: Record<string, string> = {
+    'bi-speedometer2': 'LayoutDashboard',
+    'bi-building': 'Building2',
+    'bi-file-text': 'FileText',
+    'bi-heart-pulse': 'Stethoscope',
+    'bi-person-gear': 'HardHat',
+    'bi-book': 'BookOpen',
+    'bi-clipboard-list': 'ClipboardList',
+    'bi-bar-chart': 'BarChart2',
+    'bi-key': 'KeyRound',
+    'bi-people': 'Users',
+    'bi-diagram-3': 'Network',
+    'bi-journal-text': 'ScrollText',
+    'bi-tools': 'Wrench',
+    'bi-gear': 'Settings',
+    'bi-shield-lock': 'ShieldCheck',
+}
+
+/**
+ * Respaldo por nombre de grupo, para menús cuyo icono no resuelva.
+ * Los tres son los sembrados por la migración 013.
+ */
+const ICONOS_MENU: Record<string, IconoComponente> = {
+    Operaciones: Wrench,
+    Administración: Settings,
+    Administracion: Settings,
+    Seguridad: ShieldCheck,
+}
+
+/**
+ * Traduce el valor de la columna 'icono' al componente que lo dibuja.
+ *
+ * Acepta las dos convenciones: un nombre de lucide tal cual, o una clase de
+ * Bootstrap Icons con o sin el prefijo 'bi ' ('bi bi-key' y 'bi-key' dan lo
+ * mismo). Sin coincidencia devuelve el círculo, que señala visualmente que ese
+ * módulo tiene un icono sin mapear.
+ */
+function resolverIcono(nombre: string | undefined): IconoComponente {
+    if (!nombre) return Circle
+
+    const limpio = nombre.trim()
+
+    if (ICONOS[limpio]) return ICONOS[limpio]
+
+    // 'bi bi-key' → 'bi-key'; una clase suelta como 'bi-key' ya viene lista.
+    const clase = limpio.startsWith('bi ') ? limpio.slice(3).trim() : limpio
+    const equivalente = ALIAS_BOOTSTRAP[clase]
+
+    return equivalente ? ICONOS[equivalente] ?? Circle : Circle
+}
 
 // =============================================================================
 // COMPONENTE
 // =============================================================================
 
-export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
+export default function Sidebar({ navegacion, mobileOpen, onClose }: SidebarProps) {
     const pathname = usePathname()
 
     const isActive = (href: string) =>
         pathname === href || pathname.startsWith(`${href}/`)
 
-    /** Devuelve true si la ruta actual pertenece a este módulo */
-    function moduleIsActive(mod: NavModule): boolean {
-        return mod.items.some((item) => isActive(item.href))
+    /** Devuelve true si la ruta actual pertenece a este menú */
+    function menuIsActive(menu: MenuNav): boolean {
+        return menu.modulos.some((m) => isActive(m.url))
     }
 
-    // Estado abierto/cerrado por módulo.
-    // Mantenimiento abierto por defecto; Seguridad solo si la ruta activa es suya.
+    // Abierto el primer grupo por defecto, y cualquiera que contenga la ruta activa.
     const [openModules, setOpenModules] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {}
-        NAV_MODULES.forEach((mod) => {
-            // Mantenimiento siempre abierto por defecto
-            initial[mod.label] = mod.label === 'Mantenimiento' || moduleIsActive(mod)
+        navegacion.forEach((menu, i) => {
+            initial[menu.nombre] = i === 0 || menuIsActive(menu)
         })
         return initial
     })
@@ -176,17 +231,30 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                         Módulos
                     </p>
 
+                    {navegacion.length === 0 && (
+                        <p className="px-3 py-2 text-xs text-[#94A3B8] leading-relaxed">
+                            No tienes módulos asignados. Contacta al administrador.
+                        </p>
+                    )}
+
                     <div className="space-y-1">
-                        {NAV_MODULES.map((mod) => {
-                            const ModIcon = mod.icon
-                            const isOpen = openModules[mod.label] ?? false
-                            const hasActive = moduleIsActive(mod)
+                        {navegacion.map((mod) => {
+                            // El icono del grupo sale del dato; el mapa por
+                            // nombre solo cubre el caso de que no resuelva.
+                            // Antes se ignoraba menus.icono y los tres grupos
+                            // salían con la misma llave inglesa.
+                            const IconoDelDato = resolverIcono(mod.icono)
+                            const ModIcon = IconoDelDato !== Circle
+                                ? IconoDelDato
+                                : ICONOS_MENU[mod.nombre] ?? Wrench
+                            const isOpen = openModules[mod.nombre] ?? false
+                            const hasActive = menuIsActive(mod)
 
                             return (
-                                <div key={mod.label}>
+                                <div key={mod.nombre}>
                                     {/* ── Header del módulo (desplegable) ── */}
                                     <button
-                                        onClick={() => toggleModule(mod.label)}
+                                        onClick={() => toggleModule(mod.nombre)}
                                         className={cn(
                                             'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium',
                                             'transition-colors duration-150',
@@ -202,7 +270,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                                                 hasActive ? 'text-white' : 'text-[#94A3B8]'
                                             )}
                                         />
-                                        <span className="flex-1 text-left">{mod.label}</span>
+                                        <span className="flex-1 text-left">{mod.nombre}</span>
                                         <ChevronDown
                                             className={cn(
                                                 'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
@@ -220,7 +288,8 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                                         )}
                                     >
                                         <div className="mt-0.5 ml-3 pl-3 border-l border-white/10 space-y-0.5 py-0.5">
-                                            {mod.items.map(({ label, href, icon: Icon }) => {
+                                            {mod.modulos.map(({ nombre: label, url: href, icono }) => {
+                                                const Icon = resolverIcono(icono)
                                                 const active = isActive(href)
                                                 return (
                                                     <Link

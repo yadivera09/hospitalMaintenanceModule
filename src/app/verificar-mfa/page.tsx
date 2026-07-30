@@ -1,114 +1,75 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+/**
+ * src/app/verificar-mfa/page.tsx
+ * Verificación del segundo factor en cada sesión nueva. Único método: TOTP.
+ *
+ * Antes, si no detectaba un factor TOTP verificado, caía a un flujo de código
+ * por correo que ya no se ofrecía en /configurar-mfa: enviaba el OTP a un buzón
+ * que podía no existir y el usuario quedaba encerrado. Ahora ese caso manda a
+ * /configurar-mfa, que limpia los factores sueltos y permite enrolar de nuevo.
+ */
+
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Activity, ShieldCheck, AlertCircle, Smartphone, Mail } from 'lucide-react'
+import { Activity, ShieldCheck, AlertCircle, Smartphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { marcarSesionEmailVerificada } from '@/app/actions/mfa'
+import { getDestinoPostLogin } from '@/app/actions/seguridad/sesion'
+import SalirDelFlujoMfa from '@/components/seguridad/SalirDelFlujoMfa'
 
-type Step = 'loading' | 'totp' | 'email' | 'done'
+type Step = 'loading' | 'totp' | 'done'
 
 export default function VerificarMfaPage() {
     const router = useRouter()
     const supabase = createClient()
 
     const [step, setStep] = useState<Step>('loading')
-    const [userId, setUserId] = useState<string>('')
-    const [userEmail, setUserEmail] = useState<string>('')
-    const [userRol, setUserRol] = useState<string>('')
     const [totpFactorId, setTotpFactorId] = useState<string>('')
 
     const [code, setCode] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const emailOtpSentRef = useRef(false)
-
     useEffect(() => {
-        async function detectarMetodo() {
-            // ✅ Las 3 llamadas en paralelo — reduce latencia ~60-70%
+        async function detectarFactor() {
             const [
                 { data: { user } },
-                { data: aalData },
                 { data: factors }
             ] = await Promise.all([
                 supabase.auth.getUser(),
-                supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
                 supabase.auth.mfa.listFactors()
             ])
 
             if (!user) { router.replace('/login'); return }
 
-            // Setear estado de una vez
-            setUserId(user.id)
-            setUserEmail(user.email ?? '')
-            setUserRol(user.user_metadata?.rol ?? '')
+            const totp = factors?.totp?.find((f) => f.status === 'verified')
 
-            const nextLevel = aalData?.nextLevel ?? 'aal1'
-
-            if (nextLevel === 'aal2') {
-                const totp = factors?.totp?.find((f) => f.status === 'verified')
-                if (!totp) {
-                    router.replace('/configurar-mfa')
-                    return
-                }
-                setTotpFactorId(totp.id)
-                setStep('totp')
-            } else {
-                // ✅ Email ya disponible aquí, pasar directo sin depender del estado
-                setStep('email')
-                await enviarOtpEmailDirecto()
+            // Sin factor verificado no hay nada que verificar aquí: el
+            // enrolamiento se hace en /configurar-mfa, que además limpia
+            // los factores a medio configurar.
+            if (!totp) {
+                router.replace('/configurar-mfa')
+                return
             }
+
+            setTotpFactorId(totp.id)
+            setStep('totp')
         }
 
-        detectarMetodo()
+        detectarFactor()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // ✅ Versión sin parámetro (para reenvío desde botón, cuando userEmail ya está en estado)
-    async function enviarOtpEmail() {
-        if (emailOtpSentRef.current) return
-        emailOtpSentRef.current = true
-        try {
-            const { error: reauthErr } = await supabase.auth.reauthenticate()
-            if (reauthErr) {
-                setError('No se pudo enviar el código. Intenta recargar la página.')
-                emailOtpSentRef.current = false
-            }
-        } catch {
-            setError('Error al enviar el código. Intenta recargar la página.')
-            emailOtpSentRef.current = false
-        }
-    }
-
-    // ✅ Versión para llamar dentro del useEffect (no depende del estado)
-    async function enviarOtpEmailDirecto() {
-        if (emailOtpSentRef.current) return
-        emailOtpSentRef.current = true
-        try {
-            const { error: reauthErr } = await supabase.auth.reauthenticate()
-            if (reauthErr) {
-                setError('No se pudo enviar el código. Intenta recargar la página.')
-                emailOtpSentRef.current = false
-            }
-        } catch {
-            setError('Error al enviar el código. Intenta recargar la página.')
-            emailOtpSentRef.current = false
-        }
-    }
-
-    async function reenviarOtp() {
-        setError(null)
-        setCode('')
-        emailOtpSentRef.current = false
-        await enviarOtpEmail()
-    }
-
-    function dashboardPath(rol: string) {
-        return rol === 'administrador' ? '/admin/dashboard' : '/tecnico/dashboard'
+    /**
+     * Destino tras verificar el segundo factor. Se resuelve en el servidor
+     * contra usuario_roles. Si falla, el middleware corrige el destino igual.
+     */
+    async function dashboardPath() {
+        const { destino } = await getDestinoPostLogin()
+        return destino ?? '/tecnico/dashboard'
     }
 
     async function verificarTotp(e: React.FormEvent) {
@@ -130,11 +91,11 @@ export default function VerificarMfaPage() {
             // antes de navegar, para que el middleware lea AAL2 correctamente.
             await supabase.auth.getSession()
 
+            const destino = await dashboardPath()
             setStep('done')
 
-            // ✅ Usar window.location en vez de router.replace para forzar
-            // un request HTTP fresco con las cookies ya actualizadas
-            window.location.href = dashboardPath(userRol)
+            // ✅ window.location fuerza un request fresco con las cookies nuevas
+            window.location.href = destino
 
         } catch {
             setError('Error inesperado. Intenta de nuevo.')
@@ -142,33 +103,6 @@ export default function VerificarMfaPage() {
             setLoading(false)
         }
     }
-
-    async function verificarEmail(e: React.FormEvent) {
-        e.preventDefault()
-        if (code.trim().length < 6) return
-        setLoading(true)
-        setError(null)
-        try {
-            const { error: verifyErr } = await supabase.auth.verifyOtp({
-                email: userEmail,
-                token: code.trim(),
-                type: 'magiclink',
-            })
-            if (verifyErr) throw verifyErr
-
-            await marcarSesionEmailVerificada(userId)
-            setStep('done')
-            router.replace(dashboardPath(userRol))
-        } catch (err: any) {
-            console.error('[verificarEmail]', err)
-            setError(err.message || 'Código incorrecto')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const isTotp = step === 'totp'
-    const isEmail = step === 'email'
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] p-4">
@@ -190,7 +124,7 @@ export default function VerificarMfaPage() {
                         </div>
                     )}
 
-                    {isTotp && (
+                    {step === 'totp' && (
                         <form onSubmit={verificarTotp} className="space-y-5">
                             <div className="flex flex-col items-center gap-2 mb-2">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1E3A5F]">
@@ -232,64 +166,12 @@ export default function VerificarMfaPage() {
                                     : <><ShieldCheck className="h-4 w-4 mr-1.5" />Verificar acceso</>
                                 }
                             </Button>
-                        </form>
-                    )}
 
-                    {isEmail && (
-                        <form onSubmit={verificarEmail} className="space-y-5">
-                            <div className="flex flex-col items-center gap-2 mb-2">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1E3A5F]">
-                                    <Mail className="h-5 w-5 text-[#60A5FA]" />
-                                </div>
-                                <p className="text-sm text-slate-300 text-center">
-                                    Enviamos un código a{' '}
-                                    <span className="text-white font-medium">{userEmail}</span>.
-                                    Ingresa el código para continuar.
-                                </p>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="email-otp" className="text-xs font-medium text-slate-300">
-                                    Código de verificación
-                                </Label>
-                                <Input
-                                    id="email-otp"
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={8}
-                                    autoComplete="one-time-code"
-                                    autoFocus
-                                    placeholder="000000"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                                    className="h-12 text-center tracking-[0.5em] text-xl font-mono bg-white/10 border-white/15 text-white placeholder:text-slate-600 focus:border-[#3B82F6]"
-                                />
-                            </div>
-
-                            <p className="text-center text-xs text-slate-500">
-                                ¿No recibiste el código?{' '}
-                                <button
-                                    type="button"
-                                    onClick={reenviarOtp}
-                                    disabled={loading}
-                                    className="text-[#60A5FA] hover:underline disabled:opacity-50"
-                                >
-                                    Reenviar
-                                </button>
+                            <p className="text-center text-[11px] text-slate-500 leading-relaxed">
+                                ¿Perdiste el acceso a tu app autenticadora?
+                                <br />
+                                Pide a un administrador que resetee tu verificación en dos pasos.
                             </p>
-
-                            {error && <ErrorBanner message={error} />}
-
-                            <Button
-                                type="submit"
-                                disabled={loading || code.trim().length < 6}
-                                className="w-full h-11 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-semibold disabled:opacity-50"
-                            >
-                                {loading
-                                    ? <Spinner />
-                                    : <><ShieldCheck className="h-4 w-4 mr-1.5" />Verificar acceso</>
-                                }
-                            </Button>
                         </form>
                     )}
 
@@ -303,6 +185,8 @@ export default function VerificarMfaPage() {
                         </div>
                     )}
                 </div>
+
+                {step !== 'done' && <SalirDelFlujoMfa />}
 
                 <p className="mt-4 text-center text-xs text-slate-600">
                     Mobilhospital © {new Date().getFullYear()} · Acceso restringido

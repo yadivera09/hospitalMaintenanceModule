@@ -24,7 +24,8 @@ import { computarEstadoContrato } from '@/types'
 interface ContratosTableProps {
     contratos: Contrato[]
     onVerDetalle: (id: string) => void
-    onEditar: (contrato: Contrato) => void
+    /** Omitir para ocultar la acción cuando el usuario no tiene permiso de editar */
+    onEditar?: (contrato: Contrato) => void
     onDesactivar?: (contrato: Contrato) => Promise<{ error: string | null }>
     onDesactivarExito?: (id: string) => void
 }
@@ -166,17 +167,18 @@ export default function ContratosTable({
                                 {/* Acciones */}
                                 <TableCell className="py-3.5 pr-4">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => onEditar(contrato)}
-                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
-                                            aria-label={`Editar ${contrato.numero_contrato}`}
-                                            title="Editar"
-                                        >
-
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
+                                        {onEditar && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => onEditar(contrato)}
+                                                className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                                aria-label={`Editar ${contrato.numero_contrato}`}
+                                                title="Editar"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                         {onDesactivar && contrato.activo && (
                                             <DeleteButton
                                                 nombreRegistro={contrato.numero_contrato}

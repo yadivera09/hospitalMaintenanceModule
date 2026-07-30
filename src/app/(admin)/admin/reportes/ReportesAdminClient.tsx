@@ -11,6 +11,8 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import ReportesTable, { ESTADO_REPORTE_CFG } from '@/components/admin/reportes/ReportesTable'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { EstadoReporte, ReporteResumen } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -74,7 +76,11 @@ interface ReportesAdminClientProps {
 
 export default function ReportesAdminClient({ reportes, tipos, tecnicos }: ReportesAdminClientProps) {
     const searchParams = useSearchParams()
-    
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+
     const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
     const [filtroTipo, setFiltroTipo] = useState<string>('todos')
     const [filtroTecnico, setFiltroTecnico] = useState<string>('todos')
@@ -156,15 +162,17 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
                         </p>
                     </div>
                 </div>
-                <Button
-                    variant="outline"
-                    onClick={handleExportar}
-                    className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                    id="btn-exportar-reportes"
-                >
-                    <Download className="h-4 w-4" />
-                    Exportar Excel
-                </Button>
+                {puede(MODULO.REPORTES, PERMISO.EXPORTAR) && (
+                    <Button
+                        variant="outline"
+                        onClick={handleExportar}
+                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                        id="btn-exportar-reportes"
+                    >
+                        <Download className="h-4 w-4" />
+                        Exportar Excel
+                    </Button>
+                )}
             </div>
 
             {/* Chips de conteo por estado */}

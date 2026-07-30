@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { asignarRolesUsuario } from '@/app/actions/seguridad/usuarios'
+import ResetPasswordButton from '@/components/seguridad/ResetPasswordButton'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { UsuarioDetalle } from '@/app/actions/seguridad/usuarios'
 import type { RolConPermisos } from '@/app/actions/seguridad/roles'
 
@@ -44,9 +47,17 @@ export default function UsuarioDetalleClient({
 }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+    const puedeEditar = puede(MODULO.USUARIOS, PERMISO.EDITAR)
+
     const [modalAbierto, setModalAbierto] = useState(false)
     const [rolesSeleccionados, setRolesSeleccionados] = useState<string[]>(usuario.roles.map(r => r.id))
     const [errorModal, setErrorModal] = useState<string | null>(null)
+    /** Advertencia sobre la ficha de técnico tras guardar roles correctamente. */
+    const [avisoPerfil, setAvisoPerfil] = useState<string | null>(null)
     const [guardando, setGuardando] = useState(false)
 
     const iniciales = `${usuario.nombre.charAt(0)}${usuario.apellido.charAt(0)}`.toUpperCase()
@@ -76,11 +87,15 @@ export default function UsuarioDetalleClient({
         const result = await asignarRolesUsuario(usuario.id, rolesSeleccionados)
 
         setGuardando(false)
-        if (result.error) {
-            setErrorModal(result.error)
+
+        // Los roles se guardaron si data llegó; un error acompañando a data es
+        // una advertencia sobre la ficha de técnico, no un fallo del guardado.
+        if (!result.data) {
+            setErrorModal(result.error ?? 'No se pudieron guardar los roles.')
             return
         }
 
+        setAvisoPerfil(result.error)
         setModalAbierto(false)
         startTransition(() => {
             router.refresh()
@@ -101,6 +116,13 @@ export default function UsuarioDetalleClient({
                     Usuarios
                 </Button>
             </div>
+
+            {avisoPerfil && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+                    <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-900">{avisoPerfil}</p>
+                </div>
+            )}
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-sm">
                 <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white text-2xl font-bold ${avatarColor}`}>
@@ -173,6 +195,16 @@ export default function UsuarioDetalleClient({
                                 )}
                             </div>
                         </div>
+
+                        {puedeEditar && (
+                            <div className="px-5 py-3">
+                                <ResetPasswordButton
+                                    userId={usuario.user_id}
+                                    nombre={`${usuario.nombre} ${usuario.apellido}`}
+                                    className="w-full border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC]"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -180,15 +212,17 @@ export default function UsuarioDetalleClient({
                 <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col">
                     <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
                         <h2 className="text-base font-semibold text-[#0F172A]">Roles asignados</h2>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={handleAbrirModal}
-                            className="h-8 text-xs bg-white text-[#1E40AF] border-[#E2E8F0] hover:bg-[#1E40AF]/5 hover:text-[#1E40AF] hover:border-[#1E40AF]/30 shadow-sm"
-                        >
-                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                            Editar roles
-                        </Button>
+                        {puedeEditar && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleAbrirModal}
+                                className="h-8 text-xs bg-white text-[#1E40AF] border-[#E2E8F0] hover:bg-[#1E40AF]/5 hover:text-[#1E40AF] hover:border-[#1E40AF]/30 shadow-sm"
+                            >
+                                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                                Editar roles
+                            </Button>
+                        )}
                     </div>
                     <div className="p-5 flex-1">
                         {usuario.roles.length === 0 ? (

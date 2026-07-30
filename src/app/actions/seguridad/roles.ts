@@ -8,8 +8,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { getRolesUsuario } from '@/lib/seguridad/permisos'
+import { requireAdmin, ACCESO_DENEGADO } from '@/lib/seguridad/guard'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
@@ -59,29 +58,6 @@ const RolSchema = z.object({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: verificar que el usuario actual es administrador
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } | null> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return null
-
-    const roles = await getRolesUsuario(session.user.id)
-    if (!roles.includes('administrador')) return null
-
-    // Resolver usuarios.id (genérico) para auditoría
-    const admin = createAdminClient()
-    const { data: usuario } = await admin
-        .from('usuarios')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single()
-
-    return { userId: session.user.id, usuarioId: usuario?.id ?? '' }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // getPermisos — catálogo completo de permisos del sistema
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -91,6 +67,9 @@ async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } |
  * de qué permisos tenga ya asignados el rol.
  */
 export async function getPermisos(): Promise<ActionResult<PermisoBase[]>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
         const { data, error } = await admin
@@ -116,6 +95,9 @@ export async function getPermisos(): Promise<ActionResult<PermisoBase[]>> {
  * Accesible para administradores.
  */
 export async function getRoles(): Promise<ActionResult<RolConPermisos[]>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
         const { data, error } = await admin
@@ -169,6 +151,9 @@ export async function getRoles(): Promise<ActionResult<RolConPermisos[]>> {
  * Obtiene el detalle de un rol con su matriz completa de permisos por módulo.
  */
 export async function getRolById(id: string): Promise<ActionResult<RolConPermisos>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
         const { data, error } = await admin
@@ -226,8 +211,8 @@ export async function getRolById(id: string): Promise<ActionResult<RolConPermiso
 export async function crearRol(
     raw: unknown
 ): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = RolSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -277,8 +262,8 @@ export async function editarRol(
     id: string,
     raw: unknown
 ): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = RolSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -340,8 +325,8 @@ export async function editarRol(
  * Bloqueado si es_sistema = true.
  */
 export async function eliminarRol(id: string): Promise<ActionResult<boolean>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()
@@ -392,8 +377,8 @@ export async function asignarPermisosRol(
     rolId: string,
     permisos: AsignarPermisoInput[]
 ): Promise<ActionResult<boolean>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()

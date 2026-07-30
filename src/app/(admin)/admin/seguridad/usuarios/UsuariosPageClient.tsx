@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { toggleUsuarioActivo } from '@/app/actions/seguridad/usuarios'
 import type { UsuarioConRoles } from '@/app/actions/seguridad/usuarios'
 import type { RolConPermisos } from '@/app/actions/seguridad/roles'
+import NuevoUsuarioModal from './NuevoUsuarioModal'
 
 // Colores específicos solicitados
 const AVATAR_COLORS = [
@@ -129,6 +130,11 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                         </p>
                     </div>
                 </div>
+
+                <NuevoUsuarioModal
+                    rolesCatalogo={rolesCatalogo}
+                    onCreado={() => startTransition(() => router.refresh())}
+                />
             </div>
 
             {errorInicial && (
@@ -220,7 +226,7 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                             usuariosFiltrados.map((usuario) => {
                                 const iniciales = `${usuario.nombre.charAt(0)}${usuario.apellido.charAt(0)}`.toUpperCase()
                                 const avatarColor = getAvatarColor(usuario.nombre)
-                                const mfaConfigurado = (usuario as any).mfa_configurado === true
+                                const mfaConfigurado = usuario.mfa_configurado === true
                                 
                                 return (
                                     <TableRow 

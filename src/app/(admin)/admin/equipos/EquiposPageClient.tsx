@@ -22,6 +22,8 @@ import EquiposTable from '@/components/admin/equipos/EquiposTable'
 import EquipoForm from '@/components/admin/equipos/EquipoForm'
 import ModalCargaMasivaEquipos from '@/components/admin/equipos/ModalCargaMasivaEquipos'
 import { getEquipos, createEquipo, desactivarEquipo } from '@/app/actions/equipos'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { EquipoConCliente } from '@/app/actions/equipos'
 import type { Categoria } from '@/app/actions/catalogos'
 import type { EquipoFormValues } from '@/components/admin/equipos/EquipoForm'
@@ -47,6 +49,13 @@ interface Props {
 export default function EquiposPageClient({ equiposIniciales, categoriasList, tiposMantenimiento, contratos, errorInicial }: Props) {
     const router = useRouter()
     const [, startTransition] = useTransition()
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+    const puedeCrear    = puede(MODULO.EQUIPOS, PERMISO.CREAR)
+    const puedeEditar   = puede(MODULO.EQUIPOS, PERMISO.EDITAR)
+    const puedeEliminar = puede(MODULO.EQUIPOS, PERMISO.ELIMINAR)
     const [busqueda, setBusqueda] = useState('')
     const [filtroCategoria, setFiltroCategoria] = useState('todos')
     const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activo' | 'baja'>('todos')
@@ -164,31 +173,38 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => setModalCargaMasivaAbierto(true)}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                    >
-                        <Upload className="h-4 w-4" />
-                        Carga masiva
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                        id="btn-exportar-equipos"
-                    >
-                        <Download className="h-4 w-4" />
-                        Exportar Excel
-                    </Button>
-                    <Button
-                        id="btn-nuevo-equipo"
-                        onClick={() => { setErrorCrear(null); setModalNuevoAbierto(true) }}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Nuevo Equipo
-                    </Button>
+                    {/* La carga masiva es una creación en bloque: mismo permiso */}
+                    {puedeCrear && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setModalCargaMasivaAbierto(true)}
+                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                        >
+                            <Upload className="h-4 w-4" />
+                            Carga masiva
+                        </Button>
+                    )}
+                    {puede(MODULO.EQUIPOS, PERMISO.EXPORTAR) && (
+                        <Button
+                            variant="outline"
+                            onClick={handleExportar}
+                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            id="btn-exportar-equipos"
+                        >
+                            <Download className="h-4 w-4" />
+                            Exportar Excel
+                        </Button>
+                    )}
+                    {puedeCrear && (
+                        <Button
+                            id="btn-nuevo-equipo"
+                            onClick={() => { setErrorCrear(null); setModalNuevoAbierto(true) }}
+                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nuevo Equipo
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -268,8 +284,10 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                 <EquiposTable
                     equipos={listaFiltrada}
                     onVerDetalle={(id) => router.push(`/admin/equipos/${id}`)}
-                    onEditar={(e) => startTransition(() => { router.push(`/admin/equipos/${e.id}`) })}
-                    onDesactivar={(equipo) => desactivarEquipo(equipo.id)}
+                    onEditar={puedeEditar
+                        ? (e) => startTransition(() => { router.push(`/admin/equipos/${e.id}`) })
+                        : undefined}
+                    onDesactivar={puedeEliminar ? (equipo) => desactivarEquipo(equipo.id) : undefined}
                     onDesactivarExito={() => startTransition(async () => {
                         router.refresh()
                         const { data } = await getEquipos({ search: busqueda || undefined, categoria_id: filtroCategoria })

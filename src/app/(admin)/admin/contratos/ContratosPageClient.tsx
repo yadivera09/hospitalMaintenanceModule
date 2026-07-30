@@ -27,6 +27,8 @@ import {
 import ContratosTable from '@/components/admin/contratos/ContratosTable'
 import ContratoForm from '@/components/admin/contratos/ContratoForm'
 import { createContrato, updateContrato, desactivarContrato } from '@/app/actions/contratos'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { computarEstadoContrato } from '@/types'
 import type { Contrato, Cliente, EstadoContrato } from '@/types'
 import type { ContratoConCliente } from '@/app/actions/contratos'
@@ -49,6 +51,13 @@ interface Props {
 export default function ContratosPageClient({ contratosIniciales, clientesList, errorInicial }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Ocultar acciones no permitidas. La protección real está en las server
+    // actions (requirePermiso); esto solo evita mostrar puertas cerradas.
+    const puede = usePuede()
+    const puedeCrear    = puede(MODULO.CONTRATOS, PERMISO.CREAR)
+    const puedeEditar   = puede(MODULO.CONTRATOS, PERMISO.EDITAR)
+    const puedeEliminar = puede(MODULO.CONTRATOS, PERMISO.ELIMINAR)
     const [filtroEstado, setFiltroEstado] = useState<EstadoContrato | 'todos'>('todos')
     const [filtroCliente, setFiltroCliente] = useState('todos')
     const [modalAbierto, setModalAbierto] = useState(false)
@@ -128,23 +137,27 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
-                        id="btn-exportar-contratos"
-                    >
-                        <Download className="h-4 w-4" />
-                        Exportar Excel
-                    </Button>
-                    <Button
-                        onClick={() => { setModoForm('crear'); setContratoEditando(undefined); setErrorForm(null); setModalAbierto(true) }}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
-                        id="btn-nuevo-contrato"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Nuevo Contrato
-                    </Button>
+                    {puede(MODULO.CONTRATOS, PERMISO.EXPORTAR) && (
+                        <Button
+                            variant="outline"
+                            onClick={handleExportar}
+                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            id="btn-exportar-contratos"
+                        >
+                            <Download className="h-4 w-4" />
+                            Exportar Excel
+                        </Button>
+                    )}
+                    {puedeCrear && (
+                        <Button
+                            onClick={() => { setModoForm('crear'); setContratoEditando(undefined); setErrorForm(null); setModalAbierto(true) }}
+                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                            id="btn-nuevo-contrato"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nuevo Contrato
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -186,8 +199,10 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                 <ContratosTable
                     contratos={contratosFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/contratos/${id}`)}
-                    onEditar={(c) => { setContratoEditando(c); setModoForm('editar'); setErrorForm(null); setModalAbierto(true) }}
-                    onDesactivar={(contrato) => desactivarContrato(contrato.id)}
+                    onEditar={puedeEditar
+                        ? (c) => { setContratoEditando(c); setModoForm('editar'); setErrorForm(null); setModalAbierto(true) }
+                        : undefined}
+                    onDesactivar={puedeEliminar ? (contrato) => desactivarContrato(contrato.id) : undefined}
                     onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
                 <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">

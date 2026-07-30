@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/dialog'
 import ContratoForm from '@/components/admin/contratos/ContratoForm'
 import { updateContrato } from '@/app/actions/contratos'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { computarEstadoContrato } from '@/types'
 import type { Contrato, Cliente, EstadoContrato } from '@/types'
 import type { ContratoConCliente } from '@/app/actions/contratos'
@@ -131,6 +133,11 @@ interface Props {
 export default function ContratoDetalleClient({ contratoInicial, clientesList }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+
+    // Antes del return temprano de más abajo: los hooks deben ejecutarse
+    // siempre en el mismo orden, sin condicionales de por medio.
+    const puede = usePuede()
+
     const [modalAbierto, setModalAbierto] = useState(false)
     const [errorForm, setErrorForm] = useState<string | null>(null)
 
@@ -217,15 +224,17 @@ export default function ContratoDetalleClient({ contratoInicial, clientesList }:
                     </div>
                 </div>
 
-                <Button
-                    onClick={() => { setErrorForm(null); setModalAbierto(true) }}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
-                    id="btn-editar-contrato"
-                    disabled={isPending}
-                >
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                </Button>
+                {puede(MODULO.CONTRATOS, PERMISO.EDITAR) && (
+                    <Button
+                        onClick={() => { setErrorForm(null); setModalAbierto(true) }}
+                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
+                        id="btn-editar-contrato"
+                        disabled={isPending}
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Editar
+                    </Button>
+                )}
             </div>
 
             {/* ── Cuerpo en dos columnas ────────────────────────── */}

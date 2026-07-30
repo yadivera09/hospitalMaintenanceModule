@@ -7,8 +7,19 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { z } from 'zod'
 import type { Contrato, Cliente } from '@/types'
+
+/**
+ * Lectura de contratos: además de su propia pantalla, la usa Equipos para
+ * mostrar y asignar el contrato vigente de cada equipo.
+ */
+const VER_CONTRATOS = [
+    [MODULO.CONTRATOS, PERMISO.VER],
+    [MODULO.EQUIPOS, PERMISO.VER],
+] as const
 
 // ── Esquema de validación ─────────────────────────────────────────────────────
 
@@ -51,6 +62,8 @@ export async function getContratos(filtros?: {
     cliente_id?: string
     search?: string
 }): Promise<ActionResult<ContratoConCliente[]>> {
+    if (!await requirePermiso(...VER_CONTRATOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         let query = supabase
@@ -77,6 +90,8 @@ export async function getContratos(filtros?: {
  * Detalle de un contrato con equipos asignados actualmente (desde v_equipo_contrato_vigente).
  */
 export async function getContratoById(id: string): Promise<ActionResult<ContratoConCliente & { equipos: unknown[] }>> {
+    if (!await requirePermiso(...VER_CONTRATOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const [contratoRes, equiposRes] = await Promise.all([
@@ -110,6 +125,10 @@ export async function getContratoById(id: string): Promise<ActionResult<Contrato
  * Crea un nuevo contrato. Valida con zod antes de insertar.
  */
 export async function createContrato(raw: unknown): Promise<ActionResult<Contrato>> {
+    if (!await requirePermiso([MODULO.CONTRATOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ContratoSchema.safeParse(raw)
     if (!parsed.success) {
         return { data: null, error: parsed.error.issues[0].message }
@@ -160,6 +179,10 @@ export async function updateContrato(
     id: string,
     raw: unknown
 ): Promise<ActionResult<Contrato>> {
+    if (!await requirePermiso([MODULO.CONTRATOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ContratoSchema.partial().superRefine((d, ctx) => {
         if (d.fecha_inicio && d.fecha_fin && d.fecha_inicio > d.fecha_fin) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La fecha de fin debe ser mayor o igual a la de inicio', path: ['fecha_fin'] })
@@ -201,6 +224,10 @@ export async function updateContrato(
  * NUNCA elimina físicamente — solo cambia activo = false.
  */
 export async function desactivarContrato(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CONTRATOS, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -238,6 +265,10 @@ export async function desactivarContrato(id: string): Promise<ActionResult<boole
  * Alterna el estado activo de un contrato dado su ID.
  */
 export async function toggleActivoContrato(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CONTRATOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         const { data: current, error: fetchErr } = await supabase

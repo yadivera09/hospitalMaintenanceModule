@@ -422,10 +422,18 @@ export interface VistaEquipoMantenimientoVencido {
 }
 
 // =============================================================================
-// TIPOS DE UTILIDAD — Autenticación / Sesión (mock para BLOQUE 1)
+// TIPOS DE UTILIDAD — Autenticación / Sesión
 // =============================================================================
 
-export type Rol = 'administrador' | 'tecnico'
+/**
+ * Nombre de un rol del sistema.
+ *
+ * Los roles se crean desde /admin/seguridad/roles, así que el conjunto es
+ * abierto: cerrarlo en 'administrador' | 'tecnico' impedía tipar cualquier rol
+ * nuevo. Los dos literales se mantienen para conservar el autocompletado —
+ * `string & {}` evita que TypeScript colapse la unión a `string` y los pierda.
+ */
+export type Rol = 'administrador' | 'tecnico' | (string & {})
 
 export interface UsuarioSesion {
     id: string

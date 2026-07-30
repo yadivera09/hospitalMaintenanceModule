@@ -38,7 +38,12 @@ import { getActividadesByCategoria } from '@/mocks/catalogos'
 import { getTiposMantenimiento, getUbicaciones, getInsumos, TipoMantenimiento, UbicacionConCliente, Insumo } from '@/app/actions/catalogos'
 import { getEquipoById } from '@/app/actions/equipos'
 import { getTecnicos, getTecnicoActual } from '@/app/actions/tecnicos'
-import { getReporteBorradorData, getUltimoMantenimientoPreventivo } from '@/app/actions/reportes'
+import {
+    getReporteBorradorData, getUltimoMantenimientoPreventivo,
+    actualizarBorradorReporte, createBorradorReporte,
+    guardarDetalleReporte, guardarInsumosTecnicos,
+    firmarComoTecnico, guardarBorradorGlobal,
+} from '@/app/actions/reportes'
 import type { ActividadChecklist } from '@/types'
 import type SignatureCanvasType from 'react-signature-canvas'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -46,7 +51,9 @@ import InsumoSelector from '@/components/tecnico/InsumoSelector'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useOfflineReporte } from '@/hooks/useOfflineReporte'
-import { generarIdLocal } from '@/lib/offline/db'
+import { generarIdLocal, getCatalogo, buscarEquipoEnCache, getAllEquiposFromCache, guardarReporteOffline } from '@/lib/offline/db'
+import { sync } from '@/lib/offline/sync'
+import { createClient as createBrowserSB } from '@/lib/supabase/client'
 import { WifiOff } from 'lucide-react'
 
 // ── Wrapper client-only para SignatureCanvas
@@ -946,29 +953,34 @@ export default function NuevoReporteWizard() {
             console.log('🔵 [PAGE] cargarContexto iniciado')
             setCargandoContexto(true)
             try {
-                // ── IDB-first ────────────────────────────────────────────────
-                const { buscarEquipoEnCache, getCatalogo } = await import('@/lib/offline/db')
-                const [equipoIDB, tecnicoIDB, tiposIDB, insumosIDB] = await Promise.allSettled([
+                // ── IDB-first — imports estáticos para que el bundler los registre correctamente
+                const [equipoIDB, tecnicoIDB, tiposIDB, insumosIDB, ubicacionesIDB, tecnicosIDB] = await Promise.allSettled([
                     buscarEquipoEnCache(equipoId),
                     getCatalogo<TecnicoData>('tecnico_actual'),
                     getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento'),
                     getCatalogo<Insumo[]>('insumos'),
+                    getCatalogo<UbicacionConCliente[]>('ubicaciones', true),
+                    getCatalogo<TecnicoData[]>('tecnicos', true),
                 ])
                 if (equipoIDB.status === 'fulfilled' && equipoIDB.value) setEquipo(equipoIDB.value as any)
                 if (tecnicoIDB.status === 'fulfilled' && tecnicoIDB.value) setTecnicoActual(tecnicoIDB.value)
                 if (tiposIDB.status === 'fulfilled' && tiposIDB.value) setTiposMantenimiento(tiposIDB.value)
                 if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
+                if (ubicacionesIDB.status === 'fulfilled' && ubicacionesIDB.value) setUbicaciones(ubicacionesIDB.value)
+                if (tecnicosIDB.status === 'fulfilled' && tecnicosIDB.value) setTecnicos(tecnicosIDB.value)
 
                 // Sin conexión: si tenemos el equipo en IDB, el wizard funciona completo.
                 // Si no está en IDB, intentar fallback a todos los equipos cacheados.
                 if (!isOnline) {
-                    if (equipoIDB.status !== 'fulfilled' || !equipoIDB.value) {
+                    let cachedEquipo: any = equipoIDB.status === 'fulfilled' ? equipoIDB.value : null
+
+                    if (!cachedEquipo) {
                         try {
-                            const { getAllEquiposFromCache } = await import('@/lib/offline/db')
                             const todos = await getAllEquiposFromCache()
-                            const encontrado = todos.find(e => e.id === equipoId)
+                            const encontrado = todos.find(e => e.id === equipoId) ?? null
                             if (encontrado) {
                                 setEquipo(encontrado as any)
+                                cachedEquipo = encontrado
                             } else {
                                 setErrorGlobal('Equipo no disponible offline. Abre la app con conexión para cachear los equipos.')
                             }
@@ -976,6 +988,12 @@ export default function NuevoReporteWizard() {
                             setErrorGlobal('Error al leer el caché local.')
                         }
                     }
+
+                    // Último preventivo precacheado en el equipo (campo añadido por /api/offline/equipos)
+                    if (cachedEquipo?.ultimo_preventivo_fecha) {
+                        setUltimoPreventivo(cachedEquipo.ultimo_preventivo_fecha)
+                    }
+
                     setCargandoContexto(false)
                     return  // salir aquí, nunca llegar al fetch de Supabase
                 }
@@ -1039,7 +1057,6 @@ export default function NuevoReporteWizard() {
                 // Initialize draft data if it exists
                 if (draftRes?.data) {
                     const r = draftRes.data;
-                    const { createClient: createBrowserSB } = await import('@/lib/supabase/client')
                     const sbClient = createBrowserSB()
                     console.log('[cargarContexto] hora_salida raw:', r.hora_salida, '| estado:', r.estado_reporte)
                     // Primera actualización: campos que no dependen de otros selects cargados
@@ -1195,7 +1212,6 @@ export default function NuevoReporteWizard() {
         startTransition(async () => {
             try {
                 if (reporteId) {
-                    const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
                     const result = await actualizarBorradorReporte(reporteId, {
                         equipo_id: equipoId,
                         tecnico_principal_id: tecnicoActual.id,
@@ -1214,7 +1230,6 @@ export default function NuevoReporteWizard() {
                     setErrorGlobal(null)
                     setPaso(2)
                 } else {
-                    const { createBorradorReporte } = await import('@/app/actions/reportes')
                     const result = await createBorradorReporte({
                         equipo_id: equipoId,
                         tecnico_principal_id: tecnicoActual.id,
@@ -1264,7 +1279,6 @@ export default function NuevoReporteWizard() {
 
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
-            const { guardarDetalleReporte } = await import('@/app/actions/reportes')
             const result = await guardarDetalleReporte({
                 reporte_id: reporteId,
                 diagnostico: datos.diagnostico || null,
@@ -1313,7 +1327,6 @@ export default function NuevoReporteWizard() {
 
         if (!reporteId) { setErrorGlobal('Borrador no creado'); return }
         startTransition(async () => {
-            const { guardarInsumosTecnicos } = await import('@/app/actions/reportes')
             const result = await guardarInsumosTecnicos({
                 reporte_id: reporteId,
                 insumos_usados: datos.insumos_usados.map((i) => ({
@@ -1348,7 +1361,6 @@ export default function NuevoReporteWizard() {
     async function handleFirmarTecnico(): Promise<boolean> {
         if (!reporteId || !firmaRef.current) return false
         const base64 = firmaRef.current.toDataURL('image/png')
-        const { firmarComoTecnico } = await import('@/app/actions/reportes')
         const result = await firmarComoTecnico({ reporte_id: reporteId, firma_base64: base64 })
         if (result.error) { setErrorGlobal(result.error); return false }
         setErrorGlobal(null)
@@ -1431,7 +1443,6 @@ export default function NuevoReporteWizard() {
 
         // Online: sync en background + redirect
         try {
-            const { sync } = await import('@/lib/offline/sync')
             sync().catch(console.error)
         } catch(e) {
             console.error('Error triggering sync', e)
@@ -1443,7 +1454,6 @@ export default function NuevoReporteWizard() {
     async function handleGuardarBorrador() {
         if (!navigator.onLine) {
             // ... (logica offline existente omitida por brevedad en multi replace o re-ejecutada literal)
-            const { guardarReporteOffline } = await import('@/lib/offline/db')
             await guardarReporteOffline({
                 id: reporteId || crypto.randomUUID(),
                 equipo_id: equipoId,
@@ -1478,7 +1488,6 @@ export default function NuevoReporteWizard() {
         }
 
         startTransition(async () => {
-            const { guardarBorradorGlobal } = await import('@/app/actions/reportes')
             const re = await guardarBorradorGlobal({
                 reporte_id: reporteId,
                 tipo_mantenimiento_id: datos.tipo_mantenimiento_id,

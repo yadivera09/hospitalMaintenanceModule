@@ -3,7 +3,12 @@
     "allow": [
       "Bash(find c:UsersdayanmaintenanceModule -type f \\\\\\(-name *.sql -o -name *supabase* -o -name *migrations* \\\\\\))",
       "Bash(xargs grep *)",
-      "Bash(node --check \"c:/Users/dayan/maintenanceModule/public/sw.js\")"
+      "Bash(node --check \"c:/Users/dayan/maintenanceModule/public/sw.js\")",
+      "Bash(node scripts/generate-icons.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/dashboard --max-time 120)",
+      "Read(//c/Users/dayan/AppData/Local/Temp/claude/C--Users-dayan-maintenanceModule/f5308b35-2d46-473f-bca7-137b4b813d70/tasks/**)"
     ]
   }
 }

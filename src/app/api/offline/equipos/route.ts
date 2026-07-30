@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/offline/equipos?tecnico_id=<uuid>
- * Devuelve los equipos asignados al técnico (via equipo_contratos) para caché offline.
+ * Devuelve equipos activos enriquecidos con cliente, contrato y ubicación
+ * para caché offline. Usa la misma lógica que getEquipos() del panel online.
  * Requiere sesión activa (cookie de Supabase).
  */
 export async function GET(req: NextRequest) {
@@ -15,9 +16,8 @@ export async function GET(req: NextRequest) {
     try {
         const supabase = createClient()
 
-        // Traer los equipos de contratos activos donde aparece el técnico.
-        // Se usa como caché de búsqueda offline, no es exhaustivo.
-        const { data, error } = await supabase
+        // Equipos activos con categoría y tipo de mantenimiento
+        const { data: equipos, error: equiposError } = await supabase
             .from('equipos')
             .select(`
                 *,
@@ -27,9 +27,52 @@ export async function GET(req: NextRequest) {
             .eq('activo', true)
             .order('nombre')
 
-        if (error) throw error
+        if (equiposError) throw equiposError
 
-        return NextResponse.json({ equipos: data })
+        // Contratos vigentes con cliente y ubicación — misma vista que usa getEquipos()
+        const { data: vigentes, error: vigentesError } = await supabase
+            .from('v_equipo_contrato_vigente')
+            .select('equipo_id, cliente_nombre, cliente_id, contrato_id, numero_contrato, ubicacion_id, ubicacion_nombre')
+
+        if (vigentesError) throw vigentesError
+
+        const vigentesMap = Object.fromEntries(
+            (vigentes ?? []).map((v) => [v.equipo_id, v])
+        )
+
+        // Último reporte preventivo por equipo — misma lógica que getUltimoMantenimientoPreventivo()
+        // pero en batch para evitar N+1. Ordenado desc para que el primero por equipo_id sea el más reciente.
+        const { data: preventivos } = await supabase
+            .from('reportes_mantenimiento')
+            .select('equipo_id, fecha_inicio, tipo:tipos_mantenimiento!inner(es_planificado)')
+            .eq('tipo.es_planificado', true)
+            .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+            .order('fecha_inicio', { ascending: false })
+
+        const preventivoMap: Record<string, string> = {}
+        for (const p of preventivos ?? []) {
+            if (!preventivoMap[p.equipo_id]) {
+                preventivoMap[p.equipo_id] = p.fecha_inicio
+            }
+        }
+
+        // Combinar: añadir campos denormalizados que el wizard necesita offline
+        const equiposEnriquecidos = (equipos ?? []).map((e) => {
+            const v = vigentesMap[e.id]
+            return {
+                ...e,
+                categoria_nombre:        (e.categoria as any)?.nombre ?? null,
+                cliente_nombre:          v?.cliente_nombre   ?? null,
+                cliente_id:              v?.cliente_id       ?? null,
+                contrato_id:             v?.contrato_id      ?? null,
+                numero_contrato:         v?.numero_contrato  ?? null,
+                ubicacion_id:            v?.ubicacion_id     ?? null,
+                ubicacion_nombre:        v?.ubicacion_nombre ?? null,
+                ultimo_preventivo_fecha: preventivoMap[e.id] ?? null,
+            }
+        })
+
+        return NextResponse.json({ equipos: equiposEnriquecidos })
     } catch (err) {
         console.error('[/api/offline/equipos]', err)
         return NextResponse.json({ error: 'Error al cargar equipos.' }, { status: 500 })

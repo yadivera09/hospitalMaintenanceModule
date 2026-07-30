@@ -35,8 +35,15 @@ export async function precargarDatosOffline(tecnicoId: string): Promise<void> {
 }
 
 async function precargarCatalogos(): Promise<void> {
-    const yaEnCache = await getCatalogo('tipos_mantenimiento')
-    if (yaEnCache) return
+    // Comprobar todos los catálogos requeridos — si alguno falta, refetch completo.
+    // (Antes solo se chequeaba tipos_mantenimiento, lo que dejaba ubicaciones y
+    //  tecnicos sin cachear si ya existía ese key pero los otros no.)
+    const [tipos, ubicaciones, tecnicos] = await Promise.all([
+        getCatalogo('tipos_mantenimiento'),
+        getCatalogo('ubicaciones'),
+        getCatalogo('tecnicos'),
+    ])
+    if (tipos && ubicaciones && tecnicos) return
 
     try {
         const datos = await fetchJSON<{
@@ -44,13 +51,17 @@ async function precargarCatalogos(): Promise<void> {
             insumos: any[]
             categorias: any[]
             checklists: any[]
+            ubicaciones: any[]
+            tecnicos: any[]
         }>('/api/offline/catalogs')
 
         await Promise.all([
             guardarCatalogo('tipos_mantenimiento', datos.tipos_mantenimiento),
-            guardarCatalogo('insumos', datos.insumos),
-            guardarCatalogo('categorias', datos.categorias),
-            guardarCatalogo('checklists', datos.checklists),
+            guardarCatalogo('insumos',             datos.insumos),
+            guardarCatalogo('categorias',          datos.categorias),
+            guardarCatalogo('checklists',          datos.checklists),
+            guardarCatalogo('ubicaciones',         datos.ubicaciones),
+            guardarCatalogo('tecnicos',            datos.tecnicos),
         ])
     } catch (err) {
         console.warn('[preload] No se pudieron cachear catálogos:', err)
@@ -84,9 +95,15 @@ export async function refrescarCacheVencida(tecnicoId: string): Promise<void> {
     const { getAllEquiposFromCache } = await import('./db')
 
     await Promise.allSettled([
-        getCatalogo('tipos_mantenimiento').then(v => {
-            if (!v) return precargarCatalogos()
+        // Catálogos: refetch si alguno de los requeridos está vencido o ausente
+        Promise.all([
+            getCatalogo('tipos_mantenimiento'),
+            getCatalogo('ubicaciones'),
+            getCatalogo('tecnicos'),
+        ]).then(([tipos, ubicaciones, tecnicos]) => {
+            if (!tipos || !ubicaciones || !tecnicos) return precargarCatalogos()
         }),
+        // Equipos: refetch si el store está vacío (TTL 12h gestionado por getAllEquiposFromCache)
         getAllEquiposFromCache().then(equipos => {
             if (equipos.length === 0) return precargarEquipos(tecnicoId)
         }),

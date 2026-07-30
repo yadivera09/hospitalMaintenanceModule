@@ -10,15 +10,19 @@ import { useState } from 'react'
 import Sidebar from '@/components/admin/Sidebar'
 import Navbar from '@/components/admin/Navbar'
 import type { UsuarioSesion } from '@/types'
+import type { MenuNav } from '@/lib/seguridad/navegacion'
 
 interface AdminLayoutClientProps {
     children: React.ReactNode
     usuario: UsuarioSesion
+    /** Navegación ya filtrada por permisos en el servidor */
+    navegacion: MenuNav[]
 }
 
 export default function AdminLayoutClient({
     children,
-    usuario
+    usuario,
+    navegacion
 }: AdminLayoutClientProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -27,6 +31,7 @@ export default function AdminLayoutClient({
 
             {/* ── Sidebar ─────────────────────────────────────── */}
             <Sidebar
+                navegacion={navegacion}
                 mobileOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
             />

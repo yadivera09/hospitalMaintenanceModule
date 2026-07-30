@@ -5,10 +5,14 @@
  * Todas las queries usan createAdminClient() (service_role) para evitar
  * que las políticas RLS bloqueen lecturas del sistema de roles.
  *
- * Arquitectura de transición:
- *   1. Lee roles desde usuario_roles → roles (nueva tabla).
- *   2. Si no hay resultados, hace fallback a user_metadata.rol (compatibilidad
- *      con usuarios que aún no fueron migrados a la nueva tabla).
+ * Fuente de verdad ÚNICA: usuario_roles → roles.
+ *
+ * IMPORTANTE — no reintroducir el fallback a user_metadata.rol:
+ *   user_metadata es escribible por el propio usuario vía
+ *   supabase.auth.updateUser({ data: { rol: 'administrador' } }). Usarlo para
+ *   decidir autorización permite que cualquier usuario se auto-ascienda.
+ *   Los roles solo se asignan desde /admin/seguridad/usuarios (tabla usuario_roles).
+ *   Ver migración 014_seguridad_hardening.sql.
  *
  * El cálculo de permisos hace OR entre todos los roles activos del usuario:
  *   Si tiene rol 'tecnico' (sin exportar) Y rol 'supervisor' (con exportar),
@@ -16,6 +20,9 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+
+/** Rol con acceso total: no se filtra por la matriz de permisos. */
+export const ROL_ADMINISTRADOR = 'administrador'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos internos
@@ -37,93 +44,91 @@ interface PermisoModuloRow {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fallbackMetadataRol (privado)
+// getEstadoUsuario
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Fallback de compatibilidad: lee el rol desde user_metadata.
- * Se usa cuando el usuario no tiene fila en public.usuarios o no tiene
- * roles en usuario_roles (usuarios no migrados al nuevo RBAC).
- *
- * TODO Fase 5: quitar este fallback cuando user_metadata.rol esté deprecated.
- */
-async function fallbackMetadataRol(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    admin: any,
-    userId: string
-): Promise<string[]> {
-    const { data: authUser } = await admin.auth.admin.getUserById(userId)
-    const rolLegacy = authUser?.user?.user_metadata?.rol as string | undefined
-
-    if (rolLegacy) {
-        console.warn(
-            `[getRolesUsuario] Usuario ${userId} sin roles en usuario_roles. ` +
-            `Usando fallback user_metadata.rol="${rolLegacy}".`
-        )
-        return [rolLegacy]
-    }
-
-    return []
+/** Identidad, estado y roles de un usuario — resuelto en una sola query. */
+export interface EstadoUsuario {
+    /** usuarios.id (genérico) — el que referencian usuario_roles y auditoria */
+    usuarioId: string
+    nombre: string
+    apellido: string
+    email: string
+    /** false = cuenta desactivada; el middleware corta el acceso */
+    activo: boolean
+    /** Nombres de los roles activos, ej: ['administrador'] */
+    roles: string[]
 }
 
+/**
+ * Resuelve identidad, estado y roles de un usuario en una sola consulta.
+ *
+ * Reemplaza el par de queries que hacía getRolesUsuario (usuarios + usuario_roles)
+ * y añade el flag `activo`, que antes no se verificaba en ningún punto del flujo
+ * de acceso: desactivar un usuario no le impedía entrar.
+ *
+ * @param userId - El auth.users.id del usuario (NO el usuarios.id).
+ * @returns null si el usuario no tiene fila en public.usuarios.
+ */
+export async function getEstadoUsuario(userId: string): Promise<EstadoUsuario | null> {
+    const admin = createAdminClient()
+
+    const { data, error } = await admin
+        .from('usuarios')
+        .select(`
+            id, nombre, apellido, email, activo,
+            usuario_roles (
+                activo,
+                roles ( nombre )
+            )
+        `)
+        .eq('user_id', userId)
+        .maybeSingle()
+
+    if (error) {
+        console.error('[getEstadoUsuario] Error al leer el usuario:', error.message)
+        return null // Fail-closed: ante error, sin identidad ni roles
+    }
+
+    if (!data) return null
+
+    const roles = (data.usuario_roles as unknown as UsuarioRolRow[] ?? [])
+        .filter((ur) => ur.activo)
+        .map((ur) => ur.roles?.nombre)
+        .filter((n): n is string => typeof n === 'string' && n.length > 0)
+
+    return {
+        usuarioId: data.id,
+        nombre: data.nombre,
+        apellido: data.apellido,
+        email: data.email,
+        activo: data.activo,
+        roles: Array.from(new Set(roles)),
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getRolesUsuario
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Obtiene los nombres de los roles activos asignados a un usuario.
  *
- * Estrategia de lectura:
- *   1. Busca en usuario_roles → roles (nueva tabla RBAC).
- *   2. Si la tabla no retorna resultados (usuario no migrado), hace fallback
- *      a auth.users.user_metadata.rol para compatibilidad hacia atrás.
+ * Fuente única: usuario_roles → roles. Un usuario sin fila en public.usuarios,
+ * desactivado, o sin roles asignados obtiene [] — nunca se infiere un rol desde
+ * user_metadata (ver nota de seguridad en la cabecera del archivo).
  *
  * @param userId - El auth.users.id del usuario (NO el usuarios.id).
  * @returns Array de nombres de rol, ej: ['administrador'] o ['tecnico', 'supervisor'].
- *          Retorna [] si el usuario no tiene roles ni metadata.
  *
  * @example
  *   const roles = await getRolesUsuario(user.id)
  *   if (roles.includes('administrador')) { ... }
  */
 export async function getRolesUsuario(userId: string): Promise<string[]> {
-    const admin = createAdminClient()
-
-    // ── Paso 1: resolver usuarios.id desde auth.users.id ─────────────────────
-    // Se hace primero porque usuario_roles apunta a usuarios.id (no a auth.users.id).
-    const { data: usuarioRow } = await admin
-        .from('usuarios')
-        .select('id')
-        .eq('user_id', userId)
-        .single()
-
-    if (!usuarioRow?.id) {
-        // El usuario no tiene fila en public.usuarios todavía → ir directo al fallback
-        return await fallbackMetadataRol(admin, userId)
-    }
-
-    // ── Paso 2: leer roles activos desde usuario_roles → roles ───────────────
-    const { data: rolRows, error: rolError } = await admin
-        .from('usuario_roles')
-        .select(`
-            activo,
-            roles ( nombre )
-        `)
-        .eq('usuario_id', usuarioRow.id)
-        .eq('activo', true)
-
-    if (rolError) {
-        console.error('[getRolesUsuario] Error al leer roles:', rolError.message)
-        return await fallbackMetadataRol(admin, userId)
-    }
-
-    if (rolRows && rolRows.length > 0) {
-        const nombres = (rolRows as unknown as UsuarioRolRow[])
-            .map((r) => r.roles?.nombre)
-            .filter((n): n is string => typeof n === 'string' && n.length > 0)
-
-        if (nombres.length > 0) return nombres
-    }
-
-    // Sin roles en usuario_roles → intentar fallback
-    return await fallbackMetadataRol(admin, userId)
+    const estado = await getEstadoUsuario(userId)
+    if (!estado || !estado.activo) return []
+    return estado.roles
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,46 +153,34 @@ export async function getRolesUsuario(userId: string): Promise<string[]> {
  *                        'ver' | 'crear' | 'editar' | 'eliminar' | 'exportar' | 'anular'.
  * @returns true si alguno de los roles activos del usuario tiene ese permiso.
  *          false si no tiene el permiso o si ocurre algún error (fail-closed).
+ *
+ * IMPORTANTE — no reintroducir la consulta propia que tenía esta función:
+ *   filtraba con .in('roles.nombre', roles) sobre una relación EMBEBIDA sin
+ *   !inner. PostgREST no descarta filas padre así: devuelve todas las filas de
+ *   rol_permisos_modulo con roles: null para las que no coinciden. Y el filtro
+ *   en memoria solo comparaba módulo y código, nunca el rol — de modo que
+ *   cualquier usuario obtenía los permisos de CUALQUIER rol del sistema.
+ *   Delegar en permisosUsuario(), que filtra por rol_id en la consulta, es lo
+ *   que cierra ese agujero y deja una sola implementación del cálculo.
  */
 export async function tienePermiso(
     userId: string,
     moduloUrl: string,
     permisoCodigo: string
 ): Promise<boolean> {
-    const admin = createAdminClient()
-
-    // 1. Obtener roles activos del usuario
     const roles = await getRolesUsuario(userId)
     if (roles.length === 0) return false
 
-    // 2. Verificar si algún rol tiene el permiso sobre el módulo
-    //    Join: rol_permisos_modulo → roles (nombre) → modulos (url) → permisos (codigo)
-    const { data, error } = await admin
-        .from('rol_permisos_modulo')
-        .select(`
-            activo,
-            roles ( nombre ),
-            modulos ( url ),
-            permisos ( codigo )
-        `)
-        .eq('activo', true)
-        .in('roles.nombre', roles)
+    // Atajo de administrador: acceso total por definición, sin consultar la
+    // matriz. Se mantiene aquí y no se delega en permisosUsuario() porque ese
+    // mapa se construye solo con los módulos sembrados: un módulo que falte en
+    // el catálogo dejaría al administrador fuera, incluida la pantalla desde la
+    // que se arreglan los permisos.
+    if (roles.includes(ROL_ADMINISTRADOR)) return true
 
-    if (error) {
-        console.error('[tienePermiso] Error al consultar permisos:', error.message)
-        return false // Fail-closed: ante error, denegar acceso
-    }
+    const permisos = await permisosUsuario(userId)
 
-    if (!data || data.length === 0) return false
-
-    // 3. Filtrar por módulo y permiso específicos en memoria
-    //    (más simple y predecible que múltiples filtros anidados en Supabase)
-    return (data as unknown as PermisoModuloRow[]).some(
-        (row) =>
-            row.activo &&
-            row.modulos?.url === moduloUrl &&
-            row.permisos?.codigo === permisoCodigo
-    )
+    return permisos[moduloUrl]?.includes(permisoCodigo) ?? false
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,6 +217,24 @@ export async function permisosUsuario(
     // 1. Obtener roles activos del usuario
     const roles = await getRolesUsuario(userId)
     if (roles.length === 0) return {}
+
+    // Atajo de administrador: todos los permisos sobre todos los módulos
+    // activos, sin depender de lo que haya en la matriz (ver tienePermiso).
+    if (roles.includes(ROL_ADMINISTRADOR)) {
+        const [{ data: modulos }, { data: permisos }] = await Promise.all([
+            admin.from('modulos').select('url').eq('activo', true),
+            admin.from('permisos').select('codigo'),
+        ])
+
+        const codigos = (permisos ?? []).map((p) => p.codigo)
+        const mapa: Record<string, string[]> = {}
+
+        for (const modulo of modulos ?? []) {
+            mapa[modulo.url] = codigos
+        }
+
+        return mapa
+    }
 
     // 2. Obtener IDs de los roles para filtrar en rol_permisos_modulo
     const { data: rolData, error: rolError } = await admin

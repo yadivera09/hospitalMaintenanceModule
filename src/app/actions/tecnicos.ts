@@ -8,6 +8,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { generarPasswordTemporal } from '@/lib/seguridad/password'
+import { requireAdmin, ACCESO_DENEGADO } from '@/lib/seguridad/guard'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { Tecnico } from '@/types'
@@ -179,6 +181,17 @@ export async function getTecnicoById(
 
         if (tecnicoRes.error) throw tecnicoRes.error
 
+        // El estado de MFA vive en 'usuarios' desde la migración 015; las
+        // columnas mfa_* de 'tecnicos' quedaron obsoletas y ya no se escriben.
+        // Se sobrescriben aquí para que la ficha del técnico no muestre datos
+        // congelados en el momento de la migración.
+        const admin = createAdminClient()
+        const { data: identidad } = await admin
+            .from('usuarios')
+            .select('mfa_configurado, mfa_metodo, mfa_configurado_en')
+            .eq('user_id', (tecnicoRes.data as Tecnico).user_id)
+            .maybeSingle()
+
         // Extraer y combinar los reportes de ambas fuentes
         const reportes: any[] = []
         if (principalRes.data) {
@@ -201,6 +214,9 @@ export async function getTecnicoById(
         return {
             data: {
                 ...(tecnicoRes.data as Tecnico),
+                mfa_configurado: identidad?.mfa_configurado ?? false,
+                mfa_metodo: (identidad?.mfa_metodo as 'totp' | null) ?? null,
+                mfa_configurado_en: identidad?.mfa_configurado_en ?? null,
                 intervenciones: combinados,
             },
             error: null,
@@ -217,23 +233,17 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
 
     const admin = createAdminClient()
 
-    // ── Generar contraseña temporal: 3 letras nombre + 3 apellido + 123 ──────
-    // Ej: "Yadira Vera" → "yadver123"
-    function generarPasswordTemporal(nombre: string, apellido: string): string {
-        const n = nombre.trim().toLowerCase().replace(/\s+/g, '').slice(0, 3).padEnd(3, 'x')
-        const a = apellido.trim().toLowerCase().replace(/\s+/g, '').slice(0, 3).padEnd(3, 'x')
-        return `${n}${a}123`
-    }
-
-    const passwordTemporal = generarPasswordTemporal(parsed.data.nombre, parsed.data.apellido)
+    // Aleatoria, no derivada del nombre: ver src/lib/seguridad/password.ts
+    const passwordTemporal = generarPasswordTemporal()
 
     // ── Paso 1: crear usuario en Auth con contraseña temporal ─────────────────
     const { data: createData, error: createErr } = await admin.auth.admin.createUser({
         email: parsed.data.email,
         password: passwordTemporal,
         email_confirm: true,           // confirmar email automáticamente
+        // Solo datos descriptivos. El rol NUNCA va aquí: user_metadata es
+        // escribible por el propio usuario (ver 014_seguridad_hardening.sql).
         user_metadata: {
-            rol: 'tecnico',
             debe_cambiar_password: true,
             nombre: parsed.data.nombre,
             apellido: parsed.data.apellido,
@@ -261,6 +271,7 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
                 apellido: parsed.data.apellido,
                 email: parsed.data.email,
                 telefono: parsed.data.telefono || null,
+                cedula: parsed.data.cedula || null,
                 activo: parsed.data.activo,
             })
             .select()
@@ -330,12 +341,18 @@ export async function createTecnico(raw: unknown): Promise<ActionResult<Tecnico>
 }
 
 export async function updateTecnico(id: string, raw: unknown): Promise<ActionResult<Tecnico>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     const parsed = TecnicoSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
 
     try {
-        const supabase = createClient()
-        const { data, error } = await supabase
+        // Cliente service_role, igual que el resto de escrituras del módulo.
+        // Con el cliente sujeto a RLS este UPDATE afectaba 0 filas y fallaba
+        // con PGRST116; la autorización se hace arriba, no vía policy.
+        const admin = createAdminClient()
+        const { data, error } = await admin
             .from('tecnicos')
             .update({
                 ...parsed.data,
@@ -350,7 +367,14 @@ export async function updateTecnico(id: string, raw: unknown): Promise<ActionRes
             if (error.code === '23505') return { data: null, error: 'Ya existe un técnico con ese email o cédula.' }
             throw error
         }
+
+        // Propagar los datos personales a la identidad. Sin esto, editar a un
+        // técnico dejaba desactualizadas las pantallas de Seguridad: cada tabla
+        // guardaba su propia versión del nombre, email o teléfono.
+        await sincronizarIdentidadDesdeTecnico(createAdminClient(), id, parsed.data)
+
         revalidatePath('/admin/tecnicos')
+        revalidatePath('/admin/seguridad/usuarios')
         return { data: data as Tecnico, error: null }
     } catch (err) {
         console.error('[updateTecnico]', err)
@@ -358,8 +382,106 @@ export async function updateTecnico(id: string, raw: unknown): Promise<ActionRes
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// sincronizarAccesoUsuario — mantiene usuarios.activo alineado con tecnicos.activo
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Desactiva un técnico (soft delete).
+ * Propaga el estado del técnico a su identidad en la tabla `usuarios`.
+ *
+ * Son dos flags con significados distintos:
+ *   tecnicos.activo → disponible para asignarle reportes (negocio)
+ *   usuarios.activo → puede entrar al sistema (identidad, lo lee el middleware)
+ *
+ * Dar de baja a un técnico debe revocarle el acceso: sin esta sincronización,
+ * un técnico desactivado seguía pudiendo iniciar sesión.
+ *
+ * Para suspender el acceso SIN dar de baja al técnico, usar el toggle de
+ * /admin/seguridad/usuarios, que escribe solo usuarios.activo.
+ *
+ * No lanza: si la identidad no existe, no hay nada que sincronizar.
+ */
+async function sincronizarAccesoUsuario(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    admin: any,
+    tecnicoId: string,
+    activo: boolean
+): Promise<void> {
+    const { data: tecnico } = await admin
+        .from('tecnicos')
+        .select('usuario_id, user_id')
+        .eq('id', tecnicoId)
+        .maybeSingle()
+
+    if (!tecnico) return
+
+    const query = admin.from('usuarios').update({ activo })
+
+    // usuario_id es la FK canónica; user_id es el fallback para filas antiguas
+    // que aún no fueron vinculadas por la migración 008.
+    const { error } = tecnico.usuario_id
+        ? await query.eq('id', tecnico.usuario_id)
+        : await query.eq('user_id', tecnico.user_id)
+
+    if (error) {
+        console.error('[sincronizarAccesoUsuario]', error.message)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sincronizarIdentidadDesdeTecnico — propaga los datos personales a `usuarios`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Copia a `usuarios` los datos personales editados en la ficha del técnico.
+ *
+ * Nombre, apellido, email, teléfono y cédula pertenecen a la identidad; las
+ * columnas equivalentes en `tecnicos` son copias que aún leen 14 consultas de
+ * reportes, dashboard y caché offline. Mientras esa deuda exista, ambas caras
+ * deben escribirse juntas o los datos divergen.
+ *
+ * No lanza: un fallo aquí no debe invalidar la edición ya guardada.
+ */
+async function sincronizarIdentidadDesdeTecnico(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    admin: any,
+    tecnicoId: string,
+    cambios: Record<string, unknown>
+): Promise<void> {
+    const CAMPOS_DE_IDENTIDAD = ['nombre', 'apellido', 'email', 'telefono', 'cedula', 'activo'] as const
+
+    const actualizacion: Record<string, unknown> = {}
+    for (const campo of CAMPOS_DE_IDENTIDAD) {
+        if (campo in cambios && cambios[campo] !== undefined) {
+            actualizacion[campo] = cambios[campo] || null
+        }
+    }
+
+    if (Object.keys(actualizacion).length === 0) return
+
+    try {
+        const { data: tecnico } = await admin
+            .from('tecnicos')
+            .select('usuario_id, user_id')
+            .eq('id', tecnicoId)
+            .maybeSingle()
+
+        if (!tecnico) return
+
+        const query = admin.from('usuarios').update(actualizacion)
+
+        const { error } = tecnico.usuario_id
+            ? await query.eq('id', tecnico.usuario_id)
+            : await query.eq('user_id', tecnico.user_id)
+
+        if (error) console.error('[sincronizarIdentidadDesdeTecnico]', error.message)
+    } catch (err) {
+        console.error('[sincronizarIdentidadDesdeTecnico]', err)
+    }
+}
+
+/**
+ * Desactiva un técnico (soft delete) y le revoca el acceso al sistema.
  * Verifica que no tenga reportes de mantenimiento activos (no cerrados) asignados como técnico principal.
  * NUNCA elimina físicamente — solo cambia activo = false.
  */
@@ -413,7 +535,12 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
             .eq('id', id)
 
         if (error) throw error
+
+        // 3. Revocar el acceso al sistema
+        await sincronizarAccesoUsuario(admin, id, false)
+
         revalidatePath('/admin/tecnicos')
+        revalidatePath('/admin/seguridad/usuarios')
         return { data: true, error: null }
     } catch (err) {
         console.error('[desactivarTecnico]', err)
@@ -454,7 +581,13 @@ export async function eliminarTecnicoDefinitivo(id: string): Promise<ActionResul
             return { data: null, error: 'HAS_DEPENDENCIES' }
         }
 
-        // 3. Proceder con el hard delete en la tabla tecnicos
+        // 3. Revocar el acceso ANTES de borrar — después ya no se puede
+        //    resolver a qué identidad pertenecía este técnico.
+        //    Sin esto quedaría una cuenta que puede autenticarse pero cuyo
+        //    estado MFA vive en una fila de 'tecnicos' que ya no existe.
+        await sincronizarAccesoUsuario(admin, id, false)
+
+        // 4. Proceder con el hard delete en la tabla tecnicos
         const { error } = await admin
             .from('tecnicos')
             .delete()
@@ -463,6 +596,7 @@ export async function eliminarTecnicoDefinitivo(id: string): Promise<ActionResul
         if (error) throw error
 
         revalidatePath('/admin/tecnicos')
+        revalidatePath('/admin/seguridad/usuarios')
         return { data: true, error: null }
     } catch (err) {
         console.error('[eliminarTecnicoDefinitivo]', err)
@@ -470,17 +604,26 @@ export async function eliminarTecnicoDefinitivo(id: string): Promise<ActionResul
     }
 }
 
+/**
+ * Alterna el estado del técnico y su acceso al sistema en bloque:
+ * reactivar a un técnico le devuelve el acceso, desactivarlo se lo quita.
+ */
 export async function toggleActivoTecnico(id: string): Promise<ActionResult<boolean>> {
     try {
         const admin = createAdminClient()
         const { data: current, error: fetchErr } = await admin.from('tecnicos').select('activo').eq('id', id).single()
         if (fetchErr) throw fetchErr
 
-        const { error: updateErr } = await admin.from('tecnicos').update({ activo: !current.activo }).eq('id', id)
+        const nuevoEstado = !current.activo
+
+        const { error: updateErr } = await admin.from('tecnicos').update({ activo: nuevoEstado }).eq('id', id)
         if (updateErr) throw updateErr
 
+        await sincronizarAccesoUsuario(admin, id, nuevoEstado)
+
         revalidatePath('/admin/tecnicos')
-        return { data: !current.activo, error: null }
+        revalidatePath('/admin/seguridad/usuarios')
+        return { data: nuevoEstado, error: null }
     } catch {
         return { data: null, error: 'Error al cambiar estado del técnico.' }
     }

@@ -16,9 +16,42 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '../../lib/supabase/admin'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { z } from 'zod'
 import crypto from 'crypto'
 import type { ReporteResumen, EstadoReporte } from '@/types'
+
+// ─── Requisitos de permiso ────────────────────────────────────────────────────
+//
+// El ciclo de vida de un reporte lo comparten los dos paneles: el técnico lo
+// levanta desde /tecnico/nuevo-reporte y el administrador lo gestiona desde
+// /admin/reportes. Ninguno tiene permiso sobre el módulo del otro, así que
+// cada operación acepta cualquiera de los dos orígenes (evaluación OR).
+
+/** Consultar reportes: propios del técnico o el listado de administración. */
+const VER_REPORTES = [
+    [MODULO.REPORTES, PERMISO.VER],
+    [MODULO.TEC_MIS_REPORTES, PERMISO.VER],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.VER],
+] as const
+
+/** Levantar un reporte nuevo. */
+const CREAR_REPORTES = [
+    [MODULO.REPORTES, PERMISO.CREAR],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.CREAR],
+] as const
+
+/**
+ * Modificar un reporte en curso: detalle, insumos, borrador y firmas.
+ *
+ * El técnico usa 'editar' sobre su módulo — no 'eliminar' ni 'anular', que son
+ * operaciones de administración que él no tiene y no debe tener.
+ */
+const EDITAR_REPORTES = [
+    [MODULO.REPORTES, PERMISO.EDITAR],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.EDITAR],
+] as const
 
 // ─── Tipos de respuesta ────────────────────────────────────────────────────────
 
@@ -45,6 +78,14 @@ function base64ToBuffer(base64: string): Buffer {
  * Bug-fix: normaliza espacios y usa ilike para evitar duplicados por casing/espacios.
  */
 export async function crearInsumoRapido(nombre: string): Promise<ActionResult<any>> {
+    // Escribe en el catálogo maestro, pero se invoca desde el formulario de
+    // reporte: se acepta también el permiso de crear reportes.
+    const autorizado = await requirePermiso(
+        [MODULO.CATALOGOS, PERMISO.CREAR],
+        ...CREAR_REPORTES,
+    )
+    if (!autorizado) return { data: null, error: SIN_PERMISO }
+
     try {
         const adminSupabase = createAdminClient()
         // Normalizar: quitar espacios extremos y colapsar espacios internos múltiples
@@ -120,6 +161,8 @@ const CreateBorradorSchema = z.object({
 export async function createBorradorReporte(
     input: z.infer<typeof CreateBorradorSchema>
 ): Promise<ActionResult<{ id: string }>> {
+    if (!await requirePermiso(...CREAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = CreateBorradorSchema.safeParse(input)
         if (!parsed.success) {
@@ -181,6 +224,8 @@ export async function actualizarBorradorReporte(
     reporte_id: string,
     input: z.infer<typeof CreateBorradorSchema>
 ): Promise<ActionResult<{ id: string }>> {
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = CreateBorradorSchema.safeParse(input)
         if (!parsed.success) {
@@ -227,6 +272,8 @@ export async function actualizarBorradorReporte(
 export async function getBorradorReporte(
     equipo_id: string
 ): Promise<ActionResult<{ id: string; fecha_inicio: string } | null>> {
+    if (!await requirePermiso(...VER_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const { unstable_noStore: noStore } = await import('next/cache')
         noStore()
@@ -284,6 +331,8 @@ export async function getBorradorReporte(
 export async function getUltimoMantenimientoPreventivo(
     equipo_id: string
 ): Promise<ActionResult<string | null>> {
+    if (!await requirePermiso(...VER_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -313,6 +362,8 @@ export async function getUltimoMantenimientoPreventivo(
 }
 
 export async function getReporteBorradorData(reporte_id: string): Promise<ActionResult<any>> {
+    if (!await requirePermiso(...VER_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const [reporteRes, checklistRes] = await Promise.all([
@@ -353,6 +404,11 @@ export async function getReporteBorradorData(reporte_id: string): Promise<Action
 }
 
 export async function eliminarBorradorReporte(reporte_id: string): Promise<ActionResult> {
+    // Se exige 'editar' y no 'eliminar': descartar el propio borrador es parte
+    // del trabajo del técnico, que no tiene —ni debe tener— permiso de borrado
+    // sobre el módulo de reportes.
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -415,6 +471,8 @@ const GuardarDetalleSchema = z.object({
 export async function guardarDetalleReporte(
     input: z.infer<typeof GuardarDetalleSchema>
 ): Promise<ActionResult> {
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = GuardarDetalleSchema.safeParse(input)
         if (!parsed.success) {
@@ -540,6 +598,8 @@ const GuardarInsumosSchema = z.object({
 export async function guardarInsumosTecnicos(
     input: z.infer<typeof GuardarInsumosSchema>
 ): Promise<ActionResult> {
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = GuardarInsumosSchema.safeParse(input)
         if (!parsed.success) {
@@ -676,6 +736,8 @@ const GuardadoGlobalBorradorSchema = z.object({
 export async function guardarBorradorGlobal(
     input: z.infer<typeof GuardadoGlobalBorradorSchema>
 ): Promise<ActionResult> {
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = GuardadoGlobalBorradorSchema.safeParse(input)
         if (!parsed.success) {
@@ -768,6 +830,8 @@ const FirmarTecnicoSchema = z.object({
 export async function firmarComoTecnico(
     input: z.infer<typeof FirmarTecnicoSchema>
 ): Promise<ActionResult<{ serial: string }>> {
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = FirmarTecnicoSchema.safeParse(input)
         if (!parsed.success) {
@@ -870,6 +934,10 @@ const FirmarClienteSchema = z.object({
 export async function firmarComoCliente(
     input: z.infer<typeof FirmarClienteSchema>
 ): Promise<ActionResult> {
+    // La firma la traza el cliente, pero siempre en el dispositivo del técnico
+    // que llevó el reporte: el permiso exigido es el de quien opera la sesión.
+    if (!await requirePermiso(...EDITAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = FirmarClienteSchema.safeParse(input)
         if (!parsed.success) {
@@ -965,6 +1033,8 @@ export async function getMisReportes(filtros?: {
     estado?: string
     limit?: number
 }): Promise<ActionResult<unknown[]>> {
+    if (!await requirePermiso(...VER_REPORTES)) return { data: [], error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -1014,6 +1084,12 @@ export async function getMisReportes(filtros?: {
 // src/app/actions/reportes.ts
 
 export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>> {
+    // Devuelve TODOS los reportes con service_role, saltando RLS: aquí sí se
+    // exige el módulo de administración, no vale el permiso del técnico.
+    if (!await requirePermiso([MODULO.REPORTES, PERMISO.VER])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createAdminClient()
 
@@ -1083,6 +1159,12 @@ const AnularReporteSchema = z.object({
 export async function anularReporte(
     input: z.infer<typeof AnularReporteSchema>
 ): Promise<ActionResult> {
+    // 'anular' es un permiso propio, distinto de editar: invalida un reporte
+    // ya levantado y es competencia de administración, no del técnico.
+    if (!await requirePermiso([MODULO.REPORTES, PERMISO.ANULAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const parsed = AnularReporteSchema.safeParse(input)
         if (!parsed.success) {
@@ -1132,6 +1214,8 @@ export async function anularReporte(
 // =============================================================================
 
 export async function getReporteById(id: string): Promise<ActionResult<any>> {
+    if (!await requirePermiso(...VER_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         console.log('--- DIAGNOSTICO getReporteById ---')
         console.log('Buscando ID:', id)
@@ -1261,6 +1345,8 @@ export async function duplicarReporteAction(
     reporte_id_original: string,
     nuevo_equipo_id: string
 ): Promise<ActionResult<{ nuevo_id: string }>> {
+    if (!await requirePermiso(...CREAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -1300,6 +1386,8 @@ export async function duplicarReporteAction(
 // =============================================================================
 
 export async function duplicarReporte(reporteId: string, nuevoEquipoId: string): Promise<ActionResult<string>> {
+    if (!await requirePermiso(...CREAR_REPORTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const { data, error } = await supabase.rpc('duplicar_reporte', {
@@ -1324,6 +1412,12 @@ export async function duplicarReporte(reporteId: string, nuevoEquipoId: string):
  * Solo permitido si el reporte no está cerrado.
  */
 export async function reasignarReporte(reporteId: string, nuevoTecnicoId: string): Promise<ActionResult<boolean>> {
+    // Cambiar de responsable es una decisión de administración: un técnico no
+    // debe poder quitarse un reporte de encima ni asignárselo a otro.
+    if (!await requirePermiso([MODULO.REPORTES, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const admin = createAdminClient()
 

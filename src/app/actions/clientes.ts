@@ -7,8 +7,20 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { z } from 'zod'
 import type { Cliente, Contrato } from '@/types'
+
+/**
+ * Lectura de clientes: la necesitan el panel de administración y el flujo de
+ * reporte del técnico, que muestra a qué cliente pertenece el equipo.
+ */
+const VER_CLIENTES = [
+    [MODULO.CLIENTES, PERMISO.VER],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.VER],
+    [MODULO.TEC_MIS_REPORTES, PERMISO.VER],
+] as const
 
 // ── Esquema de validación ─────────────────────────────────────────────────────
 
@@ -35,6 +47,8 @@ type ActionResult<T> = { data: T | null; error: string | null }
 export async function getClientes(
     filtros?: { activo?: boolean; search?: string }
 ): Promise<ActionResult<Cliente[]>> {
+    if (!await requirePermiso(...VER_CLIENTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         let query = supabase
@@ -64,6 +78,8 @@ export async function getClientes(
 export async function getClienteById(
     id: string
 ): Promise<ActionResult<Cliente & { contratos: Contrato[] }>> {
+    if (!await requirePermiso(...VER_CLIENTES)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
         const [clienteRes, contratosRes] = await Promise.all([
@@ -94,6 +110,10 @@ export async function getClienteById(
  * Crea un nuevo cliente. Valida con zod antes de insertar.
  */
 export async function createCliente(raw: unknown): Promise<ActionResult<Cliente>> {
+    if (!await requirePermiso([MODULO.CLIENTES, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ClienteSchema.safeParse(raw)
     if (!parsed.success) {
         return { data: null, error: parsed.error.issues[0].message }
@@ -132,6 +152,10 @@ export async function updateCliente(
     id: string,
     raw: unknown
 ): Promise<ActionResult<Cliente>> {
+    if (!await requirePermiso([MODULO.CLIENTES, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     const parsed = ClienteSchema.partial().safeParse(raw)
     if (!parsed.success) {
         return { data: null, error: parsed.error.issues[0].message }
@@ -170,6 +194,10 @@ export async function updateCliente(
  * NUNCA elimina físicamente — solo cambia activo = false.
  */
 export async function desactivarCliente(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.CLIENTES, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -209,6 +237,10 @@ export async function desactivarCliente(id: string): Promise<ActionResult<boolea
 export async function toggleActivoCliente(
     id: string
 ): Promise<ActionResult<Cliente>> {
+    if (!await requirePermiso([MODULO.CLIENTES, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
         // Primero obtener el estado actual

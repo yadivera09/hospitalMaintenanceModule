@@ -8,6 +8,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { VistaCorrectivosModelo, VistaDuracionIntervencion } from '@/types'
 
 // =============================================================================
@@ -18,6 +20,10 @@ export async function getEquiposProblematicos(): Promise<{
     data: VistaCorrectivosModelo[]
     error: string | null
 }> {
+    if (!await requirePermiso([MODULO.ANALISIS, PERMISO.VER])) {
+        return { data: [], error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -116,6 +122,10 @@ export async function getDuracionIntervenciones(): Promise<{
     data: VistaDuracionIntervencion[]
     error: string | null
 }> {
+    if (!await requirePermiso([MODULO.ANALISIS, PERMISO.VER])) {
+        return { data: [], error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 

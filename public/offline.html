@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Sin conexión — MobilHospital</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-600: #475569;
+      --slate-400: #94a3b8;
+      --blue-700:  #1d4ed8;
+      --blue-800:  #1e40af;
+      --amber-400: #fbbf24;
+      --white:     #ffffff;
+      --bg:        #f1f5f9;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--slate-900);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      padding-top: max(1.5rem, env(safe-area-inset-top));
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      min-height: 100dvh;
+      text-align: center;
+      gap: 0;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white);
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 2.5rem 2rem;
+      max-width: 360px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: var(--slate-900);
+      border-radius: .625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 1.25rem; height: 1.25rem; }
+    .logo-text { text-align: left; }
+    .logo-name {
+      font-size: .875rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      line-height: 1;
+    }
+    .logo-sub {
+      font-size: .6875rem;
+      color: var(--slate-400);
+      line-height: 1;
+      margin-top: .125rem;
+    }
+
+    /* ── Offline badge ── */
+    .offline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      border-radius: 9999px;
+      padding: .3125rem .875rem;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .offline-dot {
+      width: .5rem;
+      height: .5rem;
+      background: var(--amber-400);
+      border-radius: 50%;
+    }
+
+    /* ── Icon ── */
+    .offline-icon {
+      width: 5rem;
+      height: 5rem;
+      background: #eff6ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .offline-icon svg { width: 2.25rem; height: 2.25rem; color: var(--blue-700); }
+
+    /* ── Text ── */
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      line-height: 1.3;
+    }
+    .subtitle {
+      font-size: .875rem;
+      color: var(--slate-600);
+      line-height: 1.5;
+      max-width: 280px;
+    }
+
+    /* ── Button ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      width: 100%;
+      padding: .75rem 1.25rem;
+      background: var(--blue-800);
+      color: var(--white);
+      border: none;
+      border-radius: .625rem;
+      font-size: .9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { background: var(--blue-700); }
+    .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+
+    /* ── Footer hint ── */
+    .hint {
+      font-size: .75rem;
+      color: var(--slate-400);
+      margin-top: .25rem;
+    }
+
+    /* ── Network status indicator (updated via JS) ── */
+    #status-line {
+      font-size: .75rem;
+      color: var(--slate-400);
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+    }
+    #status-dot {
+      width: .5rem;
+      height: .5rem;
+      border-radius: 50%;
+      background: var(--amber-400);
+      flex-shrink: 0;
+    }
+    #status-dot.online { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">
+        <!-- HardHat icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2H2v2Z"/>
+          <path d="M20 15a8 8 0 1 0-16 0"/>
+          <path d="M12 7V3"/>
+          <path d="M8 7v1a4 4 0 0 1 8 0V7"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-name">Mobilhospital</div>
+        <div class="logo-sub">Panel Técnico</div>
+      </div>
+    </div>
+
+    <!-- Offline badge -->
+    <div class="offline-badge">
+      <span class="offline-dot"></span>
+      Sin conexión
+    </div>
+
+    <!-- Illustration -->
+    <div class="offline-icon">
+      <!-- WifiOff icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+        <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <circle cx="12" cy="20" r="1" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- Message -->
+    <div>
+      <h1>Sin conexión</h1>
+      <p class="subtitle" style="margin-top:.5rem">
+        Tus reportes guardados están disponibles.<br>
+        Cuando recuperes conexión, se sincronizarán automáticamente.
+      </p>
+    </div>
+
+    <!-- CTA -->
+    <a href="/tecnico/mis-reportes" class="btn">
+      <!-- ClipboardList icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>
+      </svg>
+      Ir a mis reportes guardados
+    </a>
+
+    <p class="hint">Los datos guardados están en tu dispositivo.</p>
+
+    <!-- Live network status -->
+    <div id="status-line">
+      <span id="status-dot"></span>
+      <span id="status-text">Comprobando conexión…</span>
+    </div>
+
+  </div>
+
+  <script>
+    function actualizarEstado() {
+      const dot  = document.getElementById('status-dot')
+      const text = document.getElementById('status-text')
+      if (navigator.onLine) {
+        dot.classList.add('online')
+        text.textContent = 'Conexión restaurada — redirigiendo…'
+        setTimeout(() => { window.location.href = '/tecnico/dashboard' }, 1500)
+      } else {
+        dot.classList.remove('online')
+        text.textContent = 'Sin conexión a internet'
+      }
+    }
+
+    window.addEventListener('online',  actualizarEstado)
+    window.addEventListener('offline', actualizarEstado)
+    actualizarEstado()
+  </script>
+</body>
+</html>

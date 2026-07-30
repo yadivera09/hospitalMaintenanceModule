@@ -7,8 +7,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { getRolesUsuario } from '@/lib/seguridad/permisos'
+import { requireAdmin, ACCESO_DENEGADO } from '@/lib/seguridad/guard'
 import { registrarAuditoria } from '@/lib/seguridad/auditoria'
 import { z } from 'zod'
 
@@ -62,28 +61,6 @@ const ModuloSchema = z.object({
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: verificar que el usuario actual es administrador
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } | null> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return null
-
-    const roles = await getRolesUsuario(session.user.id)
-    if (!roles.includes('administrador')) return null
-
-    const admin = createAdminClient()
-    const { data: usuario } = await admin
-        .from('usuarios')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single()
-
-    return { userId: session.user.id, usuarioId: usuario?.id ?? '' }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // getMenusConModulos — árbol completo menus → modulos
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -91,8 +68,12 @@ async function verificarAdmin(): Promise<{ userId: string; usuarioId: string } |
  * Obtiene el árbol completo de menús con sus módulos anidados.
  * Ordenados por campo 'orden'. Útil para renderizar la sidebar y la
  * pantalla de configuración de permisos por módulo.
+ * Solo administradores.
  */
 export async function getMenusConModulos(): Promise<ActionResult<Menu[]>> {
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
+
     try {
         const admin = createAdminClient()
         const { data, error } = await admin
@@ -133,8 +114,8 @@ export async function getMenusConModulos(): Promise<ActionResult<Menu[]>> {
  * Crea un nuevo menú de navegación. Solo administradores.
  */
 export async function crearMenu(raw: unknown): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = MenuSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -178,8 +159,8 @@ export async function editarMenu(
     id: string,
     raw: unknown
 ): Promise<ActionResult<{ id: string; nombre: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = MenuSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -222,8 +203,8 @@ export async function editarMenu(
  * La URL debe ser única en todo el sistema.
  */
 export async function crearModulo(raw: unknown): Promise<ActionResult<{ id: string; nombre: string; url: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = ModuloSchema.safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }
@@ -274,8 +255,8 @@ export async function editarModulo(
     id: string,
     raw: unknown
 ): Promise<ActionResult<{ id: string; nombre: string; url: string }>> {
-    const actor = await verificarAdmin()
-    if (!actor) return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     const parsed = ModuloSchema.partial().safeParse(raw)
     if (!parsed.success) return { data: null, error: parsed.error.issues[0].message }

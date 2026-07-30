@@ -49,6 +49,8 @@ import EquipoForm from '@/components/admin/equipos/EquipoForm'
 import AsignarContratoModal from '@/components/admin/equipos/AsignarContratoModal'
 import { computarEstadoEquipo } from '@/types'
 import { updateEquipo } from '@/app/actions/equipos'
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { Equipo, EstadoEquipo } from '@/types'
 import type { EquipoFormValues } from '@/components/admin/equipos/EquipoForm'
 import type { EquipoConCliente } from '@/app/actions/equipos'
@@ -137,6 +139,11 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
 
+    // Antes del return temprano de más abajo: los hooks deben ejecutarse
+    // siempre en el mismo orden, sin condicionales de por medio.
+    const puede = usePuede()
+    const puedeEditar = puede(MODULO.EQUIPOS, PERMISO.EDITAR)
+
     const [equipoActual, setEquipoActual] = useState(equipoInicial)
     const [modalEditarAbierto, setModalEditarAbierto] = useState(false)
     const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false)
@@ -224,15 +231,19 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                 </div>
 
                 <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => setModalAsignarAbierto(true)}
-                        className="gap-2 text-[#334155]"
-                        id="btn-asignar-contrato"
-                    >
-                        <Link2 className="h-4 w-4" />
-                        Asignar a contrato
-                    </Button>
+                    {/* Asignar a contrato modifica el equipo: mismo permiso que editar */}
+                    {puedeEditar && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setModalAsignarAbierto(true)}
+                            className="gap-2 text-[#334155]"
+                            id="btn-asignar-contrato"
+                        >
+                            <Link2 className="h-4 w-4" />
+                            Asignar a contrato
+                        </Button>
+                    )}
+                    {puedeEditar && (
                     <Button
                         onClick={() => setModalEditarAbierto(true)}
                         className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
@@ -241,6 +252,7 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                         <Pencil className="h-4 w-4" />
                         Editar
                     </Button>
+                    )}
                 </div>
             </div>
 
@@ -344,15 +356,17 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                             <p className="text-xs text-[#94A3B8]">
                                 Este equipo no está asignado a ningún contrato vigente.
                             </p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setModalAsignarAbierto(true)}
-                                className="mt-3 gap-1.5 text-xs"
-                            >
-                                <Link2 className="h-3 w-3" />
-                                Asignar
-                            </Button>
+                            {puedeEditar && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setModalAsignarAbierto(true)}
+                                    className="mt-3 gap-1.5 text-xs"
+                                >
+                                    <Link2 className="h-3 w-3" />
+                                    Asignar
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>

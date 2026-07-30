@@ -7,9 +7,21 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { requirePermiso, SIN_PERMISO } from '@/lib/seguridad/guard'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import type { Equipo } from '@/types'
 
 type ActionResult<T> = { data: T | null; error: string | null }
+
+/**
+ * Lectura de equipos: el técnico la necesita para buscar el equipo al que le
+ * va a levantar un reporte, no solo el panel de administración.
+ */
+const VER_EQUIPOS = [
+    [MODULO.EQUIPOS, PERMISO.VER],
+    [MODULO.TEC_NUEVO_REPORTE, PERMISO.VER],
+    [MODULO.TEC_MIS_REPORTES, PERMISO.VER],
+] as const
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -33,6 +45,8 @@ export async function getEquipos(filtros?: {
     activo?: boolean
     soloConContrato?: boolean
 }): Promise<ActionResult<EquipoConCliente[]>> {
+    if (!await requirePermiso(...VER_EQUIPOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -119,6 +133,8 @@ export async function getEquipos(filtros?: {
 export async function getEquipoById(
     id: string
 ): Promise<ActionResult<EquipoConCliente & { historial_contratos: unknown[], mantenimientos: unknown[], historial_ubicaciones: any[], checklist_template: unknown[], ultimo_preventivo: string | null }>> {
+    if (!await requirePermiso(...VER_EQUIPOS)) return { data: null, error: SIN_PERMISO }
+
     try {
         const supabase = createClient()
 
@@ -206,6 +222,24 @@ export async function getEquipoById(
                 .order('orden', { ascending: true })
         ])
 
+        // Estas consultas devuelven [] tanto si no hay datos como si fallan.
+        // Sin este registro, un fallo de permisos o de la consulta se muestra
+        // en la ficha como "Sin mantenimientos registrados" y es indistinguible
+        // de un equipo que realmente no tiene historial.
+        const fallos: [string, { message: string } | null][] = [
+            ['historial_contratos', historialRes.error],
+            ['mantenimientos', mantenimientosRes.error],
+            ['ultimo_preventivo', resPreventivo.error],
+            ['historial_ubicaciones', ubicacionesRes.error],
+            ['checklist', checklistRes.error],
+        ]
+
+        for (const [nombre, error] of fallos) {
+            if (error) {
+                console.error(`[getEquipoById] Falló "${nombre}" para el equipo ${id}:`, error.message)
+            }
+        }
+
         const ultimoPreventivo = resPreventivo.data?.fecha_inicio ?? null
         const historialUbicaciones = ubicacionesRes.data ?? []
         const checklistTemplate = checklistRes.data ?? []
@@ -265,6 +299,10 @@ export type CreateEquipoInput = z.infer<typeof createEquipoSchema>
 export async function createEquipo(
     raw: CreateEquipoInput
 ): Promise<ActionResult<Equipo>> {
+    if (!await requirePermiso([MODULO.EQUIPOS, PERMISO.CREAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const parsed = createEquipoSchema.safeParse(raw)
         if (!parsed.success) {
@@ -330,6 +368,10 @@ export async function updateEquipo(
     id: string,
     raw: Partial<CreateEquipoInput>
 ): Promise<ActionResult<Equipo>> {
+    if (!await requirePermiso([MODULO.EQUIPOS, PERMISO.EDITAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const parsed = updateEquipoSchema.safeParse(raw)
         if (!parsed.success) {
@@ -384,6 +426,14 @@ export type AsignarEquipoInput = z.infer<typeof asignarSchema>
 export async function asignarEquipoAContrato(
     raw: AsignarEquipoInput
 ): Promise<ActionResult<{ equipo_id: string; contrato_id: string }>> {
+    // Modifica ambos lados de la relación: basta poder editar cualquiera de
+    // los dos módulos desde los que se hace la asignación.
+    const autorizado = await requirePermiso(
+        [MODULO.EQUIPOS, PERMISO.EDITAR],
+        [MODULO.CONTRATOS, PERMISO.EDITAR],
+    )
+    if (!autorizado) return { data: null, error: SIN_PERMISO }
+
     try {
         const parsed = asignarSchema.safeParse(raw)
         if (!parsed.success) {
@@ -447,6 +497,10 @@ export async function asignarEquipoAContrato(
  * NUNCA elimina físicamente — solo cambia activo = false.
  */
 export async function desactivarEquipo(id: string): Promise<ActionResult<boolean>> {
+    if (!await requirePermiso([MODULO.EQUIPOS, PERMISO.ELIMINAR])) {
+        return { data: null, error: SIN_PERMISO }
+    }
+
     try {
         const supabase = createClient()
 
@@ -504,6 +558,16 @@ export async function importarEquiposDesdeCSV(
     fallidos: number
     detalles: { row: number; error: string; codigo_mh?: string }[]
 }> {
+    // Una importación masiva es una creación de equipos en bloque; sin este
+    // control sería la vía más fácil de saltarse el permiso de 'crear'.
+    if (!await requirePermiso([MODULO.EQUIPOS, PERMISO.CREAR])) {
+        return {
+            insertados: 0,
+            fallidos: rows.length,
+            detalles: [{ row: 0, error: SIN_PERMISO }],
+        }
+    }
+
     const supabase = createClient()
     let insertados = 0
     let fallidos = 0

@@ -8,8 +8,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { getRolesUsuario } from '@/lib/seguridad/permisos'
+import { requireAdmin, ACCESO_DENEGADO } from '@/lib/seguridad/guard'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos
@@ -65,17 +64,8 @@ const PAGE_SIZE = 50
 export async function getAuditoria(filtros: FiltrosAuditoria = {}): Promise<
     ActionResult<{ registros: RegistroAuditoria[]; total: number; pagina: number; totalPaginas: number }>
 > {
-    // Verificar que el usuario actual es administrador
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-        return { data: null, error: 'No hay sesión activa.' }
-    }
-
-    const roles = await getRolesUsuario(session.user.id)
-    if (!roles.includes('administrador')) {
-        return { data: null, error: 'Acceso denegado. Se requiere rol administrador.' }
-    }
+    const actor = await requireAdmin()
+    if (!actor) return { data: null, error: ACCESO_DENEGADO }
 
     try {
         const admin = createAdminClient()

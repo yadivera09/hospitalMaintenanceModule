@@ -15,6 +15,8 @@ import {
     AlertTriangle,
 } from 'lucide-react'
 
+import { usePuede } from '@/lib/seguridad/PermisosProvider'
+import { MODULO, PERMISO } from '@/lib/seguridad/modulos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -69,6 +71,10 @@ function SectionHeader({ icon: Icon, title, count, onNuevo }: {
     icon: React.ComponentType<{ className?: string }>
     title: string; count: number; onNuevo: () => void
 }) {
+    // Todas las secciones de esta pantalla escriben en el mismo módulo, así
+    // que un único permiso gobierna el botón de agregar de todas ellas.
+    const puede = usePuede()
+
     return (
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -76,9 +82,11 @@ function SectionHeader({ icon: Icon, title, count, onNuevo }: {
                 <h2 className="text-sm font-semibold text-[#0F172A]">{title}</h2>
                 <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">{count}</span>
             </div>
-            <Button onClick={onNuevo} size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5 h-8 text-xs">
-                <Plus className="h-3.5 w-3.5" /> Agregar
-            </Button>
+            {puede(MODULO.CATALOGOS, PERMISO.CREAR) && (
+                <Button onClick={onNuevo} size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5 h-8 text-xs">
+                    <Plus className="h-3.5 w-3.5" /> Agregar
+                </Button>
+            )}
         </div>
     )
 }
