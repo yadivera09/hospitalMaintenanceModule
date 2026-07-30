@@ -34,10 +34,31 @@ const ESCAPE_ROUTES = ['/auth/logout']
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function redirect(request: NextRequest, pathname: string) {
+/**
+ * Redirige CONSERVANDO las cookies que Supabase haya renovado.
+ *
+ * `sesion` es la respuesta que el cliente de Supabase fue rellenando durante
+ * getUser(). Copiarla no es un detalle: al refrescar el token, Supabase ROTA el
+ * refresh token e invalida el anterior. Si el redirect viaja sin las cookies
+ * nuevas, el navegador se queda con las viejas —ya revocadas— y la sesión muere
+ * en la siguiente petición.
+ *
+ * El síntoma es desconcertante: el usuario introduce credenciales correctas, la
+ * autenticación tiene éxito, y aun así vuelve al formulario de login vacío sin
+ * ningún mensaje de error. Ocurre solo cuando toca renovar el token, así que
+ * aparece de forma intermitente y no se reproduce recién iniciada la sesión.
+ */
+function redirect(request: NextRequest, pathname: string, sesion?: NextResponse) {
     const url = request.nextUrl.clone()
     url.pathname = pathname
-    return NextResponse.redirect(url, { status: 303 })
+
+    const response = NextResponse.redirect(url, { status: 303 })
+
+    if (sesion) {
+        for (const cookie of sesion.cookies.getAll()) response.cookies.set(cookie)
+    }
+
+    return response
 }
 
 /**
@@ -106,8 +127,8 @@ function esNavegacion(request: NextRequest) {
 }
 
 /** Corta el paso a una petición que no completó el segundo factor. */
-function bloqueoMfa(request: NextRequest, destino: string) {
-    if (esNavegacion(request)) return redirect(request, destino)
+function bloqueoMfa(request: NextRequest, destino: string, sesion: NextResponse) {
+    if (esNavegacion(request)) return redirect(request, destino, sesion)
 
     return NextResponse.json(
         { error: 'Verificación en dos pasos pendiente.', destino },
@@ -157,7 +178,7 @@ export async function middleware(request: NextRequest) {
 
     // ─── 1. Sin sesión: proteger rutas privadas y el flujo MFA ───────────────
     if (!user) {
-        if (esRutaMfa || isProtectedRoute(pathname)) return redirect(request, '/login')
+        if (esRutaMfa || isProtectedRoute(pathname)) return redirect(request, '/login', supabaseResponse)
         return supabaseResponse
     }
 
@@ -197,12 +218,12 @@ export async function middleware(request: NextRequest) {
 
     // Sin factor enrolado → configurarlo antes de continuar
     if (mfaState === 'needs-setup') {
-        return bloqueoMfa(request, '/configurar-mfa')
+        return bloqueoMfa(request, '/configurar-mfa', supabaseResponse)
     }
 
     // Factor enrolado pero no verificado en esta sesión → pedir el código
     if (mfaState === 'needs-verify') {
-        return bloqueoMfa(request, '/verificar-mfa')
+        return bloqueoMfa(request, '/verificar-mfa', supabaseResponse)
     }
 
     // ─── 5. MFA OK — continuar con lógica de rol ─────────────────────────────
@@ -220,11 +241,11 @@ export async function middleware(request: NextRequest) {
         // El panel del técnico depende de una ficha en 'tecnicos' que el
         // administrador no tiene; entrar ahí solo produce errores.
         if (TECNICO_ROUTES.some((r) => pathname.startsWith(r))) {
-            return redirect(request, '/admin/dashboard')
+            return redirect(request, '/admin/dashboard', supabaseResponse)
         }
 
         if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-            return redirect(request, '/admin/dashboard')
+            return redirect(request, '/admin/dashboard', supabaseResponse)
         }
 
         return supabaseResponse
@@ -247,7 +268,7 @@ export async function middleware(request: NextRequest) {
 
     // Usuario autenticado (MFA completo) en /login → su primera pantalla
     if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-        return redirect(request, destinoPropio ?? '/login')
+        return redirect(request, destinoPropio ?? '/login', supabaseResponse)
     }
 
     if (isProtectedRoute(pathname)) {
@@ -265,7 +286,7 @@ export async function middleware(request: NextRequest) {
             // la sesión en vez de rebotarlo indefinidamente.
             if (!destinoPropio) return redirectCerrandoSesion(request, '/login', 'sin-acceso')
 
-            return redirect(request, destinoPropio)
+            return redirect(request, destinoPropio, supabaseResponse)
         }
     }
 
