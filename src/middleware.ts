@@ -85,12 +85,25 @@ function redirectCerrandoSesion(request: NextRequest, pathname: string, motivo?:
 /**
  * Deja pasar la petición, adjuntando el pathname para los Server Components.
  *
+ * Solo se reescriben las cabeceras en las rutas de los paneles, que son las
+ * únicas cuyo layout necesita el pathname para autorizar la pantalla. En el
+ * resto se devuelve el NextResponse.next({ request }) de siempre.
+ *
+ * La distinción importa: reescribir cabeceras obliga a Next a serializar TODAS
+ * las de la petición dentro de la respuesta, cookies incluidas. Las de sesión
+ * de Supabase son grandes —el JWT viaja troceado en varias sb-*.0, .1…— y
+ * hacerlo en cada ruta añade un riesgo que /login no tiene por qué correr,
+ * justo donde un fallo deja al usuario sin poder entrar.
+ *
  * Las cabeceras se clonan en el momento de la llamada, no antes: el cliente de
  * Supabase escribe las cookies renovadas sobre `request` durante setAll, y una
- * copia tomada al inicio del middleware perdería esa renovación — la sesión se
- * caería al vencer el token.
+ * copia tomada al inicio del middleware perdería esa renovación.
  */
 function permitir(request: NextRequest) {
+    if (!isProtectedRoute(request.nextUrl.pathname)) {
+        return NextResponse.next({ request })
+    }
+
     const headers = new Headers(request.headers)
     headers.set(PATHNAME_HEADER, request.nextUrl.pathname)
 
