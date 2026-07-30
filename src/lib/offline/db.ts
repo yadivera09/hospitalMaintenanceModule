@@ -51,7 +51,12 @@ export interface EquipoCache {
 
 export interface CatalogoCacheEntry {
     key: string                             // 'tipos_mantenimiento' | 'insumos' | 'categorias' | 'checklists'
-    datos: TipoMantenimiento[] | Insumo[] | Categoria[] | ActividadChecklist[] | any[]
+    // No todas las entradas son listas: 'tecnico_actual' guarda un único objeto
+    // con el técnico en sesión. El tipo anterior solo admitía arrays, así que
+    // esa escritura —que existe desde el principio en el layout técnico— no
+    // compilaba.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    datos: TipoMantenimiento[] | Insumo[] | Categoria[] | ActividadChecklist[] | any[] | Record<string, any>
     cached_at: string                       // ISO 8601 — TTL 24h
 }
 
@@ -167,6 +172,14 @@ export async function getOfflineDB(): Promise<IDBPDatabase<MobilhospitalDB>> {
                 ec.createIndex('cached_at', 'cached_at')
 
                 db.createObjectStore('catalogos_cache', { keyPath: 'key' })
+            }
+
+            // v2 → v3: reportes ya sincronizados, para consultarlos y
+            //          duplicarlos sin red.
+            if (oldVersion < 3) {
+                const rc = db.createObjectStore('reportes_cache', { keyPath: 'id' })
+                rc.createIndex('fecha_inicio', 'fecha_inicio')
+                rc.createIndex('equipo_id', 'equipo_id')
             }
         },
         blocked() {
@@ -328,6 +341,50 @@ export async function getAllEquiposFromCache(): Promise<Equipo[]> {
     const entries = await db.getAll('equipos_cache')
     // Filter out expired cache if needed, or return all
     return entries.filter(e => !estaVencido(e.cached_at, TTL_EQUIPOS_MS)).map(e => e.datos)
+}
+
+// ─── reportes_cache ───────────────────────────────────────────────────────────
+
+/** Reemplaza el conjunto de reportes cacheados por el que llega del servidor. */
+export async function guardarReportesEnCache(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    reportes: any[],
+): Promise<void> {
+    const db = await getOfflineDB()
+    const now = new Date().toISOString()
+    const tx = db.transaction('reportes_cache', 'readwrite')
+
+    await Promise.all([
+        ...reportes.map((r) =>
+            tx.store.put({
+                id: r.id,
+                tecnico_principal_id: r.tecnico_principal_id ?? '',
+                equipo_id: r.equipo_id ?? '',
+                estado_reporte: r.estado_reporte ?? '',
+                fecha_inicio: r.fecha_inicio ?? now,
+                datos: r,
+                cached_at: now,
+            }),
+        ),
+        tx.done,
+    ])
+}
+
+/** Reportes cacheados, del más reciente al más antiguo. */
+export async function getReportesDeCache(): Promise<ReporteCache[]> {
+    const db = await getOfflineDB()
+    const todos = await db.getAllFromIndex('reportes_cache', 'fecha_inicio')
+    return todos.reverse()
+}
+
+export async function getReporteDeCache(id: string): Promise<ReporteCache | undefined> {
+    const db = await getOfflineDB()
+    return db.get('reportes_cache', id)
+}
+
+export async function countReportesEnCache(): Promise<number> {
+    const db = await getOfflineDB()
+    return db.count('reportes_cache')
 }
 
 // ─── catalogos_cache ──────────────────────────────────────────────────────────

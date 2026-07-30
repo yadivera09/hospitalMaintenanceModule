@@ -3,11 +3,9 @@ import { getEstadoUsuario, permisosUsuario, ROL_ADMINISTRADOR } from '@/lib/segu
 import {
     getNavegacionUsuario,
     getUrlsModulos,
-    resolverModulo,
-    modulosDescendientes,
-    primerModuloVisible,
     PATHNAME_HEADER,
 } from '@/lib/seguridad/navegacion'
+import { puedeVerRuta, destinoAlternativo } from '@/lib/seguridad/autorizarRuta'
 import { PermisosProvider } from '@/lib/seguridad/PermisosProvider'
 import AdminLayoutClient from '@/components/admin/AdminLayoutClient'
 import type { UsuarioSesion } from '@/types'
@@ -83,7 +81,7 @@ export default async function AdminLayout({
         redirect(destinoAlternativo(permisos, urlsCatalogo))
     }
 
-    if (!puedeVer(pathname, permisos, urlsCatalogo)) {
+    if (!puedeVerRuta(pathname, permisos, urlsCatalogo)) {
         redirect(destinoAlternativo(permisos, urlsCatalogo))
     }
 
@@ -105,56 +103,3 @@ export default async function AdminLayout({
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Decide si el usuario puede ver la pantalla pedida.
- *
- * Tres casos, en orden:
- *
- *   1. La ruta pertenece a un módulo del catálogo → exige 'ver' sobre él.
- *      Cubre lo normal, incluidos los detalles: /admin/equipos/<id> hereda de
- *      /admin/equipos por el prefijo más largo.
- *
- *   2. La ruta no es un módulo pero tiene módulos colgando → exige 'ver' sobre
- *      al menos uno. Es el caso de /admin/seguridad, que es la portada de la
- *      sección y no tiene fila propia en el catálogo. Sin esta rama caería en
- *      el caso 3 y quedaría abierta a cualquiera con acceso al panel.
- *
- *   3. Ni módulo ni descendientes → se deja pasar. Bloquear por defecto
- *      volvería inaccesibles pantallas legítimas ante un catálogo incompleto,
- *      que es el mismo criterio que aplica el middleware. El guard de
- *      navegación vacía sigue exigiendo, como mínimo, acceso al panel.
- */
-function puedeVer(
-    pathname: string,
-    permisos: Record<string, string[]>,
-    urlsCatalogo: string[]
-): boolean {
-    const modulo = resolverModulo(pathname, urlsCatalogo)
-
-    if (modulo) return permisos[modulo]?.includes('ver') ?? false
-
-    const hijos = modulosDescendientes(pathname, urlsCatalogo)
-
-    if (hijos.length > 0) return hijos.some((url) => permisos[url]?.includes('ver'))
-
-    return true
-}
-
-/**
- * A dónde mandar a quien se le niega una pantalla del panel.
- *
- * A su primera pantalla visible, no a /login: con la sesión viva el middleware
- * lo devolvería a esa misma pantalla, así que redirigir a /login solo añade un
- * rebote. Solo cuando no puede ver nada se le manda a /login, con el motivo que
- * la página sabe explicar.
- */
-function destinoAlternativo(
-    permisos: Record<string, string[]>,
-    urlsCatalogo: string[]
-): string {
-    return primerModuloVisible(permisos, urlsCatalogo) ?? '/login?motivo=sin-acceso'
-}

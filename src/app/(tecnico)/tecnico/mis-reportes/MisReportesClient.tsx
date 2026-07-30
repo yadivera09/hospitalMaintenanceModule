@@ -6,7 +6,7 @@ import { ClipboardList, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ESTADO_REPORTE_CFG } from '@/components/admin/reportes/ReportesTable'
 import type { EstadoReporte } from '@/types'
-import { getReportesBorrador, type ReporteBorrador, type EstadoSync } from '@/lib/offline/db'
+import { getReportesBorrador, getReportesDeCache, type ReporteBorrador, type EstadoSync } from '@/lib/offline/db'
 import { useOfflineStatus } from '@/hooks/useOfflineStatus'
 
 // Reutilizamos abreviarId del mock para no romper, o creamos logica propia
@@ -45,6 +45,7 @@ export default function MisReportesClient({ iniciales }: { iniciales: ReporteDat
     const router = useRouter()
     const [filtro, setFiltro] = useState<FiltroEstado>('todos')
     const [offline, setOffline] = useState<ReporteBorrador[]>([])
+    const [cacheados, setCacheados] = useState<ReporteData[] | null>(null)
     const { sync, isSyncing, isOnline } = useOfflineStatus()
 
     useEffect(() => {
@@ -53,7 +54,23 @@ export default function MisReportesClient({ iniciales }: { iniciales: ReporteDat
             .catch(() => {})
     }, [isSyncing])
 
-    const misReportes = iniciales
+    // Reportes ya sincronizados, desde IndexedDB.
+    //
+    // Sin red el Server Component no puede consultar nada, así que 'iniciales'
+    // llega con lo que el service worker guardó del último acceso con conexión
+    // — o vacío si el técnico nunca abrió esta pantalla online. La copia en
+    // IndexedDB la deja la preparación offline al iniciar sesión y es la única
+    // fuente fiable en campo.
+    useEffect(() => {
+        getReportesDeCache()
+            .then(rs => setCacheados(rs.map(r => r.datos as ReporteData)))
+            .catch(() => {})
+    }, [])
+
+    // Con conexión mandan los datos del servidor, que son los del instante.
+    // Sin ella, o cuando el HTML cacheado vino vacío, mandan los de IndexedDB.
+    const usarCache = (!isOnline || iniciales.length === 0) && !!cacheados?.length
+    const misReportes = usarCache ? cacheados! : iniciales
 
     const conteos = useMemo(() => {
         const base: Record<string, number> = {
@@ -88,7 +105,7 @@ export default function MisReportesClient({ iniciales }: { iniciales: ReporteDat
                     Todos {misReportes.length}
                 </button>
                 {ESTADOS_TECNICOS.map((e) => {
-                    let cfg = { ...ESTADO_REPORTE_CFG[e] }
+                    const cfg = { ...ESTADO_REPORTE_CFG[e] }
                     if (!cfg) return null
                     
                     return (

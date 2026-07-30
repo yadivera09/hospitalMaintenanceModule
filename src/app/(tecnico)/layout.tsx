@@ -1,173 +1,100 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getEstadoUsuario, permisosUsuario } from '@/lib/seguridad/permisos'
+import { getUrlsModulos, PATHNAME_HEADER } from '@/lib/seguridad/navegacion'
+import { puedeVerRuta, destinoAlternativo } from '@/lib/seguridad/autorizarRuta'
+import TecnicoLayoutClient, { type TecnicoSesion } from '@/components/tecnico/TecnicoLayoutClient'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 /**
  * src/app/(tecnico)/layout.tsx
- * Layout del panel técnico — mobile-first, max-width 480px.
- * Barra superior fija + navegación inferior con tabs.
+ * Layout base del panel Técnico (Server Component).
+ *
+ * Segunda línea de defensa, simétrica a la del panel de administración: repite
+ * contra usuario_roles y la matriz de permisos lo que ya decidió el middleware.
+ *
+ * Hasta ahora este layout era un componente de cliente sin ninguna comprobación
+ * de acceso: dependía por completo del middleware. Identificaba al usuario con
+ * getSession(), que decodifica el JWT de la cookie SIN validarlo contra el
+ * servidor de Auth, y si no encontraba ficha de técnico mostraba el nombre
+ * guardado en user_metadata — un campo que el propio usuario puede escribir.
+ *
+ * SOBRE EL MODO OFFLINE
+ *   Que sea un Server Component no rompe la PWA. Sin red el service worker
+ *   sirve el documento ya renderizado que guardó con conexión, exactamente
+ *   igual que hacía antes con el cascarón del componente de cliente. La
+ *   diferencia es que ahora ese documento solo se genera para quien tiene
+ *   permiso.
  */
 
-import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Plus, ClipboardList, HardHat, LogOut } from 'lucide-react'
-import OfflineBanner from '@/components/tecnico/OfflineBanner'
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { registerServiceWorker } from '@/lib/pwa/register-sw'
+export default async function TecnicoLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    const supabase = createClient()
 
-const NAV_ITEMS = [
-    { href: '/tecnico/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tecnico/nuevo-reporte', icon: Plus, label: 'Nuevo', fab: true },
-    { href: '/tecnico/mis-reportes', icon: ClipboardList, label: 'Reportes' },
-]
+    // getUser() valida el JWT contra el servidor de Auth — no usar getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-export default function TecnicoLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname()
-    const router = useRouter()
-    const [tecnico, setTecnico] = useState<{ id: string; nombre: string; apellido: string } | null>(null)
-    const [loading, setLoading] = useState(true)
+    if (!user) {
+        redirect('/login')
+    }
 
-    useEffect(() => {
-        registerServiceWorker()
-    }, [])
+    const estado = await getEstadoUsuario(user.id)
 
-    useEffect(() => {
-        async function cargarTecnico() {
-            const supabase = createClient()
+    if (!estado || !estado.activo) {
+        redirect('/login')
+    }
 
-            // Obtener sesión actual
-            const { data: { session } } = await supabase.auth.getSession()
+    const [permisos, urlsCatalogo] = await Promise.all([
+        permisosUsuario(user.id),
+        getUrlsModulos(),
+    ])
 
-            if (!session) {
-                setLoading(false)
-                return
-            }
+    // El pathname lo escribe el middleware (ver PATHNAME_HEADER). Su ausencia
+    // significa que la petición no pasó por él, que es justo el escenario
+    // contra el que existe esta segunda línea: se deniega.
+    const pathname = headers().get(PATHNAME_HEADER)
 
-            // Buscar en la tabla tecnicos usando el email
-            const { data: tecnicoData } = await supabase
-                .from('tecnicos')
-                .select('id, nombre, apellido')
-                .eq('email', session.user.email)
-                .single()
+    if (!pathname || !pathname.startsWith('/tecnico')) {
+        redirect(destinoAlternativo(permisos, urlsCatalogo))
+    }
 
-            if (tecnicoData) {
-                setTecnico(tecnicoData)
+    if (!puedeVerRuta(pathname, permisos, urlsCatalogo)) {
+        redirect(destinoAlternativo(permisos, urlsCatalogo))
+    }
 
-                // Cachear técnico actual
-                import('@/lib/offline/db').then(({ guardarCatalogo }) => {
-                    guardarCatalogo('tecnico_actual', tecnicoData).catch(() => {})
-                })
+    // ── Ficha de técnico ─────────────────────────────────────────────────────
+    //
+    // Se busca por user_id, que es el vínculo real con la identidad. El email
+    // de 'tecnicos' es una copia sincronizada desde 'usuarios': si se edita
+    // allí y la ficha no se resincroniza, buscar por email no encuentra nada.
+    //
+    // Con el cliente de servicio, no con la sesión: las políticas de RLS sobre
+    // 'tecnicos' no tienen por qué dejar al técnico leer su propia ficha, y
+    // aquí solo se consulta la del usuario ya autenticado.
+    const admin = createAdminClient()
 
-                // Precargar datos offline — refrescar TTL vencido, luego llenar lo que falte
-                import('@/lib/offline/preload').then(({ precargarDatosOffline, refrescarCacheVencida }) => {
-                    refrescarCacheVencida(tecnicoData.id)
-                        .then(() => precargarDatosOffline(tecnicoData.id))
-                        .catch((err) => console.warn('[layout] preload falló:', err))
-                })
-            } else {
-                // Fallback: usar metadata de auth (sin id real, no se puede precargar)
-                setTecnico({
-                    id: '',
-                    nombre: session.user.user_metadata?.nombre || 'Técnico',
-                    apellido: session.user.user_metadata?.apellido || ''
-                })
-            }
-            setLoading(false)
-        }
+    const { data: ficha } = await admin
+        .from('tecnicos')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('activo', true)
+        .maybeSingle()
 
-        cargarTecnico()
-    }, [])
-
-    // Mostrar un estado de carga mientras se obtienen los datos
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF] mx-auto"></div>
-                    <p className="mt-2 text-sm text-[#64748B]">Cargando...</p>
-                </div>
-            </div>
-        )
+    // Nombre y apellido salen de 'usuarios', que es la fuente desde la
+    // migración 016 — las columnas de 'tecnicos' son copias suyas.
+    const tecnico: TecnicoSesion = {
+        id: ficha?.id ?? '',
+        nombre: estado.nombre,
+        apellido: estado.apellido,
     }
 
     return (
-        <div className="min-h-screen bg-[#F1F5F9] flex flex-col">
-            {/* ── Top bar ── */}
-            <header className="fixed top-0 left-0 right-0 z-40 bg-[#0F172A] shadow-md">
-                <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
-                    <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E40AF]">
-                            <HardHat className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-white leading-none">Mobilhospital</p>
-                            <p className="text-[10px] text-[#64748B] leading-none mt-0.5">Panel Técnico</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="text-right">
-                            <p className="text-xs font-semibold text-white leading-none">
-                                {tecnico ? `${tecnico.nombre} ${tecnico.apellido}` : 'Cargando...'}
-                            </p>
-                            <p className="text-[10px] text-[#64748B] leading-none mt-0.5">Técnico</p>
-                        </div>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1E40AF] text-white text-xs font-bold">
-                            {tecnico ? tecnico.nombre[0] : '?'}
-                            {tecnico ? tecnico.apellido[0] : ''}
-                        </div>
-                        <form action="/auth/logout" method="POST" className="ml-1 flex items-center">
-                            <button
-                                type="submit"
-                                title="Cerrar Sesión"
-                                className="text-[#94A3B8] hover:text-white transition-colors p-1"
-                            >
-                                <LogOut className="h-4 w-4" />
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </header>
-
-            {/* ── Offline banner (se inserta debajo del top bar) ── */}
-            <OfflineBanner />
-
-            {/* ── Contenido principal ── */}
-            <main className="flex-1 pt-14 pb-20 overflow-y-auto">
-                <div className="max-w-lg mx-auto p-4 space-y-4">
-                    {children}
-                </div>
-            </main>
-
-            {/* ── Bottom navigation ── */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#E2E8F0] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-                <div className="flex items-end max-w-lg mx-auto">
-                    {NAV_ITEMS.map((item) => {
-                        const active = item.href === '/tecnico/nuevo-reporte'
-                            ? pathname === item.href || pathname.startsWith('/tecnico/nuevo-reporte/')
-                            : pathname.startsWith(item.href)
-                        const Icon = item.icon
-                        return (
-                            <button
-                                key={item.href}
-                                onClick={() => router.push(item.href)}
-                                className={`flex-1 flex flex-col items-center justify-center transition-all
-                  ${item.fab ? 'pb-3 pt-1 gap-0' : 'h-16 gap-1'}
-                `}
-                            >
-                                {item.fab ? (
-                                    <div className={`flex h-13 w-13 -mt-5 items-center justify-center rounded-full w-14 h-14 shadow-lg transition-colors
-                    ${active ? 'bg-[#1E3A8A]' : 'bg-[#1E40AF]'}`}>
-                                        <Icon className="h-6 w-6 text-white" />
-                                    </div>
-                                ) : (
-                                    <Icon className={`h-5 w-5 ${active ? 'text-[#1E40AF]' : 'text-[#94A3B8]'}`} />
-                                )}
-                                <span className={`text-[10px] font-medium ${item.fab ? 'mt-1 text-[#1E40AF]' : active ? 'text-[#1E40AF]' : 'text-[#94A3B8]'}`}>
-                                    {item.label}
-                                </span>
-                            </button>
-                        )
-                    })}
-                </div>
-            </nav>
-        </div>
+        <TecnicoLayoutClient tecnico={tecnico}>
+            {children}
+        </TecnicoLayoutClient>
     )
 }

@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getEquipos, type EquipoConCliente } from '@/app/actions/equipos'
 import { duplicarReporteAction } from '@/app/actions/reportes'
+import { duplicarReporteOffline } from '@/lib/offline/duplicar'
+import { getAllEquiposFromCache, getCatalogo } from '@/lib/offline/db'
+import { useOfflineStatus } from '@/hooks/useOfflineStatus'
 
 interface ModalDuplicarReporteProps {
     reporteIdOriginal: string
@@ -32,6 +35,7 @@ export default function ModalDuplicarReporte({
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [duplicating, setDuplicating] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const { isOnline } = useOfflineStatus()
 
     // Cargar equipos al abrir o limpiar al cerrar
     useEffect(() => {
@@ -75,6 +79,22 @@ export default function ModalDuplicarReporte({
         setLoading(true)
         setError(null)
         try {
+            // Sin red la búsqueda se resuelve contra los equipos que la
+            // preparación offline dejó en IndexedDB. Son los mismos que
+            // devuelve el servidor —todos los que tienen contrato vigente—,
+            // así que el técnico ve idéntico catálogo con o sin señal.
+            if (!isOnline) {
+                const termino = search.trim().toLowerCase()
+                const todos = await getAllEquiposFromCache()
+                const coincide = (e: EquipoConCliente) =>
+                    !termino ||
+                    [e.codigo_mh, e.nombre, e.marca, e.modelo, e.numero_serie]
+                        .some((campo) => campo?.toLowerCase().includes(termino))
+
+                setEquipos((todos as unknown as EquipoConCliente[]).filter(coincide).slice(0, 50))
+                return
+            }
+
             const res = await getEquipos({ search, activo: true, soloConContrato: true })
             if (res.error) setError(res.error)
             else setEquipos(res.data || [])
@@ -90,6 +110,25 @@ export default function ModalDuplicarReporte({
         setDuplicating(true)
         setError(null)
         try {
+            // Sin red se replica en el dispositivo la misma lógica de la RPC
+            // duplicar_reporte (ver src/lib/offline/duplicar.ts). El borrador
+            // resultante vive en IndexedDB con un id 'local_…' y se sube cuando
+            // el técnico lo firme y vuelva la conexión.
+            if (!isOnline) {
+                const tecnico = await getCatalogo<{ id: string }>('tecnico_actual', true)
+
+                if (!tecnico?.id) {
+                    setError('No se pudo identificar al técnico en este dispositivo. Abre la app con señal.')
+                    return
+                }
+
+                const idLocal = await duplicarReporteOffline(reporteIdOriginal, selectedId, tecnico.id)
+
+                onOpenChange(false)
+                router.push(`/tecnico/nuevo-reporte/${selectedId}?reporteId=${idLocal}&paso=4`)
+                return
+            }
+
             const res = await duplicarReporteAction(reporteIdOriginal, selectedId)
             if (res.error) {
                 setError(res.error)
@@ -99,7 +138,7 @@ export default function ModalDuplicarReporte({
                 // Llevamos al paso 4 (revisión) para que el técnico valide y firme
             }
         } catch (err) {
-            setError('Error inesperado al duplicar')
+            setError(err instanceof Error ? err.message : 'Error inesperado al duplicar')
         } finally {
             setDuplicating(false)
         }

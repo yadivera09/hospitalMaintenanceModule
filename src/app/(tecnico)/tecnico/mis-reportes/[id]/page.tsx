@@ -1,33 +1,25 @@
-import { Suspense } from 'react'
-import { Loader2, AlertCircle } from 'lucide-react'
-import ReporteDetalleClient from './ReporteDetalleClient'
+import ReporteDetalleResolver from './ReporteDetalleResolver'
 import { getReporteById } from '@/app/actions/reportes'
 
+/**
+ * Detalle de un reporte del técnico.
+ *
+ * El servidor intenta resolverlo, pero NO decide: sin red la página se sirve
+ * desde el cascarón cacheado, que pertenece a otro id, y renderizar aquí el
+ * resultado mostraría un reporte equivocado con toda naturalidad. La última
+ * palabra la tiene el cliente, que compara contra el id de la URL y recurre a
+ * IndexedDB cuando hace falta.
+ *
+ * Por lo mismo un error del servidor no corta el render: se pasa hacia abajo
+ * para enseñarlo solo si tampoco hay copia local.
+ */
 export default async function ReporteDetallePage({ params }: { params: { id: string } }) {
-    const res = await getReporteById(params.id)
-
-    if (res.error || !res.data) {
-        return (
-            <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
-                <AlertCircle className="h-10 w-10 text-red-500" />
-                <h2 className="text-lg font-bold text-[#0F172A]">Error o no encontrado</h2>
-                <p className="text-sm text-[#334155]">{res.error || 'Reporte no existe'}</p>
-            </div>
-        )
-    }
-
-    const reporte = res.data
-    const id = params.id
-    console.log('[getReporteById] estado_equipo_post:', reporte.estado_equipo_post, '| id:', id)
+    const res = await getReporteById(params.id).catch(() => ({ data: null, error: null }))
 
     return (
-        <Suspense fallback={
-            <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-[#94A3B8]">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1E40AF]" />
-                <p className="text-sm font-medium">Cargando detalles...</p>
-            </div>
-        }>
-            <ReporteDetalleClient reporte={res.data} />
-        </Suspense>
+        <ReporteDetalleResolver
+            inicial={res.data ?? null}
+            errorServidor={res.error ?? null}
+        />
     )
 }

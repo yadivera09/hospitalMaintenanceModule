@@ -994,6 +994,77 @@ export default function NuevoReporteWizard() {
                         setUltimoPreventivo(cachedEquipo.ultimo_preventivo_fecha)
                     }
 
+                    // Checklist del equipo, armado desde el catálogo cacheado.
+                    // Online viene resuelto en eqRes.data.checklist_template; sin
+                    // red hay que cruzarlo aquí contra la categoría del equipo, o
+                    // el paso 2 aparece sin ninguna actividad que marcar.
+                    const todasActividades = (await getCatalogo<any[]>('checklists', true)) ?? []
+
+                    if (cachedEquipo?.categoria_id && todasActividades.length) {
+                        setChecklistTemplate(
+                            todasActividades.filter((a) => a.categoria_id === cachedEquipo.categoria_id)
+                        )
+                    }
+
+                    // Borrador creado en el dispositivo — el caso de un reporte
+                    // duplicado sin conexión. Su id lleva el prefijo 'local_' y
+                    // solo existe en IndexedDB, así que no puede resolverse con
+                    // la server action que se usa online.
+                    if (draftReporteId?.startsWith('local_')) {
+                        const { getReporteBorradorById } = await import('@/lib/offline/db')
+                        const borrador = await getReporteBorradorById(draftReporteId)
+
+                        if (borrador) {
+                            update({
+                                tipo_mantenimiento_id: borrador.tipo_mantenimiento_id || '',
+                                fecha_ejecucion:       borrador.fecha_inicio || hoy(),
+                                hora_entrada:          borrador.hora_entrada || '',
+                                hora_salida:           borrador.hora_salida || '',
+                                ciudad:                borrador.ciudad || '',
+                                solicitado_por:        borrador.solicitado_por || '',
+                                motivo_visita:         borrador.motivo_visita || '',
+                                numero_reporte_fisico: borrador.numero_reporte_fisico || '',
+                                diagnostico:           borrador.diagnostico || '',
+                                trabajo_realizado:     borrador.trabajo_realizado || '',
+                                estado_equipo_post:    (borrador.estado_equipo_post as any) || 'operativo',
+                                tecnicos_apoyo:        borrador.tecnicos_apoyo || [],
+                                insumos_usados: (borrador.insumos_usados || []).map((i) => ({
+                                    uid: crypto.randomUUID(),
+                                    insumo_id: i.insumo_id,
+                                    nombre: '', codigo: null, unidad: '',
+                                    cantidad: i.cantidad,
+                                    es_nuevo: false,
+                                })),
+                                insumos_requeridos: (borrador.insumos_requeridos || []).map((i) => ({
+                                    uid: crypto.randomUUID(),
+                                    insumo_id: i.insumo_id,
+                                    nombre: '', codigo: null, unidad: '',
+                                    cantidad: i.cantidad,
+                                    es_nuevo: false,
+                                    motivo: i.observacion || '',
+                                })),
+                                // El borrador guarda solo actividad_id y estado;
+                                // el nombre y si es obligatoria salen del catálogo
+                                // cacheado. Sin este cruce el paso 2 mostraría
+                                // casillas sin texto.
+                                checklist: (borrador.actividades || []).map((a) => {
+                                    const def = todasActividades.find((x) => x.id === a.actividad_id)
+                                    return {
+                                        actividad_id: a.actividad_id,
+                                        nombre: def?.descripcion ?? '',
+                                        es_obligatoria: !!def?.obligatoria,
+                                        completada: a.completada,
+                                        observacion: a.observacion ?? '',
+                                    }
+                                }),
+                            })
+
+                            // El borrador ya tiene su propio id local: reutilizarlo
+                            // evita que al firmar se cree un segundo reporte.
+                            localIdRef.current = borrador.id
+                        }
+                    }
+
                     setCargandoContexto(false)
                     return  // salir aquí, nunca llegar al fetch de Supabase
                 }

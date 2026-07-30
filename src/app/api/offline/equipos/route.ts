@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Usa cookies de sesión: nunca puede prerenderizarse.
+export const dynamic = 'force-dynamic'
+
 /**
- * GET /api/offline/equipos?tecnico_id=<uuid>
- * Devuelve equipos activos enriquecidos con cliente, contrato y ubicación
- * para caché offline. Usa la misma lógica que getEquipos() del panel online.
+ * GET /api/offline/equipos[?solo_con_contrato=0]
+ *
+ * Equipos activos enriquecidos con cliente, contrato y ubicación para la caché
+ * offline. Usa la misma lógica que getEquipos() del panel online.
  * Requiere sesión activa (cookie de Supabase).
+ *
+ * Devuelve por defecto solo los equipos CON contrato vigente, que son los
+ * únicos sobre los que el técnico puede levantar un reporte — el wizard los
+ * filtra igual estando online. Cachear el resto ocuparía espacio en el
+ * dispositivo para equipos que no podría usar.
+ *
+ * No se filtra por técnico a propósito: en campo acaba atendiendo equipos que
+ * no tiene asignados, y descubrir sin red que ese equipo no está cacheado deja
+ * el trabajo sin registrar. El parámetro 'tecnico_id' se acepta y se ignora,
+ * por compatibilidad con las versiones que aún lo mandan.
  */
 export async function GET(req: NextRequest) {
-    const tecnicoId = req.nextUrl.searchParams.get('tecnico_id')
-    if (!tecnicoId) {
-        return NextResponse.json({ error: 'tecnico_id requerido.' }, { status: 400 })
-    }
+    const soloConContrato = req.nextUrl.searchParams.get('solo_con_contrato') !== '0'
 
     try {
         const supabase = createClient()
@@ -57,7 +68,9 @@ export async function GET(req: NextRequest) {
         }
 
         // Combinar: añadir campos denormalizados que el wizard necesita offline
-        const equiposEnriquecidos = (equipos ?? []).map((e) => {
+        const equiposEnriquecidos = (equipos ?? [])
+            .filter((e) => !soloConContrato || vigentesMap[e.id]?.contrato_id)
+            .map((e) => {
             const v = vigentesMap[e.id]
             return {
                 ...e,

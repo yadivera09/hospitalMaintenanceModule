@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Usa cookies de sesión: nunca puede prerenderizarse.
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/offline/catalogs
  * Devuelve todos los catálogos necesarios para el modo offline en una sola llamada.

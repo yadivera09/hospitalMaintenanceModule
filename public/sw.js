@@ -7,13 +7,48 @@
 //   Background Sync      → POST/PATCH /api/tecnico/*
 //   Network Only         → resto de /api/, /auth/
 
-const SHELL_VER    = 'v3'
+// Subir esta versión invalida shell y assets en el próximo activate. Hacerlo
+// siempre que cambien las estrategias de caché: si no, los dispositivos siguen
+// sirviendo lo que guardó la versión anterior con las reglas anteriores.
+const SHELL_VER    = 'v4'
 const SHELL_CACHE  = `mh-shell-${SHELL_VER}`
 const ASSETS_CACHE = `mh-assets-${SHELL_VER}`
 
-// Clave canónica para el shell del wizard — cualquier /tecnico/nuevo-reporte/[id]
-// visitado online se guarda aquí para servir a otros IDs offline.
-const WIZARD_SHELL_KEY = '/tecnico/nuevo-reporte/_shell'
+// Claves canónicas de las rutas dinámicas. Una sola copia del HTML sirve para
+// CUALQUIER id: el documento que Next entrega es el mismo cascarón para todos,
+// y quien resuelve el id es el JavaScript ya en el dispositivo leyendo
+// IndexedDB. Sin esto, offline solo se abrirían los ids visitados con red.
+const WIZARD_SHELL_KEY   = '/tecnico/nuevo-reporte/_shell'
+const REPORTE_SHELL_KEY  = '/tecnico/mis-reportes/_shell'
+
+/** Rutas dinámicas del panel y la clave canónica bajo la que se cachean. */
+const SHELLS_DINAMICOS = [
+    { patron: /^\/tecnico\/nuevo-reporte\/.+/, clave: WIZARD_SHELL_KEY },
+    { patron: /^\/tecnico\/mis-reportes\/.+/,  clave: REPORTE_SHELL_KEY },
+]
+
+/** Clave canónica que cubre una ruta, o null si no es dinámica. */
+function claveShell(pathname) {
+    return SHELLS_DINAMICOS.find((s) => s.patron.test(pathname))?.clave ?? null
+}
+
+/**
+ * ¿Vale la pena guardar esta respuesta como pantalla del panel?
+ *
+ * El descarte por redirección es el que importa: si la sesión caduca mientras
+ * se revalida en segundo plano, el servidor responde con un redirect a /login y
+ * fetch lo sigue solo, devolviendo el HTML del login con status 200 y
+ * Content-Type text/html. Sin esta comprobación, esa página se guardaría bajo
+ * la clave del dashboard y el técnico se encontraría en campo, sin red, con un
+ * formulario de inicio de sesión que no puede completar.
+ */
+function esDocumentoUtil(response) {
+    return (
+        response.ok &&
+        !response.redirected &&
+        !!response.headers.get('Content-Type')?.includes('text/html')
+    )
+}
 
 const VALID_CACHES = new Set([SHELL_CACHE, ASSETS_CACHE])
 
@@ -28,16 +63,28 @@ const SHELL_PAGES = [
 // ─── IndexedDB helpers (raw API — no idb library en SW) ───────────────────────
 // Lee la cola de reportes pendientes desde la misma DB que usa la app.
 
-const APP_DB_NAME    = 'mobilhospital-offline'
-const APP_DB_VERSION = 2
+const APP_DB_NAME = 'mobilhospital-offline'
 
+/**
+ * Abre la base que gestiona la app, SIN fijar versión.
+ *
+ * Fijarla aquí es una trampa: indexedDB.open(nombre, N) contra una base que ya
+ * está en una versión mayor lanza VersionError, y este service worker se traga
+ * el fallo — la cola de sincronización dejaría de subir reportes en silencio,
+ * que es la peor forma de romperse en una app de campo. Pasó al migrar el
+ * esquema de v2 a v3: el SW seguía pidiendo la v2.
+ *
+ * Sin argumento de versión se abre la que exista, sea cual sea. El esquema lo
+ * crea y migra la app (src/lib/offline/db.ts); aquí solo se lee, así que este
+ * archivo no tiene por qué enterarse de cada migración.
+ */
 function abrirAppDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open(APP_DB_NAME, APP_DB_VERSION)
-        req.onsuccess  = () => resolve(req.result)
-        req.onerror    = () => reject(req.error)
-        // Si llega acá sin la DB creada, onupgradeneeded no se dispara
-        // porque la app es quien crea el esquema — no abrimos si no existe.
+        const req = indexedDB.open(APP_DB_NAME)
+        req.onsuccess = () => resolve(req.result)
+        req.onerror   = () => reject(req.error)
+        // Solo se dispara si la base no existía: la app nunca se abrió y no hay
+        // nada que sincronizar. Se aborta para no crearla vacía y sin esquema.
         req.onupgradeneeded = () => {
             req.transaction?.abort()
             reject(new Error('DB no existe aún — la app no se ha abierto'))
@@ -90,8 +137,74 @@ function txPut(db, storeName, value) {
 self.addEventListener('message', (event) => {
     if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting()
+        return
+    }
+
+    // Precache bajo demanda — lo pide la app al preparar el modo offline.
+    //
+    // Existe porque el service worker no puede adivinar qué necesita el técnico:
+    // solo cachea lo que el navegador va pidiendo, así que las pantallas no
+    // visitadas con red quedaban fuera. Aquí la app toma la iniciativa y manda
+    // la lista completa antes de que el dispositivo se quede sin conexión.
+    if (event.data?.type === 'PRECACHE_RUTAS') {
+        event.waitUntil(
+            precacheRutas(event.data.urls ?? [])
+                .then((resultado) => event.source?.postMessage({
+                    type: 'PRECACHE_RUTAS_LISTO',
+                    ...resultado,
+                }))
+        )
     }
 })
+
+/**
+ * Descarga y guarda una lista de URLs.
+ *
+ * Los documentos van al shell (y también bajo su clave canónica si la ruta es
+ * dinámica); todo lo demás, a assets. Un fallo individual no aborta el lote:
+ * cachear nueve de diez pantallas es mejor que ninguna.
+ */
+async function precacheRutas(urls) {
+    const [shell, assets] = await Promise.all([
+        caches.open(SHELL_CACHE),
+        caches.open(ASSETS_CACHE),
+    ])
+
+    let guardadas = 0
+    let fallidas  = 0
+
+    await Promise.all(urls.map(async (url) => {
+        try {
+            const respuesta = await fetch(url, { credentials: 'include' })
+            if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`)
+
+            const pathname = new URL(url, self.location.origin).pathname
+            const esAsset  = pathname.startsWith('/_next/static/')
+            const clave    = url.split('?')[0]
+
+            if (esAsset) {
+                await assets.put(clave, respuesta.clone())
+                guardadas++
+                return
+            }
+
+            // Una pantalla que llegó por redirección es la de login, no la que
+            // se pidió: guardarla dejaría al técnico sin esa pantalla offline.
+            if (!esDocumentoUtil(respuesta)) throw new Error('respuesta no utilizable')
+
+            await shell.put(clave, respuesta.clone())
+
+            const canonica = claveShell(pathname)
+            if (canonica) await shell.put(canonica, respuesta.clone())
+
+            guardadas++
+        } catch {
+            fallidas++
+        }
+    }))
+
+    return { guardadas, fallidas, total: urls.length }
+}
 
 // ─── INSTALL ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +219,16 @@ self.addEventListener('install', (event) => {
                         // aunque la request llegue con ?v=timestamp.
                         const cleanUrl = url.split('?')[0]
                         return fetch(cleanUrl, { credentials: 'include' })
-                            .then((res) => { if (res.ok) return cache.put(cleanUrl, res) })
+                            .then((res) => {
+                                // /offline.html es un archivo suelto, no una
+                                // pantalla del panel: se acepta con res.ok. El
+                                // resto pasa el filtro que descarta redirecciones
+                                // al login (ver esDocumentoUtil).
+                                const aceptable = cleanUrl === '/offline.html'
+                                    ? res.ok
+                                    : esDocumentoUtil(res)
+                                if (aceptable) return cache.put(cleanUrl, res)
+                            })
                             .catch(() => {})
                     })
                 )
@@ -247,23 +369,23 @@ async function networkFirstAPI(request) {
 // ─── Estrategia: Stale While Revalidate (páginas) ────────────────────────────
 
 async function staleWhileRevalidate(request) {
-    const cache  = await caches.open(SHELL_CACHE)
-    const url    = new URL(request.url)
-    const isWizardRoute = /^\/tecnico\/nuevo-reporte\/.+/.test(url.pathname)
+    const cache    = await caches.open(SHELL_CACHE)
+    const url      = new URL(request.url)
+    const canonica = claveShell(url.pathname)
 
-    // Buscar hit exacto; si es ruta dinámica del wizard y no hay hit, usar shell canónico
+    // Buscar hit exacto; si es ruta dinámica y no hay hit, usar el shell canónico
     let cached = await cache.match(request, { ignoreVary: true })
-    if (!cached && isWizardRoute) {
-        cached = await cache.match(WIZARD_SHELL_KEY, { ignoreVary: true })
+    if (!cached && canonica) {
+        cached = await cache.match(canonica, { ignoreVary: true })
     }
 
     // Actualiza la caché en background — no se espera el resultado
     const revalidation = fetch(request, { credentials: 'include' })
         .then((response) => {
-            if (response.ok && response.headers.get('Content-Type')?.includes('text/html')) {
+            if (esDocumentoUtil(response)) {
                 cache.put(request, response.clone())
                 // Guardar copia canónica para que otros IDs funcionen offline
-                if (isWizardRoute) cache.put(WIZARD_SHELL_KEY, response.clone())
+                if (canonica) cache.put(canonica, response.clone())
             }
             return response
         })
