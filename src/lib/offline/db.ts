@@ -3,7 +3,7 @@ import type { Equipo, EstadoEquipoPost, MotivoVisita } from '@/types'
 import type { TipoMantenimiento, Insumo, Categoria, ActividadChecklist } from '@/app/actions/catalogos'
 
 const DB_NAME = 'mobilhospital-offline'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 // ─── Estado de sincronización de un reporte local ─────────────────────────────
 
@@ -62,6 +62,29 @@ export interface SyncQueueItem {
     created_at: string
 }
 
+/**
+ * Reporte ya sincronizado, guardado para consultarlo sin red.
+ *
+ * Existe porque hasta ahora /tecnico/mis-reportes solo podía mostrar offline el
+ * HTML que quedó en la caché del service worker: un recorte de la última visita
+ * con conexión, imposible de filtrar o abrir por id. Con el reporte en
+ * IndexedDB, el listado y el detalle se renderizan desde datos reales.
+ *
+ * `datos` guarda el reporte completo con sus colecciones (checklist, insumos,
+ * accesorios, técnicos de apoyo) para que duplicarlo sin red no necesite
+ * ninguna consulta al servidor.
+ */
+export interface ReporteCache {
+    id: string                              // reportes_mantenimiento.id
+    tecnico_principal_id: string
+    equipo_id: string
+    estado_reporte: string
+    fecha_inicio: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    datos: any                              // reporte completo tal como lo sirve la API
+    cached_at: string                       // ISO 8601 — TTL 24h
+}
+
 // ─── Schema tipado de IndexedDB ───────────────────────────────────────────────
 
 interface MobilhospitalDB extends DBSchema {
@@ -87,6 +110,14 @@ interface MobilhospitalDB extends DBSchema {
         key: number
         value: SyncQueueItem
         indexes: { created_at: string }
+    }
+    reportes_cache: {
+        key: string
+        value: ReporteCache
+        indexes: {
+            fecha_inicio: string
+            equipo_id: string
+        }
     }
 }
 
