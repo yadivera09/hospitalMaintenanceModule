@@ -40,7 +40,7 @@ export async function getEquiposProblematicos(): Promise<{
                 ),
                 tipo:tipos_mantenimiento(nombre, es_planificado)
             `)
-            .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+            .eq('estado_reporte', 'cerrado')
             .eq('activo', true)
 
         if (error) throw error
@@ -140,7 +140,7 @@ export async function getDuracionIntervenciones(): Promise<{
                 tipo:tipos_mantenimiento(nombre),
                 tecnico:tecnicos(nombre, apellido)
             `)
-            .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+            .eq('estado_reporte', 'cerrado')
             .not('hora_entrada', 'is', null)
             .not('hora_salida', 'is', null)
             .order('fecha_inicio', { ascending: false })

@@ -82,7 +82,7 @@ function SeccionHeader({ reporte, onAnularClick }: { reporte: any; onAnularClick
     }
     // Dos condiciones distintas: que el estado lo admita y que el usuario
     // tenga el permiso 'anular', que es propio y no se deriva de 'editar'.
-    const estadoAnulable = reporte.estado_reporte === 'en_progreso' || reporte.estado_reporte === 'pendiente_firma_cliente'
+    const estadoAnulable = reporte.estado_reporte === 'en_progreso' || reporte.estado_reporte === 'cerrado'
     const puedeAnular = estadoAnulable && puede(MODULO.REPORTES, PERMISO.ANULAR)
 
     return (

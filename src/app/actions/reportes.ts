@@ -325,7 +325,7 @@ export async function getBorradorReporte(
  * Según REFACTOR-PARTE1: 
  * - Misma equipo_id
  * - Tipo mantenimiento de tipo preventivo (es_planificado = true)
- * - Estado IN ('pendiente_firma_cliente', 'cerrado')
+ * - Estado = 'cerrado'
  * - Retorna MAX(fecha_inicio)
  */
 export async function getUltimoMantenimientoPreventivo(
@@ -344,7 +344,7 @@ export async function getUltimoMantenimientoPreventivo(
             `)
             .eq('equipo_id', equipo_id)
             .eq('tipo.es_planificado', true)
-            .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+            .eq('estado_reporte', 'cerrado')
             .order('fecha_inicio', { ascending: false })
             .limit(1)
             .maybeSingle()
@@ -819,13 +819,37 @@ export async function guardarBorradorGlobal(
 }
 
 // =============================================================================
-// PASO 4 — Firma del técnico → estado: pendiente_firma_cliente
+// PASO 4 — Firma del técnico → estado: cerrado
 // =============================================================================
 
 const FirmarTecnicoSchema = z.object({
     reporte_id: z.string().uuid(),
     firma_base64: z.string().min(100, 'La firma está vacía'),
 })
+
+/**
+ * Invalida las pantallas que muestran el estado de un reporte.
+ *
+ * Hace falta aunque esas páginas sean 'force-dynamic': eso solo obliga al
+ * SERVIDOR a volver a consultar. El router de Next guarda además en el cliente
+ * la respuesta de cada ruta visitada, y al volver a ella por navegación interna
+ * la sirve de ahí sin preguntar. El síntoma es exactamente el que se ve al
+ * firmar: el reporte ya está en 'cerrado' en la base, pero el
+ * dashboard lo sigue pintando 'en progreso' hasta que esa copia caduca sola.
+ *
+ * revalidatePath dentro de una server action limpia las dos cosas, así que la
+ * siguiente navegación ya trae el estado nuevo.
+ */
+async function revalidarVistasDeReporte(reporteId: string) {
+    const { revalidatePath } = await import('next/cache')
+
+    revalidatePath('/tecnico/dashboard')
+    revalidatePath('/tecnico/mis-reportes')
+    revalidatePath(`/tecnico/mis-reportes/${reporteId}`)
+    revalidatePath('/admin/reportes')
+    revalidatePath(`/admin/reportes/${reporteId}`)
+    revalidatePath('/admin/dashboard')
+}
 
 export async function firmarComoTecnico(
     input: z.infer<typeof FirmarTecnicoSchema>
@@ -877,33 +901,32 @@ export async function firmarComoTecnico(
             return { data: null, error: 'Error al subir la firma del técnico' }
         }
 
-        // UPDATE estado → pendiente_firma_cliente
         const ahora = new Date()
         const horaSalida = ahora.toTimeString().slice(0, 5) // HH:MM
-        console.log('[firmarComoTecnico] horaSalida calculada:', horaSalida)
 
-        // Asignar serial y avanzar estado de forma atómica via RPC
-        const { data: serial, error: rpcErr } = await supabase.rpc('cerrar_borrador_reporte', {
-            p_reporte_id: data.reporte_id
-        })
-
-        if (rpcErr) {
-            console.error('[firmarComoTecnico] RPC error:', rpcErr)
-            return { data: null, error: 'Error al asignar serial del reporte: ' + rpcErr.message }
-        }
-
+        // ── ORDEN: primero la firma, después el cierre ──────────────────────
+        //
+        // Desde la migración 023 el reporte queda 'cerrado' en el mismo UPDATE
+        // que hace el RPC, y hay un constraint que prohíbe un cerrado sin firma
+        // del técnico. Las dos operaciones son sentencias distintas y cada una
+        // se confirma por su cuenta, así que cerrar primero deja un instante con
+        // estado 'cerrado' y firma_tecnico NULL — y el constraint lo rechaza:
+        //   new row ... violates check constraint
+        //   "ck_reporte_cerrado_requiere_firma_tecnico"
+        //
+        // Escribiendo la firma mientras el reporte sigue 'en_progreso' el
+        // constraint ni se evalúa, y cuando el RPC lo cierra ya la encuentra.
         const { data: updatedReportes, error: updErr } = await supabase
             .from('reportes_mantenimiento')
             .update({
                 firma_tecnico: storagePath,
                 hash_firma_tecnico: hashFirma,
-                fecha_firma_tecnico: new Date().toISOString(),
+                fecha_firma_tecnico: ahora.toISOString(),
                 hora_salida: horaSalida,
             })
             .eq('id', data.reporte_id)
+            .eq('estado_reporte', 'en_progreso')
             .select('id')
-
-        console.log('[firmarComoTecnico] updatedReportes:', updatedReportes, 'updErr:', updErr)
 
         if (updErr) {
             console.error('[firmarComoTecnico] update', updErr)
@@ -913,6 +936,18 @@ export async function firmarComoTecnico(
         if (!updatedReportes || updatedReportes.length === 0) {
             return { data: null, error: 'El reporte no está en estado correcto para firma' }
         }
+
+        // Asignar serial y cerrar, de forma atómica, via RPC
+        const { data: serial, error: rpcErr } = await supabase.rpc('cerrar_borrador_reporte', {
+            p_reporte_id: data.reporte_id
+        })
+
+        if (rpcErr) {
+            console.error('[firmarComoTecnico] RPC error:', rpcErr)
+            return { data: null, error: 'Error al asignar serial del reporte: ' + rpcErr.message }
+        }
+
+        await revalidarVistasDeReporte(data.reporte_id)
 
         return { data: { serial: serial as string }, error: null }
     } catch (err) {
@@ -956,7 +991,11 @@ export async function firmarComoCliente(
             .single()
 
         if (!reporte) return { data: null, error: 'Reporte no encontrado' }
-        if (reporte.estado_reporte !== 'pendiente_firma_cliente') {
+
+        // Desde la migración 023 el reporte ya está cerrado cuando el cliente
+        // firma: la firma deja constancia de su conformidad, no dispara el
+        // cierre. Un reporte anulado o todavía en progreso no admite firma.
+        if (reporte.estado_reporte !== 'cerrado') {
             return { data: null, error: 'El reporte no está en estado correcto para firma del cliente' }
         }
 
@@ -981,7 +1020,9 @@ export async function firmarComoCliente(
 
         const ahora = new Date().toISOString()
 
-        // UPDATE reporte → cerrado
+        // Solo se registra la firma. fecha_fin NO se toca: la marcó el cierre,
+        // que ya ocurrió al firmar el técnico, y sobrescribirla aquí movería la
+        // fecha del trabajo al día en que el cliente pasó a firmar.
         const { data: updatedReportes, error: updErr } = await supabase
             .from('reportes_mantenimiento')
             .update({
@@ -989,13 +1030,11 @@ export async function firmarComoCliente(
                 hash_firma_cliente: hashFirma,
                 fecha_firma_cliente: ahora,
                 nombre_cliente_firma: data.nombre_firmante,
-                fecha_fin: ahora,
-                estado_reporte: 'cerrado',
                 sincronizado: true,
                 fecha_sincronizacion: ahora,
             })
             .eq('id', data.reporte_id)
-            .eq('estado_reporte', 'pendiente_firma_cliente')
+            .eq('estado_reporte', 'cerrado')
             .select('id')
 
         if (updErr) {
@@ -1017,6 +1056,8 @@ export async function firmarComoCliente(
             // No es crítico — loguear pero no fallar el cierre del reporte
             console.error('[firmarComoCliente] update equipo fecha_ultimo_mantenimiento', eqUpdErr)
         }
+
+        await revalidarVistasDeReporte(data.reporte_id)
 
         return { data: null, error: null }
     } catch (err) {
@@ -1148,7 +1189,7 @@ export async function getReportesAdmin(): Promise<ActionResult<ReporteResumen[]>
 }
 
 // =============================================================================
-// ANULAR REPORTE — Solo admin, estados en_progreso o pendiente_firma_cliente
+// ANULAR REPORTE — Solo admin, estados en_progreso o cerrado
 // =============================================================================
 
 const AnularReporteSchema = z.object({
@@ -1181,8 +1222,13 @@ export async function anularReporte(
             .single()
 
         if (!reporte) return { data: null, error: 'Reporte no encontrado' }
-        if (reporte.estado_reporte !== 'en_progreso' && reporte.estado_reporte !== 'pendiente_firma_cliente') {
-            return { data: null, error: 'Solo se pueden anular reportes en progreso o pendientes de firma del cliente' }
+
+        // Se admite anular un reporte cerrado. Antes 'cerrado' era el final del
+        // recorrido y no se tocaba, pero desde la migración 023 el cierre ocurre
+        // en cuanto firma el técnico: dejar fuera ese estado equivaldría a que
+        // ningún reporte firmado pudiera corregirse nunca.
+        if (reporte.estado_reporte !== 'en_progreso' && reporte.estado_reporte !== 'cerrado') {
+            return { data: null, error: 'Solo se pueden anular reportes en progreso o cerrados' }
         }
 
         const observacionesActualizadas = reporte.observaciones

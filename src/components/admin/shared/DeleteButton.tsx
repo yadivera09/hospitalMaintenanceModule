@@ -154,7 +154,11 @@ export default function DeleteButton({
                                                     </div>
                                                     
                                                     <div className="flex items-center gap-2 shrink-0">
-                                                        {r.estado === 'pendiente_firma_cliente' ? (
+                                                        {/* Un reporte cerrado ya no se reasigna: lleva la
+                                                            firma del técnico que lo hizo. Antes esto miraba
+                                                            'pendiente_firma_cliente', el estado que la
+                                                            migración 023 eliminó. */}
+                                                        {r.estado === 'cerrado' ? (
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>

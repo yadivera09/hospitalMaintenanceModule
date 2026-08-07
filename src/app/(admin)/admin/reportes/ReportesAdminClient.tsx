@@ -23,7 +23,6 @@ type FiltroEstado = EstadoReporte | 'todos'
 
 const ESTADOS_ORDEN: EstadoReporte[] = [
     'en_progreso',
-    'pendiente_firma_cliente',
     'cerrado',
     'anulado',
 ]
@@ -99,7 +98,6 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
     const conteoEstados = useMemo<Record<EstadoReporte, number>>(() => {
         const base: Record<EstadoReporte, number> = {
             en_progreso: 0,
-            pendiente_firma_cliente: 0,
             cerrado: 0,
             anulado: 0,
         }

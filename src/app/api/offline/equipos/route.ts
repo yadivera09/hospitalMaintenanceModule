@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
             .from('reportes_mantenimiento')
             .select('equipo_id, fecha_inicio, tipo:tipos_mantenimiento!inner(es_planificado)')
             .eq('tipo.es_planificado', true)
-            .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+            .eq('estado_reporte', 'cerrado')
             .order('fecha_inicio', { ascending: false })
 
         const preventivoMap: Record<string, string> = {}

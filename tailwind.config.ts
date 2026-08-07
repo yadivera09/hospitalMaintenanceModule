@@ -51,6 +51,55 @@ const config: Config = {
 					"4": "hsl(var(--chart-4))",
 					"5": "hsl(var(--chart-5))",
 				},
+				// ── Tokens de tema (claro/oscuro) ────────────────────────────────
+				// Definidos en globals.css. Van con var() plano, no con el
+				// triplete HSL de shadcn, así que NO admiten el modificador de
+				// opacidad: `bg-panel/50` no compila. Para eso están los *-suave.
+				superficie: "var(--superficie)",
+				panel: {
+					DEFAULT: "var(--panel)",
+					suave: "var(--panel-suave)",
+					alto: "var(--panel-alto)",
+				},
+				borde: {
+					DEFAULT: "var(--borde)",
+					suave: "var(--borde-suave)",
+				},
+				tinta: {
+					DEFAULT: "var(--tinta)",
+					media: "var(--tinta-media)",
+					tenue: "var(--tinta-tenue)",
+				},
+				marca: {
+					DEFAULT: "var(--marca)",
+					fuerte: "var(--marca-fuerte)",
+					suave: "var(--marca-suave)",
+					tinta: "var(--marca-tinta)",
+				},
+				reja: "var(--reja)",
+				ok: {
+					DEFAULT: "var(--ok)",
+					suave: "var(--ok-suave)",
+				},
+				aviso: {
+					DEFAULT: "var(--aviso)",
+					suave: "var(--aviso-suave)",
+				},
+				grave: {
+					DEFAULT: "var(--grave)",
+					suave: "var(--grave-suave)",
+				},
+				critico: {
+					DEFAULT: "var(--critico)",
+					suave: "var(--critico-suave)",
+				},
+				serie: {
+					"1": "var(--serie-1)",
+					"2": "var(--serie-2)",
+					"3": "var(--serie-3)",
+					otros: "var(--serie-otros)",
+				},
+
 				// ── Paleta Mobilhospital ─────────────────────────────────────────
 				brand: {
 					DEFAULT: "#1E40AF", // Azul corporativo

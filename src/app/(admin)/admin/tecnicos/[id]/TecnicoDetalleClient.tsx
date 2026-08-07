@@ -44,7 +44,6 @@ function formatFecha(f: string | null) {
 
 const ESTADO_REPORTE_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string; cls: string }> = {
     en_progreso: { icon: AlertCircle, label: 'En progreso', cls: 'text-indigo-600' },
-    pendiente_firma_cliente: { icon: AlertCircle, label: 'Pte. firma cliente', cls: 'text-amber-600' },
     cerrado: { icon: CheckCircle2, label: 'Cerrado', cls: 'text-green-600' },
     anulado: { icon: XCircle, label: 'Anulado', cls: 'text-red-500' },
 }

@@ -449,8 +449,25 @@ function Paso2({ datos, onChange, readOnly, errors, checklistTemplate }: {
                 {errors?.estado_equipo_post && <p className="text-[10px] text-red-500 font-medium">{errors.estado_equipo_post.message}</p>}
             </div>
 
-            {/* Checklist */}
-            {total > 0 && (
+            {/* Checklist
+                Cuando la categoría del equipo no tiene actividades dadas de alta
+                se dice explícitamente. Antes la sección entera desaparecía, y
+                desde el móvil no había forma de distinguir "este equipo no lleva
+                checklist" de "el checklist no cargó" — que ante un formulario
+                que se va a firmar no es un matiz menor. */}
+            {total === 0 ? (
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-[#334155]">Checklist</Label>
+                    <div className="rounded-lg border border-dashed border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5">
+                        <p className="text-[11px] leading-relaxed text-[#64748B]">
+                            Esta categoría de equipo no tiene actividades de checklist
+                            configuradas, así que no hay nada que marcar. Puedes continuar con
+                            el reporte. Si esperabas ver actividades aquí, pide al administrador
+                            que las dé de alta en <span className="font-medium">Catálogos</span>.
+                        </p>
+                    </div>
+                </div>
+            ) : (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <Label className="text-xs font-medium text-[#334155]">Checklist</Label>
@@ -1456,9 +1473,13 @@ export default function NuevoReporteWizard() {
                 : firmaClienteRef.current.toDataURL('image/png')
         }
 
-        // Guardar en IDB — offline o online, siempre
+        // Con red, el reporte ya está completo y cerrado en el servidor: esto
+        // solo borra la copia local de recuperación. Sin red, la guarda y la
+        // encola. Lo decide finalizarReporte().
+        let quedoEncolado = false
+
         try {
-            await finalizarReporte({
+            const resultado = await finalizarReporte({
                 equipo_id: equipoId,
                 tecnico_principal_id: tecnicoActual?.id || '',
                 tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
@@ -1499,6 +1520,8 @@ export default function NuevoReporteWizard() {
                 nombre_firmante: base64Cliente ? (nombreFirmante || 'Cliente') : null,
                 reporte_server_id: reporteId,
             }, localIdRef.current)
+
+            quedoEncolado = resultado.modoOffline
         } catch (e) {
             console.error('[handleFirmarEnviar] Error guardando en IDB:', e)
             // Continuar de todas formas — el técnico no debe quedar bloqueado
@@ -1512,11 +1535,11 @@ export default function NuevoReporteWizard() {
             return
         }
 
-        // Online: sync en background + redirect
-        try {
+        // Con red solo queda algo por enviar si el borrador nunca llegó al
+        // servidor. En el caso normal no se lanza sync: hacerlo justo antes de
+        // navegar era lo que dejaba reportes marcados 'sincronizando' a medias.
+        if (quedoEncolado) {
             sync().catch(console.error)
-        } catch(e) {
-            console.error('Error triggering sync', e)
         }
 
         router.push(base64Cliente ? '/tecnico/mis-reportes?nueva=1' : '/tecnico/mis-reportes')

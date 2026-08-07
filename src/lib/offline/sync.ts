@@ -14,6 +14,28 @@ export interface SyncResult {
 
 let syncEnProceso = false
 
+/**
+ * Margen tras el cual un reporte marcado 'sincronizando' se da por abandonado.
+ *
+ * Ese estado se escribe justo antes de llamar al servidor, así que si el envío
+ * muere a mitad —la pestaña navega, se recarga la app, se cierra el móvil— el
+ * reporte se queda marcado para siempre. Y como la cola saltaba todo lo que
+ * estuviera 'sincronizando', ese reporte no volvía a intentarse NUNCA: el
+ * contador de pendientes se quedaba clavado y ni el botón de "Sincronizar
+ * ahora" lo movía.
+ *
+ * Dos minutos separan un envío realmente en vuelo (otra pestaña) de uno muerto.
+ */
+const MS_SYNC_ABANDONADO = 2 * 60 * 1000
+
+/** ¿El intento anterior sigue vivo, o quedó abandonado? */
+function siguePendienteDeRespuesta(actualizadoEn: string | undefined): boolean {
+    const desde = Date.parse(actualizadoEn ?? '')
+    if (!Number.isFinite(desde)) return false
+
+    return Date.now() - desde < MS_SYNC_ABANDONADO
+}
+
 export async function sincronizarReportesPendientes(): Promise<SyncResult> {
     if (syncEnProceso) return { sincronizados: 0, errores: 0 }
     syncEnProceso = true
@@ -33,7 +55,34 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
                 continue
             }
 
-            if (reporte.estado === 'sincronizando') continue
+            // Solo se salta si el envío anterior puede seguir en vuelo.
+            if (reporte.estado === 'sincronizando' && siguePendienteDeRespuesta(reporte.updated_at)) {
+                continue
+            }
+
+            // Si el reporte ya existe en el servidor y allí no está en progreso,
+            // el trabajo terminó por el camino normal del wizard y esta copia
+            // local es un resto. Reenviarla haría que /api/sync intentara
+            // actualizar un borrador cerrado y fallara para siempre.
+            if (reporte.reporte_server_id) {
+                try {
+                    const supabase = createClient()
+                    const { data: enServidor } = await supabase
+                        .from('reportes_mantenimiento')
+                        .select('estado_reporte')
+                        .eq('id', reporte.reporte_server_id)
+                        .maybeSingle()
+
+                    if (enServidor && enServidor.estado_reporte !== 'en_progreso') {
+                        await eliminarReporteBorrador(reporte.id)
+                        await eliminarDeSyncQueue(item.id!)
+                        sincronizados++
+                        continue
+                    }
+                } catch (error) {
+                    console.error('Error al comprobar el reporte en el servidor:', error)
+                }
+            }
 
             if (!reporte.reporte_server_id) {
                 try {

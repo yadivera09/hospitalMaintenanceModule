@@ -195,9 +195,16 @@ export interface EquipoContrato {
 // ESTADO DEL REPORTE — tipo estricto
 // =============================================================================
 
+/**
+ * Estados del reporte tras la migración 023.
+ *
+ * El flujo es en_progreso → cerrado, con anulado como única marcha atrás. El
+ * reporte se cierra cuando firma el TÉCNICO; la firma del cliente puede
+ * registrarse después pero ya no condiciona el cierre, y por eso desapareció
+ * 'pendiente_firma_cliente'.
+ */
 export type EstadoReporte =
     | 'en_progreso'
-    | 'pendiente_firma_cliente'
     | 'cerrado'
     | 'anulado'
 

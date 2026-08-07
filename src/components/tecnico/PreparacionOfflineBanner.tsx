@@ -18,6 +18,9 @@ import type { ProgresoPreparacion } from '@/lib/offline/preparar'
 /** Tiempo que permanece el aviso de éxito antes de desaparecer. */
 const MS_VISIBLE_AL_TERMINAR = 4000
 
+/** Fases en las que la preparación ya no va a avanzar más. */
+const FASES_TERMINALES = ['listo', 'listo-parcial']
+
 export default function PreparacionOfflineBanner({
     progreso,
 }: {
@@ -28,7 +31,7 @@ export default function PreparacionOfflineBanner({
     // El aviso de "listo" se retira solo: ya cumplió su función y en una
     // pantalla de móvil cada franja fija le quita sitio al formulario.
     useEffect(() => {
-        if (progreso?.fase !== 'listo') return
+        if (!progreso || !FASES_TERMINALES.includes(progreso.fase)) return
 
         setOculto(false)
         const t = setTimeout(() => setOculto(true), MS_VISIBLE_AL_TERMINAR)
@@ -55,6 +58,12 @@ export default function PreparacionOfflineBanner({
 
     const listo = progreso.fase === 'listo'
 
+    // Los datos ya están; solo falta que el service worker guarde las pantallas,
+    // cosa que hace solo. Se informa en azul, no en ámbar: no hay nada que el
+    // técnico deba hacer al respecto.
+    const parcial = progreso.fase === 'listo-parcial'
+    const terminado = listo || parcial
+
     return (
         <div
             className={`fixed top-14 left-0 right-0 z-30 border-b ${
@@ -68,7 +77,9 @@ export default function PreparacionOfflineBanner({
                     {listo ? (
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
                     ) : (
-                        <Loader2 className="h-3.5 w-3.5 shrink-0 text-blue-600 animate-spin" />
+                        <Loader2
+                            className={`h-3.5 w-3.5 shrink-0 text-blue-600 ${parcial ? '' : 'animate-spin'}`}
+                        />
                     )}
                     <p
                         className={`text-[11px] font-medium leading-tight ${
@@ -79,7 +90,7 @@ export default function PreparacionOfflineBanner({
                     </p>
                 </div>
 
-                {!listo && (
+                {!terminado && (
                     <div className="mt-1.5 h-1 rounded-full bg-blue-100 overflow-hidden">
                         <div
                             className="h-1 rounded-full bg-blue-600 transition-all duration-300"

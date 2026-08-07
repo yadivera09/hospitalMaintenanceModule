@@ -20,7 +20,6 @@ type FiltroEstado = EstadoReporte | 'todos'
 
 const ESTADOS_TECNICOS: EstadoReporte[] = [
     'en_progreso',
-    'pendiente_firma_cliente',
     'cerrado',
     'anulado',
 ]
@@ -74,9 +73,8 @@ export default function MisReportesClient({ iniciales }: { iniciales: ReporteDat
 
     const conteos = useMemo(() => {
         const base: Record<string, number> = {
-            'en_progreso': 0, 
-            'pendiente_firma_cliente': 0, 
-            'cerrado': 0, 
+            'en_progreso': 0,
+            'cerrado': 0,
             'anulado': 0,
         }
         misReportes.forEach((r) => {

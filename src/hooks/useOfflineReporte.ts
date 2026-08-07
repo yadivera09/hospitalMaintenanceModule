@@ -85,10 +85,20 @@ export function useOfflineReporte() {
 
     /**
      * Finaliza el reporte.
-     * - Online: el wizard continúa con su flujo normal (modoOffline: false).
-     * - Offline: actualiza la entrada existente de crash-recovery (o crea una nueva)
-     *   y la encola en sync_queue. Solo esta función añade a sync_queue — guardarPaso
-     *   nunca lo hace.
+     *
+     * - Online y con el reporte ya creado en el servidor: NO se encola. El
+     *   wizard fue guardando cada paso contra el servidor mientras había red, y
+     *   la firma del técnico lo cerró: no queda nada que enviar. La copia local
+     *   solo era recuperación ante un cierre accidental, así que se borra.
+     *
+     *   Encolarlo igualmente —que es lo que se hacía antes— tenía dos efectos
+     *   feos: al técnico le aparecía el panel de "sincronización offline" con
+     *   WiFi de sobra, y el reintento acababa fallando, porque /api/sync intenta
+     *   actualizar un borrador que ya está cerrado.
+     *
+     * - Offline, o sin id de servidor: se actualiza la entrada de recuperación
+     *   (o se crea) y se encola en sync_queue. Solo esta función añade a
+     *   sync_queue — guardarPaso nunca lo hace.
      *
      * @param idLocal ID del borrador creado por guardarPaso(). Si se provee y existe
      *   en IDB, esa entrada se actualiza en lugar de crear una nueva, evitando duplicados.
@@ -98,6 +108,12 @@ export function useOfflineReporte() {
             const now = new Date().toISOString()
             const db = await import('@/lib/offline/db')
             const id = idLocal ?? generarIdLocal()
+
+            if (isOnline && datos.reporte_server_id) {
+                if (idLocal) await db.eliminarReporteBorrador(idLocal).catch(() => {})
+                return { id, modoOffline: false }
+            }
+
             const existing = idLocal ? await db.getReporteBorradorById(idLocal) : undefined
 
             if (existing) {

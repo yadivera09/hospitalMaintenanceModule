@@ -121,7 +121,7 @@ export const MOCK_REPORTES: ReporteResuelto[] = [
         equipo_id: EQ_SR_0001,
         tecnico_principal_id: TEC_MARCOS,
         tipo_mantenimiento_id: TM_PREV,
-        estado_reporte: 'pendiente_firma_cliente',
+        estado_reporte: 'cerrado',
         fecha_inicio: '2025-01-15T10:00:00-05:00',
         fecha_fin: '2025-01-15T12:00:00-05:00',
         diagnostico: 'Mantenimiento preventivo semestral.',

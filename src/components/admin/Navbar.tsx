@@ -8,9 +8,10 @@
  */
 
 import { usePathname } from 'next/navigation'
-import { Menu, LogOut, ChevronRight, Home } from 'lucide-react'
+import { Menu, LogOut, ChevronRight, Home, Sun, Moon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import type { Tema } from '@/lib/tema/tema'
 import type { UsuarioSesion } from '@/types'
 
 // =============================================================================
@@ -22,6 +23,10 @@ interface NavbarProps {
     onMenuClick: () => void
     /** Usuario de sesión activa (mock en BLOQUE 1) */
     usuario: UsuarioSesion
+    /** Tema activo del panel */
+    tema: Tema
+    /** Alterna entre claro y oscuro */
+    onAlternarTema: () => void
 }
 
 // =============================================================================
@@ -70,9 +75,10 @@ function capitalize(str: string) {
 // COMPONENTE
 // =============================================================================
 
-export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
+export default function Navbar({ onMenuClick, usuario, tema, onAlternarTema }: NavbarProps) {
     const pathname = usePathname()
     const breadcrumbs = buildBreadcrumbs(pathname)
+    const esOscuro = tema === 'oscuro'
 
     /** Cierra sesión via route handler POST /auth/logout */
     const handleLogout = () => {
@@ -84,12 +90,12 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
     }
 
     return (
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 bg-white border-b border-[#E2E8F0] px-4 lg:px-6">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 bg-panel border-b border-borde px-4 lg:px-6">
 
             {/* Botón hamburguesa — solo en móvil */}
             <button
                 onClick={onMenuClick}
-                className="lg:hidden p-2 rounded-md text-[#334155] hover:bg-[#F1F5F9] transition-colors"
+                className="lg:hidden p-2 rounded-md text-tinta-media hover:bg-panel-suave transition-colors"
                 aria-label="Abrir menú"
                 id="navbar-menu-toggle"
             >
@@ -98,11 +104,11 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
 
             {/* ── Breadcrumb ─────────────────────────────────── */}
             <nav aria-label="Breadcrumb" className="flex-1 min-w-0">
-                <ol className="flex items-center gap-1 text-sm text-[#94A3B8] truncate">
+                <ol className="flex items-center gap-1 text-sm text-tinta-tenue truncate">
                     <li>
                         <a
                             href="/admin/dashboard"
-                            className="flex items-center hover:text-[#1E40AF] transition-colors"
+                            className="flex items-center hover:text-marca transition-colors"
                             aria-label="Inicio"
                         >
                             <Home className="h-3.5 w-3.5 shrink-0" />
@@ -113,13 +119,13 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
                         <li key={crumb.href} className="flex items-center gap-1">
                             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
                             {crumb.isLast ? (
-                                <span className="font-medium text-[#0F172A] truncate">
+                                <span className="font-medium text-tinta truncate">
                                     {crumb.label}
                                 </span>
                             ) : (
                                 <a
                                     href={crumb.href}
-                                    className="hover:text-[#1E40AF] transition-colors truncate"
+                                    className="hover:text-marca transition-colors truncate"
                                 >
                                     {crumb.label}
                                 </a>
@@ -131,20 +137,31 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
 
             {/* ── Info de usuario + Logout ────────────────────── */}
             <div className="flex items-center gap-3 shrink-0">
+                {/* Alternar tema */}
+                <button
+                    onClick={onAlternarTema}
+                    className="p-2 rounded-md text-tinta-tenue hover:text-tinta hover:bg-panel-suave transition-colors"
+                    aria-label={esOscuro ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                    title={esOscuro ? 'Tema claro' : 'Tema oscuro'}
+                    id="navbar-tema-toggle"
+                >
+                    {esOscuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+
                 {/* Nombre y badge */}
                 <div className="hidden sm:flex flex-col items-end gap-0.5">
-                    <span className="text-sm font-semibold text-[#0F172A] leading-none">
+                    <span className="text-sm font-semibold text-tinta leading-none">
                         {usuario.nombre} {usuario.apellido}
                     </span>
                     <Badge
-                        className="text-xs px-2 py-0 bg-[#1E40AF] text-white border-0 rounded-sm"
+                        className="text-xs px-2 py-0 bg-marca text-white border-0 rounded-sm hover:bg-marca"
                     >
                         {usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1)}
                     </Badge>
                 </div>
 
                 {/* Avatar inicial */}
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1E40AF] text-white text-sm font-bold select-none">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-marca text-white text-sm font-bold select-none">
                     {usuario.nombre.charAt(0).toUpperCase()}
                 </div>
 
@@ -153,7 +170,7 @@ export default function Navbar({ onMenuClick, usuario }: NavbarProps) {
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    className="gap-1.5 text-[#94A3B8] hover:text-[#DC2626] hover:bg-red-50 transition-colors"
+                    className="gap-1.5 text-tinta-tenue hover:text-critico hover:bg-critico-suave transition-colors"
                     aria-label="Cerrar sesión"
                     id="navbar-logout-btn"
                 >

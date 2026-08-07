@@ -9,11 +9,31 @@ const SCOPE_PANEL = '/tecnico/'
 /** Marca de recarga, para no repetirla si el registro tardara en desaparecer. */
 const CLAVE_RECARGA = 'mh-sw-limpiado'
 
+/**
+ * Ejecuta la tarea cuando la página haya terminado de cargar — o ya mismo si
+ * eso ya ocurrió.
+ *
+ * La comprobación de readyState no es defensiva de más: addEventListener('load')
+ * sobre un documento que YA disparó ese evento no ejecuta nada nunca. Pasa en
+ * cuanto la hidratación de React termina después de la carga, y el efecto es que
+ * el service worker no llega a registrarse en esa visita. El fallo se ve luego
+ * lejos de aquí: la preparación offline se queda esperando a un worker que nadie
+ * pidió y acaba avisando de que no pudo dejar el dispositivo listo.
+ */
+function alCargar(tarea: () => void) {
+  if (document.readyState === 'complete') {
+    tarea()
+    return
+  }
+
+  window.addEventListener('load', tarea, { once: true })
+}
+
 export function registerServiceWorker() {
   if (typeof window === 'undefined') return
   if (!('serviceWorker' in navigator)) return
 
-  window.addEventListener('load', async () => {
+  alCargar(async () => {
     try {
       await limpiarServiceWorkersObsoletos()
 

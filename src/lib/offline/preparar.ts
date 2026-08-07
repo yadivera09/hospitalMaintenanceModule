@@ -48,6 +48,13 @@ export type FasePreparacion =
     | 'reportes'
     | 'pantallas'
     | 'listo'
+    /**
+     * Los datos están en el dispositivo, pero el service worker todavía no
+     * estaba activo para guardar las pantallas. No es un error: el precache se
+     * reintenta solo en cuanto el worker arranca, y las tres pantallas fijas del
+     * panel las guarda él por su cuenta al instalarse.
+     */
+    | 'listo-parcial'
     | 'error'
 
 export interface ProgresoPreparacion {
@@ -95,8 +102,31 @@ function assetsDelHtml(html: string): string[] {
     return Array.from(new Set(encontrados.map((m) => m[1])))
 }
 
-/** Margen para que el service worker termine de activarse en la primera visita. */
-const MS_ESPERA_SW = 10_000
+/**
+ * Margen para que el service worker termine de activarse.
+ *
+ * La instalación del worker no es instantánea: descarga sus propias pantallas
+ * antes de activarse, y en el primer arranque compite con esta misma
+ * preparación por la conexión. Diez segundos se agotaban de forma habitual y el
+ * técnico veía un aviso de fallo teniendo WiFi.
+ */
+const MS_ESPERA_SW = 30_000
+
+/**
+ * Manda al worker la orden de precachear, en cuanto esté activo.
+ *
+ * Sin tope de espera a propósito: esto se lanza cuando la espera con tope ya se
+ * agotó, y su trabajo es aprovechar la activación tardía. Si el worker nunca
+ * llega, la promesa queda pendiente y no pasa nada — nadie la espera.
+ */
+function precachearAlActivarse(urls: string[]): void {
+    navigator.serviceWorker.ready
+        .then((registration) => {
+            const sw = registration.active ?? navigator.serviceWorker.controller
+            sw?.postMessage({ type: 'PRECACHE_RUTAS', urls })
+        })
+        .catch(() => { /* sin worker no hay precache, y no hay nada que avisar */ })
+}
 
 /**
  * Pide al service worker que descargue y guarde una lista de URLs.
@@ -105,6 +135,11 @@ const MS_ESPERA_SW = 10_000
  * falló, el navegador lo bloqueó o la app se sirve sin HTTPS, esa promesa queda
  * pendiente para siempre y la preparación se colgaría en el último paso, con la
  * barra de progreso congelada y sin explicación.
+ *
+ * Agotar el tope NO significa que el precache se pierda: antes de rendirse se
+ * deja programado para cuando el worker arranque. Lo único que se pierde es la
+ * confirmación en pantalla, y por eso quien llama degrada el mensaje en vez de
+ * tratarlo como un fallo.
  */
 async function precachearEnSW(urls: string[]): Promise<void> {
     if (urls.length === 0) return
@@ -115,14 +150,13 @@ async function precachearEnSW(urls: string[]): Promise<void> {
         new Promise<null>((resolve) => setTimeout(() => resolve(null), MS_ESPERA_SW)),
     ])
 
-    if (!registration) {
-        throw new Error('El service worker no se activó: el modo offline no quedará disponible.')
-    }
-
-    const sw = registration.active ?? navigator.serviceWorker.controller
+    const sw = registration
+        ? registration.active ?? navigator.serviceWorker.controller
+        : null
 
     if (!sw) {
-        throw new Error('El service worker no está activo todavía. Recarga la app.')
+        precachearAlActivarse(urls)
+        throw new Error('El service worker aún no estaba activo.')
     }
 
     sw.postMessage({ type: 'PRECACHE_RUTAS', urls })
@@ -185,11 +219,28 @@ export async function prepararModoOffline(
         if (equipos[0]) rutas.push(`/tecnico/nuevo-reporte/${equipos[0].id}`)
         if (reportes[0]) rutas.push(`/tecnico/mis-reportes/${reportes[0]}`)
 
-        await precachearPantallas(rutas, (hechas, total) =>
-            avisar('pantallas', `Preparando pantallas… (${hechas}/${total})`, 60 + Math.round((hechas / total) * 35)),
-        )
+        // El precache de pantallas se degrada, no se convierte en un fallo del
+        // conjunto. Los datos —que es lo que no se puede recuperar sin red— ya
+        // están en el dispositivo, y las pantallas se guardan solas en cuanto el
+        // service worker arranca. Tratarlo como error mandaba al técnico a
+        // "volver a abrir la app con buena señal" teniendo cobertura de sobra.
+        try {
+            await precachearPantallas(rutas, (hechas, total) =>
+                avisar('pantallas', `Preparando pantallas… (${hechas}/${total})`, 60 + Math.round((hechas / total) * 35)),
+            )
 
-        avisar('listo', 'Listo para trabajar sin conexión', 100)
+            avisar('listo', 'Listo para trabajar sin conexión', 100)
+        } catch (err) {
+            console.warn('[preparar] pantallas:', err)
+
+            onProgreso({
+                fase: 'listo-parcial',
+                detalle: 'Datos listos. Las pantallas terminan de guardarse en segundo plano.',
+                porcentaje: 100,
+                listo: false,
+                error: null,
+            })
+        }
     } catch (err) {
         console.error('[preparar] falló la preparación offline:', err)
         onProgreso({

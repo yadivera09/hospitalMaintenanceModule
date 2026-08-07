@@ -9,7 +9,8 @@ import { puedeVerRuta, destinoAlternativo } from '@/lib/seguridad/autorizarRuta'
 import { PermisosProvider } from '@/lib/seguridad/PermisosProvider'
 import AdminLayoutClient from '@/components/admin/AdminLayoutClient'
 import type { UsuarioSesion } from '@/types'
-import { headers } from 'next/headers'
+import { COOKIE_TEMA, TEMA_POR_DEFECTO, esTema } from '@/lib/tema/tema'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 /**
@@ -94,9 +95,14 @@ export default async function AdminLayout({
         rol: estado.roles.includes(ROL_ADMINISTRADOR) ? 'administrador' : (estado.roles[0] ?? ''),
     }
 
+    // El tema se resuelve aquí, en servidor, para que la primera pintura ya
+    // salga en el color correcto y no haya destello al cargar (ver lib/tema).
+    const cookieTema = cookies().get(COOKIE_TEMA)?.value
+    const tema = esTema(cookieTema) ? cookieTema : TEMA_POR_DEFECTO
+
     return (
         <PermisosProvider permisos={permisos}>
-            <AdminLayoutClient usuario={usuarioSesion} navegacion={navegacion}>
+            <AdminLayoutClient usuario={usuarioSesion} navegacion={navegacion} temaInicial={tema}>
                 {children}
             </AdminLayoutClient>
         </PermisosProvider>

@@ -64,8 +64,9 @@ export default function ReporteDetalleClient({ reporte }: { reporte: any }) {
 
     // Status Checks
     const isCerrado = reporte.estado_reporte === 'cerrado'
+    // Todo lo que no sigue en progreso lleva ya la firma del técnico: es lo que
+    // cierra el reporte desde la migración 023.
     const firmaTecnicaCompletada =
-        reporte.estado_reporte === 'pendiente_firma_cliente' ||
         reporte.estado_reporte === 'cerrado' ||
         reporte.estado_reporte === 'anulado'
 

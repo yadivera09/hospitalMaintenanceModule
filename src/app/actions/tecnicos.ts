@@ -494,7 +494,7 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
             .from('reportes_mantenimiento')
             .select('*', { count: 'exact', head: true })
             .eq('tecnico_principal_id', id)
-            .in('estado_reporte', ['en_progreso', 'pendiente_firma_cliente'])
+            .eq('estado_reporte', 'en_progreso')
 
         if (countErr) throw countErr
 
@@ -509,12 +509,12 @@ export async function desactivarTecnico(id: string): Promise<ActionResult<boolea
                     equipos (codigo_mh, nombre)
                 `)
                 .eq('tecnico_principal_id', id)
-                .in('estado_reporte', ['en_progreso', 'pendiente_firma_cliente'])
+                .eq('estado_reporte', 'en_progreso')
                 .limit(5)
 
             return {
                 data: null,
-                error: `No se puede desactivar: el técnico tiene ${count} reporte(s) en progreso o pendientes de firma. Reasígnalos o espera a que finalicen.`,
+                error: `No se puede desactivar: el técnico tiene ${count} reporte(s) en progreso. Reasígnalos o espera a que finalicen.`,
                 meta: {
                     reportes: reportes?.map(r => ({
                         id: r.id,

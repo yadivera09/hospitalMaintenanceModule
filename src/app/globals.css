@@ -10,6 +10,129 @@
 
 
 
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Tokens de tema — Mobilhospital
+ *
+ * El panel se pinta contra estos nombres, nunca contra un hex suelto. Así el
+ * modo claro y el oscuro son EL MISMO diseño: cambian los valores, no las
+ * clases. Sin esto haria falta un `dark:` por cada color en cada componente,
+ * que es donde los dos temas se van separando hasta dejar de parecerse.
+ *
+ * Los tokens llevan valor plano (no el triplete HSL de shadcn) porque se leen
+ * mejor y no hay que recalcular nada al ajustar la paleta. A cambio no admiten
+ * el modificador de opacidad de Tailwind (`bg-panel/50` no compila): cuando
+ * hace falta una version translucida, se declara su propio token *-suave.
+ *
+ * Los colores de serie y de estado salen de una paleta validada para daltonismo
+ * y contraste contra ESTAS superficies (#FFFFFF en claro, #111827 en oscuro).
+ * No sustituir un hex sin volver a validarlo.
+ * ────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Superficies */
+    --superficie:    #F4F7FB;
+    --panel:         #FFFFFF;
+    --panel-suave:   #F1F5F9;
+    --panel-alto:    #FFFFFF;
+
+    /* Bordes */
+    --borde:         #E4EAF2;
+    --borde-suave:   #EFF3F8;
+
+    /* Tinta */
+    --tinta:         #0F172A;
+    --tinta-media:   #475569;
+    --tinta-tenue:   #8A99AD;
+
+    /* Marca */
+    --marca:         #1E40AF;
+    --marca-fuerte:  #1B379A;
+    --marca-suave:   #EAF0FF;
+    --marca-tinta:   #1E40AF;
+
+    /* Cuadricula de los graficos */
+    --reja:          #E9EEF5;
+
+    /* Estado — paleta fija, nunca tematizada.
+       En claro, aviso y grave quedan por debajo de 3:1 a proposito: por eso
+       siempre viajan con icono y etiqueta, nunca solo con el color. */
+    --ok:            #0CA30C;
+    --ok-suave:      #E7F7E7;
+    --aviso:         #FAB219;
+    --aviso-suave:   #FEF4E0;
+    --grave:         #EC835A;
+    --grave-suave:   #FDEDE6;
+    --critico:       #D03B3B;
+    --critico-suave: #FBE9E9;
+
+    /* Series categoricas de los graficos */
+    --serie-1:       #2A78D6;
+    --serie-2:       #EB6834;
+    --serie-3:       #1BAF7A;
+    --serie-otros:   #94A3B8;
+
+    /* Barras de apoyo: el mismo azul de la serie 1, rebajado.
+       --barra-vacia marca los días sin datos, que se dibujan con un filete
+       mínimo en vez de dejar el hueco: un rectángulo vacío se lee como
+       "falta el dato", y un filete gris como "ese día fue cero". */
+    --barra-suave:   #B5D4F4;
+    --barra-media:   #85B7EB;
+    --barra-vacia:   #E1E0D9;
+
+    --sombra:        rgba(15, 23, 42, 0.06);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --superficie:    #080C14;
+    --panel:         #111827;
+    --panel-suave:   #1A2233;
+    --panel-alto:    #1E293B;
+
+    --borde:         #1F2937;
+    --borde-suave:   #182031;
+
+    --tinta:         #F1F5F9;
+    --tinta-media:   #A3B1C6;
+    --tinta-tenue:   #6B7A90;
+
+    /* El azul corporativo puro es ilegible sobre casi-negro: en oscuro la marca
+       sube de paso. Es el mismo rol, escalonado para esta superficie. */
+    --marca:         #3B82F6;
+    --marca-fuerte:  #60A5FA;
+    --marca-suave:   #16233F;
+    --marca-tinta:   #93C5FD;
+
+    --reja:          #1C2536;
+
+    --ok:            #0CA30C;
+    --ok-suave:      #0E2A16;
+    --aviso:         #FAB219;
+    --aviso-suave:   #2E2410;
+    --grave:         #EC835A;
+    --grave-suave:   #2E1D16;
+    --critico:       #D03B3B;
+    --critico-suave: #2E1416;
+
+    --serie-1:       #3987E5;
+    --serie-2:       #D95926;
+    --serie-3:       #199E70;
+    --serie-otros:   #64748B;
+
+    /* Los azules rebajados del tema claro son casi blancos: sobre casi negro
+       serían manchas más llamativas que la barra destacada. Aquí el escalón va
+       al otro lado. */
+    --barra-suave:   #24406B;
+    --barra-media:   #2F5C99;
+    --barra-vacia:   #2C2C2A;
+
+    --sombra:        rgba(0, 0, 0, 0.45);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

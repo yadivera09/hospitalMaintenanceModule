@@ -103,7 +103,6 @@ const ESTADO_REPORTE_CONFIG: Record<string, {
     className: string;
 }> = {
     en_progreso: { icon: AlertCircle, label: 'En progreso', className: 'text-indigo-600' },
-    pendiente_firma_cliente: { icon: AlertCircle, label: 'Pte. firma cliente', className: 'text-amber-600' },
     cerrado: { icon: CheckCircle2, label: 'Cerrado', className: 'text-green-600' },
     anulado: { icon: XCircle, label: 'Anulado', className: 'text-red-500' },
 }

@@ -39,9 +39,16 @@ export default function DashboardClient({ reportes, nombreTecnico }: { reportes:
     const router = useRouter()
     const { isOnline: online } = useOfflineStatus()
 
-    const reportesEnProgreso = reportes.filter((r) => 
-        r.estado_reporte === 'en_progreso' || 
-        r.estado_reporte === 'pendiente_firma_cliente'
+    // Trabajo que todavía pide algo del técnico: los que sigue redactando y los
+    // que ya cerró pero están sin la firma del cliente.
+    //
+    // Ese segundo grupo antes era el estado 'pendiente_firma_cliente'. Al
+    // desaparecer (migración 023) hay que reconocerlo por la ausencia de firma,
+    // o los reportes a los que falta recoger la conformidad se caerían del
+    // dashboard y el técnico no tendría desde dónde volver a ellos.
+    const reportesEnProgreso = reportes.filter((r) =>
+        r.estado_reporte === 'en_progreso' ||
+        (r.estado_reporte === 'cerrado' && !r.firma_cliente)
     )
     const reportesHoy = reportes.filter((r) => esHoy(r.fecha_inicio))
 
@@ -86,7 +93,7 @@ export default function DashboardClient({ reportes, nombreTecnico }: { reportes:
                                 <div className="text-left min-w-0">
                                     <div className="flex items-center gap-2">
                                         <p className="text-xs font-mono font-bold text-[#1E40AF]">{r.numero_reporte_fisico ?? `#${abreviarId(r.id)}`}</p>
-                                        {r.estado_reporte === 'pendiente_firma_cliente' && (
+                                        {r.estado_reporte === 'cerrado' && (
                                             <Badge variant="outline" className="text-[9px] py-0 h-4 border-orange-200 text-orange-600 bg-orange-50">
                                                 Firma pendiente
                                             </Badge>
@@ -96,7 +103,7 @@ export default function DashboardClient({ reportes, nombreTecnico }: { reportes:
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
                                     <Badge className="text-[10px] bg-white text-[#1E40AF] border border-[#1E40AF]/20 px-1.5 py-0.5">
-                                        {r.estado_reporte === 'pendiente_firma_cliente' ? 'Ver' : 'Continuar'}
+                                        {r.estado_reporte === 'cerrado' ? 'Ver' : 'Continuar'}
                                     </Badge>
                                     <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8]" />
                                 </div>

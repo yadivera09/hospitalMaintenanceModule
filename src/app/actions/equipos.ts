@@ -205,7 +205,7 @@ export async function getEquipoById(
                 .from('reportes_mantenimiento')
                 .select(`fecha_inicio, tipos_mantenimiento!inner(es_planificado)`)
                 .eq('equipo_id', id)
-                .in('estado_reporte', ['pendiente_firma_cliente', 'cerrado'])
+                .eq('estado_reporte', 'cerrado')
                 .eq('tipos_mantenimiento.es_planificado', true)
                 .order('fecha_inicio', { ascending: false })
                 .limit(1)
