@@ -10,7 +10,7 @@
 // Subir esta versión invalida shell y assets en el próximo activate. Hacerlo
 // siempre que cambien las estrategias de caché: si no, los dispositivos siguen
 // sirviendo lo que guardó la versión anterior con las reglas anteriores.
-const SHELL_VER    = 'v4'
+const SHELL_VER    = 'v5'
 const SHELL_CACHE  = `mh-shell-${SHELL_VER}`
 const ASSETS_CACHE = `mh-assets-${SHELL_VER}`
 
@@ -30,6 +30,37 @@ const SHELLS_DINAMICOS = [
 /** Clave canónica que cubre una ruta, o null si no es dinámica. */
 function claveShell(pathname) {
     return SHELLS_DINAMICOS.find((s) => s.patron.test(pathname))?.clave ?? null
+}
+
+/**
+ * ¿Es una navegación que este service worker debe servir desde caché?
+ *
+ * Solo el panel del técnico y la pantalla de respaldo. El resto de la app
+ * —login, flujo MFA, panel de administración— va siempre a la red.
+ *
+ * El filtro parece redundante, porque el registro declara scope '/tecnico/' y
+ * un service worker no ve nada fuera de su scope. Lo es en un navegador limpio;
+ * no en los que ya abrieron la app. Una versión anterior registraba '/sw.js'
+ * SIN scope, o sea en la raíz, y ese registro sigue vivo: declarar otro scope
+ * crea un registro nuevo, nunca borra el anterior.
+ *
+ * Con el registro de raíz, stale-while-revalidate alcanzaba a /login. La página
+ * quedaba cacheada y, al iniciar sesión, el navegador recibía esa copia en lugar
+ * del 303 del middleware: el formulario reaparecía vacío, sin mensaje de error y
+ * sin haber navegado a ninguna parte, con la sesión ya abierta en las cookies.
+ * Y no se recuperaba solo — la revalidación en segundo plano descarta las
+ * respuestas redirigidas (ver esDocumentoUtil), así que la copia del login se
+ * quedaba en la caché indefinidamente.
+ *
+ * Por eso la comprobación vive aquí y no solo en el scope del registro: es la
+ * única que también protege a los navegadores ya contaminados.
+ */
+function esNavegacionCacheable(pathname) {
+    return (
+        pathname === '/tecnico' ||
+        pathname.startsWith('/tecnico/') ||
+        pathname === '/offline.html'
+    )
 }
 
 /**
@@ -298,8 +329,8 @@ self.addEventListener('fetch', (event) => {
         return
     }
 
-    // ── 5. Stale While Revalidate: navegación HTML ─────────────────────────
-    if (request.mode === 'navigate') {
+    // ── 5. Stale While Revalidate: navegación HTML del panel ───────────────
+    if (request.mode === 'navigate' && esNavegacionCacheable(url.pathname)) {
         event.respondWith(staleWhileRevalidate(request))
         return
     }
