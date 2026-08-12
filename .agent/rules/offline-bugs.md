@@ -636,3 +636,47 @@ No fue la causa del duplicado que se reportó: aquellos dos reportes se crearon
 con **101 segundos** de diferencia, y uno tenía los arreglos y el otro no. Fueron
 dos acciones separadas, una con el bundle viejo que el service worker tenía
 cacheado y otra con el nuevo.
+
+---
+
+# D9 — CRÍTICO: una duplicación acababa subiendo DOS reportes
+
+Reportado por el usuario en producción y reproducido en local el 2026-08-12. El
+síntoma que lo delató fue suyo: *"solo se sincroniza uno; cuando recargo la
+página aparece el otro"*.
+
+Dos defectos encadenados, ambos en el wizard:
+
+**1. El borrador local solo se restauraba sin conexión.** La rama que lee el
+borrador de IndexedDB estaba dentro de `if (!isOnline)`. Pero un id `local_<uuid>`
+**solo** existe en IndexedDB: ninguna server action puede resolverlo, haya red o
+no. Al abrir un duplicado con señal, el wizard se iba por el camino del servidor,
+no encontraba nada, y el formulario salía a medias.
+
+**2. `localIdRef` estrenaba id en cada montaje.**
+
+```js
+const localIdRef = useRef<string>(generarIdLocal())   // ← siempre uno nuevo
+```
+
+Solo se reemplazaba por el del borrador *dentro de aquella rama offline*. Así que
+en el caso anterior el wizard editaba un borrador y guardaba en OTRO: `guardarPaso`
+y `finalizarReporte` escribían con el id nuevo, lo encolaban, y subía como un
+reporte más. **Y bastaba recargar para repetirlo**, porque cada montaje estrenaba
+id — de ahí que el segundo reporte apareciera justo al recargar.
+
+La idempotencia de la migración 024 no lo tapaba, y no debía: los dos borradores
+tienen `id_local` distintos, así que para el servidor son dos trabajos legítimos.
+Los duplicados de los reportes 41 y 42 salieron de aquí.
+
+**Corregido:**
+
+- La condición ya no es "estoy sin conexión" sino "esto es un borrador local":
+  `if (!isOnline || esBorradorLocal)`.
+- `localIdRef` nace atado al id de la URL cuando lo hay. La misma URL escribe
+  siempre sobre el mismo borrador, con red o sin ella, se recargue lo que se
+  recargue.
+
+Verificado en local con build de producción: duplicar sin red, recuperar conexión
+y **recargar** deja un único borrador con sus datos intactos. Antes, esa recarga
+creaba el segundo.

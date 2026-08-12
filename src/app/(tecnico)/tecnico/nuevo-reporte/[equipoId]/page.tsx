@@ -931,8 +931,22 @@ export default function NuevoReporteWizard() {
 
     // Hook offline: guarda pasos en IDB y finaliza offline cuando no hay red
     const { isOnline, guardarPaso, finalizarReporte } = useOfflineReporte()
-    // ID local persistente para el borrador en IDB (distinto del ID de Supabase)
-    const localIdRef = useRef<string>(generarIdLocal())
+    /**
+     * ID del borrador en IndexedDB (distinto del id de Supabase).
+     *
+     * Si la URL ya trae uno —se está reabriendo un borrador local, típicamente un
+     * reporte duplicado sin red— se adopta ESE. Antes se generaba siempre uno
+     * nuevo y solo se reemplazaba dentro de la rama offline, así que cada montaje
+     * del wizard sin esa rama estrenaba id: al firmar se guardaba un borrador
+     * distinto del que se estaba editando, se encolaba, y subía como un reporte
+     * más. Recargar la página bastaba para repetirlo.
+     *
+     * Atarlo aquí cierra el caso de raíz: la misma URL escribe siempre sobre el
+     * mismo borrador, con red o sin ella, se recargue las veces que se recargue.
+     */
+    const localIdRef = useRef<string>(
+        draftReporteId?.startsWith('local_') ? draftReporteId : generarIdLocal()
+    )
 
     const [ultimoPreventivo, setUltimoPreventivo] = useState<string | null>(null)
     const [cargandoContexto, setCargandoContexto] = useState(true)
@@ -1051,9 +1065,24 @@ export default function NuevoReporteWizard() {
                         ? todasLasUbicaciones.filter((u) => u.cliente_id === clienteId)
                         : todasLasUbicaciones
 
-                // Sin conexión: si tenemos el equipo en IDB, el wizard funciona completo.
-                // Si no está en IDB, intentar fallback a todos los equipos cacheados.
-                if (!isOnline) {
+                // Este camino se toma en DOS casos, y el segundo se pasó por alto
+                // durante mucho tiempo:
+                //
+                //   1. No hay conexión. Con el equipo en IDB el wizard funciona
+                //      completo; si no está, se busca entre todos los cacheados.
+                //
+                //   2. Se está abriendo un borrador 'local_', haya red o no. Ese
+                //      id SOLO existe en IndexedDB: ninguna server action puede
+                //      resolverlo. Al condicionar esto únicamente a estar sin
+                //      conexión, abrir un duplicado con señal se iba por el camino
+                //      del servidor, que no encontraba nada — el formulario salía
+                //      a medias y, peor, localIdRef se quedaba con un id NUEVO en
+                //      vez del borrador que se estaba editando. Al firmar se creaba
+                //      así un SEGUNDO borrador, y acababan subiendo dos reportes
+                //      por una sola duplicación.
+                const esBorradorLocal = !!draftReporteId?.startsWith('local_')
+
+                if (!isOnline || esBorradorLocal) {
                     let cachedEquipo: any = equipoIDB.status === 'fulfilled' ? equipoIDB.value : null
 
                     if (!cachedEquipo) {
