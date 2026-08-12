@@ -216,6 +216,21 @@ const wizardSchema = paso1Schema.merge(paso2Schema).merge(paso3Schema).merge(pas
 function hoy() { return new Date().toISOString().split('T')[0] }
 
 /**
+ * ¿Este id lo asignó el servidor, o nació en el dispositivo?
+ *
+ * El wizard maneja los dos: un reporte empezado con conexión lleva el UUID de
+ * reportes_mantenimiento, y uno duplicado sin red lleva 'local_<uuid>', que solo
+ * existe en IndexedDB. Confundirlos costaba caro — el id local acababa en el
+ * campo reporte_server_id del payload y /api/sync rechazaba el reporte entero
+ * con 'Invalid UUID', dejándolo en la cola para siempre.
+ */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function esIdDeServidor(id: string | null | undefined): id is string {
+    return !!id && UUID.test(id)
+}
+
+/**
  * Nombre, código y unidad de un insumo, sacados del catálogo cacheado.
  *
  * Un borrador local guarda solo el insumo_id y la cantidad — como el checklist
@@ -1581,7 +1596,11 @@ export default function NuevoReporteWizard() {
                 firma_base64: base64Tecnico,
                 firma_cliente_base64: base64Cliente,
                 nombre_firmante: base64Cliente ? (nombreFirmante || 'Cliente') : null,
-                reporte_server_id: reporteId,
+                // Solo si es un id del SERVIDOR. En un borrador creado sin
+                // conexión reporteId vale 'local_<uuid>', y mandarlo aquí hacía
+                // que /api/sync rechazara el reporte entero por UUID inválido:
+                // el reporte se quedaba en la cola para siempre.
+                reporte_server_id: esIdDeServidor(reporteId) ? reporteId : null,
             }, localIdRef.current)
 
             quedoEncolado = resultado.modoOffline
@@ -1635,7 +1654,11 @@ export default function NuevoReporteWizard() {
                 tecnicos_apoyo: datos.tecnicos_apoyo,
                 firma_cliente_base64: null,
                 nombre_firmante: null,
-                reporte_server_id: reporteId,
+                // Solo si es un id del SERVIDOR. En un borrador creado sin
+                // conexión reporteId vale 'local_<uuid>', y mandarlo aquí hacía
+                // que /api/sync rechazara el reporte entero por UUID inválido:
+                // el reporte se quedaba en la cola para siempre.
+                reporte_server_id: esIdDeServidor(reporteId) ? reporteId : null,
             })
             alert('Sin conexión. Reporte guardado localmente. Se sincronizará automáticamente.')
             return

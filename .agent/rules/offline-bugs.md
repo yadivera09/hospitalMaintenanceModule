@@ -542,3 +542,64 @@ puede estar en otra sala.
 
 Verificado en el navegador con build de producción y sesión de técnico: el
 borrador offline guarda `ubicacion_id` tras elegirla en el paso 1.
+
+---
+
+# D6 — CRÍTICO: un reporte duplicado sin red NUNCA se sincronizaba
+
+Encontrado el 2026-08-12 ejecutando la prueba 4 del guion. Es, con diferencia,
+el hallazgo más importante de toda la ronda.
+
+`reporteId` en el wizard sale del parámetro `?reporteId=` de la URL. En un
+reporte duplicado sin conexión ese valor es el id LOCAL — `local_<uuid>`, que
+solo existe en IndexedDB. Y el wizard lo pasaba tal cual al payload:
+
+```js
+reporte_server_id: reporteId,   // 'local_8396f62b-…'
+```
+
+`SyncReporteSchema` lo valida con `z.string().uuid()`, así que `/api/sync`
+devolvía **400 Invalid UUID** y rechazaba el reporte entero antes de mirar nada
+más. El dispositivo lo marcaba `error_sync` y lo reintentaba. Para siempre.
+
+Es decir: **todo reporte duplicado sin red y firmado se quedaba atrapado en la
+cola del dispositivo y no llegaba nunca al servidor.** Y como duplicar es
+justamente lo que se hace en campo —el mismo mantenimiento sobre varios equipos
+iguales de una sala—, esta es la explicación de fondo del "siempre me queda algo
+pendiente de sincronizar".
+
+Corregido en dos capas:
+
+1. **El origen.** `esIdDeServidor()` distingue el UUID del servidor del
+   `local_<uuid>` del dispositivo; solo el primero viaja como
+   `reporte_server_id`.
+2. **La red de seguridad.** El schema de `/api/sync` ya no valida ese campo:
+   lo normaliza, y cualquier cosa que no sea un UUID se trata como "no hay id".
+   Un endpoint de sincronización no puede rechazar el reporte entero por un
+   campo auxiliar mal formado, porque el dispositivo reintenta indefinidamente y
+   el trabajo del técnico queda atrapado.
+
+La segunda capa importa además para recuperar lo ya atascado: los reportes que
+estén hoy en dispositivos con este fallo suben solos al primer reintento contra
+el servidor corregido. Se comprobó en la prueba — los dos reportes atrapados
+subieron sin tocar nada.
+
+---
+
+# VERIFICACIÓN EJECUTADA (2026-08-12)
+
+Con build de producción, sesión de técnico real y el service worker activo.
+
+| prueba | resultado |
+|---|---|
+| Assets precacheados | 25 de 25, ningún hueco |
+| Shells cacheados | 7, todos de producción, incluidos los `_shell` canónicos |
+| **1** — datos sin red | equipos, catálogos y reportes desde IndexedDB; el desplegable de ubicación filtra por cliente |
+| **2** — la cola se vacía sola | 2 pendientes → 0 sin pulsar ningún botón |
+| **4** — dos reportes del mismo equipo el mismo día | llegaron **los dos**: RPT-000038 y RPT-000039 |
+| **5** — duplicar | hora de entrada = la del dispositivo, salida vacía, insumos con nombre («Aceite lubricante · A-002 · Litro») |
+| **6** — hora de salida | 13:01 y 13:05, las del dispositivo al firmar, no la de la sincronización |
+| Numeración | 37 → 39, **cero huecos** pese a los intentos fallidos |
+| Duplicados | 0 — un solo reporte por `id_local` |
+
+Los dos reportes de prueba quedaron anulados con su motivo.

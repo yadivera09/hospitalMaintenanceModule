@@ -64,7 +64,25 @@ const SyncReporteSchema = z.object({
     firma_base64: z.string().nullable().optional(),
     firma_cliente_base64: z.string().nullable().optional(),
     nombre_firmante: z.string().nullable().optional(),
-    reporte_server_id: z.string().uuid().nullable().optional(),
+    /**
+     * Id del reporte en el servidor, si el trabajo empezó con conexión.
+     *
+     * Se normaliza en vez de validarse: cualquier cosa que no sea un UUID se
+     * trata como "no hay id". Un endpoint de sincronización no puede permitirse
+     * rechazar el reporte entero por un campo auxiliar mal formado — el
+     * dispositivo lo reintenta indefinidamente y el trabajo del técnico se
+     * queda atrapado en la cola. Pasó exactamente eso: el wizard mandaba aquí
+     * el id local ('local_<uuid>') de los reportes duplicados sin red, y
+     * z.string().uuid() devolvía 400 en cada intento.
+     *
+     * El origen está corregido; esto es la red de seguridad, y también lo que
+     * permite que los reportes ya atrapados en dispositivos suban al reintentar.
+     */
+    reporte_server_id: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((v) => (v && z.string().uuid().safeParse(v).success ? v : null)),
 })
 
 // ─── POST /api/sync ───────────────────────────────────────────────────────────
