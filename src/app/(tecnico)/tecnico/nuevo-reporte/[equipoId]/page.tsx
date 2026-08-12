@@ -215,6 +215,28 @@ const wizardSchema = paso1Schema.merge(paso2Schema).merge(paso3Schema).merge(pas
 
 function hoy() { return new Date().toISOString().split('T')[0] }
 
+/**
+ * Nombre, código y unidad de un insumo, sacados del catálogo cacheado.
+ *
+ * Un borrador local guarda solo el insumo_id y la cantidad — como el checklist
+ * guarda solo el actividad_id. La lista de insumos del wizard pinta lo que
+ * recibe, así que sin este cruce el reporte duplicado mostraba la cantidad y
+ * ningún nombre.
+ *
+ * Si el insumo no está en el catálogo —se creó en otro dispositivo y este
+ * todavía no lo ha descargado— se deja constancia en vez de una fila muda: una
+ * cantidad sin concepto no le dice nada al técnico.
+ */
+function datosDelInsumo(insumoId: string, catalogo: Insumo[]) {
+    const encontrado = catalogo.find((i) => i.id === insumoId)
+
+    return {
+        nombre: encontrado?.nombre ?? 'Insumo no disponible sin conexión',
+        codigo: encontrado?.codigo ?? null,
+        unidad: encontrado?.unidad_medida ?? '',
+    }
+}
+
 // ── Indicador de pasos
 function PasoIndicador({ paso, total }: { paso: number; total: number }) {
     const labels = ['Info general', 'Descripción', 'Insumos', 'Firma']
@@ -341,14 +363,24 @@ function Paso1({ datos, onChange, tecnicos, tecnicoActualId, tiposMantenimiento,
                     className="bg-white border-[#E2E8F0] disabled:opacity-100 disabled:bg-slate-50" />
             </div>
 
-            {/* Nro reporte físico */}
-            <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-[#334155]">N° reporte físico (opcional)</Label>
-                <Input placeholder="Ej: 0007325" value={datos.numero_reporte_fisico ?? ''} disabled={readOnly}
-                    onChange={(e) => onChange({ numero_reporte_fisico: e.target.value })}
-                    className="bg-white border-[#E2E8F0] font-mono disabled:opacity-100 disabled:bg-slate-50" />
-                <p className="text-[10px] text-[#94A3B8]">Para trazabilidad con reportes en papel anteriores</p>
-            </div>
+            {/* AQUÍ HABÍA UN CAMPO "N° reporte físico". Se quitó.
+             *
+             * Pedía teclear un número en numero_reporte_fisico, que es la MISMA
+             * columna donde el sistema escribe el serial RPT- al cerrar. Y el
+             * cierre exige que esté vacía:
+             *
+             *   UPDATE ... WHERE estado_reporte='en_progreso'
+             *                AND numero_reporte_fisico IS NULL
+             *
+             * O sea que rellenarlo impedía cerrar el reporte, y encima quemaba un
+             * número de serie: nextval() se consume antes de esa comprobación y
+             * PostgreSQL no revierte las secuencias.
+             *
+             * Además el campo no tenía sentido en el paso 1: el serial se asigna
+             * al firmar, así que en este punto todavía no existe. El número que
+             * va en el papel es el del sistema, y el técnico lo ve cuando el
+             * reporte se cierra.
+             */}
 
             {/* Técnicos apoyo */}
             <div className="space-y-2">
@@ -1017,6 +1049,9 @@ export default function NuevoReporteWizard() {
                     // el paso 2 aparece sin ninguna actividad que marcar.
                     const todasActividades = (await getCatalogo<any[]>('checklists', true)) ?? []
 
+                    const catalogoInsumos: Insumo[] =
+                        insumosIDB.status === 'fulfilled' && insumosIDB.value ? insumosIDB.value : []
+
                     if (cachedEquipo?.categoria_id && todasActividades.length) {
                         setChecklistTemplate(
                             todasActividades.filter((a) => a.categoria_id === cachedEquipo.categoria_id)
@@ -1045,17 +1080,23 @@ export default function NuevoReporteWizard() {
                                 trabajo_realizado:     borrador.trabajo_realizado || '',
                                 estado_equipo_post:    (borrador.estado_equipo_post as any) || 'operativo',
                                 tecnicos_apoyo:        borrador.tecnicos_apoyo || [],
+                                // El borrador guarda solo insumo_id y cantidad;
+                                // el nombre, el código y la unidad salen del
+                                // catálogo cacheado, igual que el checklist de
+                                // aquí debajo. Sin este cruce la lista aparecía
+                                // con la cantidad y ningún insumo — que era el
+                                // síntoma al abrir un reporte duplicado.
                                 insumos_usados: (borrador.insumos_usados || []).map((i) => ({
                                     uid: crypto.randomUUID(),
                                     insumo_id: i.insumo_id,
-                                    nombre: '', codigo: null, unidad: '',
+                                    ...datosDelInsumo(i.insumo_id, catalogoInsumos),
                                     cantidad: i.cantidad,
                                     es_nuevo: false,
                                 })),
                                 insumos_requeridos: (borrador.insumos_requeridos || []).map((i) => ({
                                     uid: crypto.randomUUID(),
                                     insumo_id: i.insumo_id,
-                                    nombre: '', codigo: null, unidad: '',
+                                    ...datosDelInsumo(i.insumo_id, catalogoInsumos),
                                     cantidad: i.cantidad,
                                     es_nuevo: false,
                                     motivo: i.observacion || '',
@@ -1449,7 +1490,12 @@ export default function NuevoReporteWizard() {
     async function handleFirmarTecnico(): Promise<boolean> {
         if (!reporteId || !firmaRef.current) return false
         const base64 = firmaRef.current.toDataURL('image/png')
-        const result = await firmarComoTecnico({ reporte_id: reporteId, firma_base64: base64 })
+        const result = await firmarComoTecnico({
+            reporte_id: reporteId,
+            firma_base64: base64,
+            // La escrita a mano manda; si no hay, se sella ahora.
+            hora_salida: datos.hora_salida || new Date().toTimeString().slice(0, 5),
+        })
         if (result.error) { setErrorGlobal(result.error); return false }
         setErrorGlobal(null)
         return true
@@ -1473,6 +1519,15 @@ export default function NuevoReporteWizard() {
                 : firmaClienteRef.current.toDataURL('image/png')
         }
 
+        // La hora de salida se sella aquí, que es cuando el trabajo termina.
+        // Se calcula en el dispositivo a propósito: sin conexión el reporte se
+        // sube más tarde —a veces al día siguiente— y dejar que la sellara el
+        // servidor le ponía la hora de la sincronización.
+        //
+        // Si el técnico la escribió a mano, se respeta.
+        const horaSalidaFinal = datos.hora_salida || new Date().toTimeString().slice(0, 5)
+        if (!datos.hora_salida) update({ hora_salida: horaSalidaFinal })
+
         // Con red, el reporte ya está completo y cerrado en el servidor: esto
         // solo borra la copia local de recuperación. Sin red, la guarda y la
         // encola. Lo decide finalizarReporte().
@@ -1485,7 +1540,7 @@ export default function NuevoReporteWizard() {
                 tipo_mantenimiento_id: datos.tipo_mantenimiento_id,
                 fecha_inicio: datos.fecha_ejecucion,
                 hora_entrada: datos.hora_entrada || null,
-                hora_salida: datos.hora_salida || null,
+                hora_salida: horaSalidaFinal,
                 ciudad: datos.ciudad || null,
                 solicitado_por: datos.solicitado_por || null,
                 motivo_visita: datos.motivo_visita || null,

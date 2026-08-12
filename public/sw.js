@@ -473,6 +473,16 @@ async function handleWrite(request) {
 // Lee directamente desde la DB `mobilhospital-offline` que gestiona la app.
 // Llama a /api/sync con cada reporte pendiente, igual que lo haría la app.
 
+/** Margen tras el cual un envío marcado 'sincronizando' se da por muerto. */
+const MS_SYNC_ABANDONADO = 2 * 60 * 1000
+
+function sigueEnVuelo(actualizadoEn) {
+    const desde = Date.parse(actualizadoEn ?? '')
+    if (!Number.isFinite(desde)) return false
+
+    return Date.now() - desde < MS_SYNC_ABANDONADO
+}
+
 async function procesarColaReportes() {
     let db
     try {
@@ -499,7 +509,15 @@ async function procesarColaReportes() {
             continue
         }
 
-        if (reporte.estado === 'sincronizando') continue
+        // Mismo margen de abandono que en lib/offline/sync.ts, y por el mismo
+        // motivo: 'sincronizando' se escribe justo antes de llamar al servidor,
+        // así que un envío que muera a mitad —móvil bloqueado, pestaña cerrada—
+        // deja el reporte marcado para siempre. Sin este margen el background
+        // sync lo saltaba en cada pasada y ese reporte no volvía a intentarse
+        // NUNCA. Dos minutos separan un envío realmente en vuelo de uno muerto.
+        if (reporte.estado === 'sincronizando' && sigueEnVuelo(reporte.updated_at)) continue
+
+        let idServidor = reporte.reporte_server_id ?? null
 
         try {
             // Marcar como sincronizando
@@ -519,6 +537,15 @@ async function procesarColaReportes() {
             const json = await res.json().catch(() => ({}))
 
             if (!res.ok || json.error) {
+                // El servidor devuelve el id del reporte también cuando falla,
+                // si llegó a crearlo. Se anota en la variable y se escribe en el
+                // catch junto con el estado de error: escribirlo aquí no serviría
+                // porque el catch vuelve a guardar el reporte y lo pisaría.
+                //
+                // Sin esto, cada reintento creaba un reporte nuevo y quemaba un
+                // número de serie. Mismo trato que en lib/offline/sync.ts.
+                if (json.data?.id) idServidor = json.data.id
+
                 throw new Error(json.error ?? `HTTP ${res.status}`)
             }
 
@@ -532,9 +559,11 @@ async function procesarColaReportes() {
                 client.postMessage({ type: 'SYNC_COMPLETED', reporteId: reporte.id })
             )
         } catch (error) {
-            // Dejar en la cola para el próximo intento
+            // Dejar en la cola para el próximo intento, conservando el id de
+            // servidor si el envío llegó a crear el reporte.
             await txPut(db, 'reportes_borrador', {
                 ...reporte,
+                reporte_server_id: idServidor,
                 estado: 'error_sync',
                 motivo_error: error?.message ?? 'Error desconocido',
                 updated_at: new Date().toISOString(),

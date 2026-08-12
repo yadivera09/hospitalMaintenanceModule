@@ -15,9 +15,9 @@
  *   si las dos versiones divergen el resultado depende de si había señal — un
  *   error imposible de diagnosticar después. Lo que la RPC hace:
  *
- *     hereda    tipo, horas, ciudad, solicitante, motivo, diagnóstico,
- *               trabajo realizado y estado del equipo
- *     reinicia  fecha (hoy), estado ('en_progreso'), firmas y número de
+ *     hereda    tipo, ciudad, solicitante, motivo, diagnóstico, trabajo
+ *               realizado y estado del equipo
+ *     reinicia  fecha (hoy), HORAS, estado ('en_progreso'), firmas y número de
  *               reporte físico — el serial no se hereda nunca
  *     copia     checklist, insumos usados e insumos requeridos
  *     NO copia  accesorios ni técnicos de apoyo
@@ -37,6 +37,11 @@ import {
 /** Fecha de hoy en ISO corto, igual que el CURRENT_DATE de la RPC. */
 function hoy(): string {
     return new Date().toISOString().split('T')[0]
+}
+
+/** Hora local en HH:MM, el mismo formato que usa el wizard. */
+function horaAhora(): string {
+    return new Date().toTimeString().slice(0, 5)
 }
 
 /**
@@ -72,8 +77,6 @@ export async function duplicarReporteOffline(
 
         // ── Heredado del original ────────────────────────────────────────────
         tipo_mantenimiento_id: original.tipo_mantenimiento_id ?? '',
-        hora_entrada:          original.hora_entrada ?? null,
-        hora_salida:           original.hora_salida ?? null,
         ciudad:                original.ciudad ?? null,
         solicitado_por:        original.solicitado_por ?? null,
         motivo_visita:         original.motivo_visita ?? null,
@@ -86,7 +89,14 @@ export async function duplicarReporteOffline(
         // haciendo ahora. El número de reporte físico y las firmas se dejan
         // vacíos a propósito — son propios de cada visita y arrastrarlos
         // convertiría la copia en un duplicado también a efectos legales.
+        //
+        // Las horas siguen la misma lógica y antes no lo hacían: la copia
+        // llegaba con la hora de entrada de la visita original, que podía ser de
+        // hace semanas. Un duplicado es una visita nueva, así que entra ahora y
+        // todavía no ha salido. La hora de salida se sella al firmar.
         fecha_inicio:          hoy(),
+        hora_entrada:          horaAhora(),
+        hora_salida:           null,
         numero_reporte_fisico: null,
         firma_base64:          null,
         firma_cliente_base64:  null,

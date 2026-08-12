@@ -156,6 +156,9 @@ const CreateBorradorSchema = z.object({
     ubicacion_id: z.string().uuid().optional().nullable(),
     ubicacion_detalle: z.string().optional().nullable(),
     dispositivo_origen: z.string().optional().nullable(),
+    // Id del borrador en el dispositivo que lo creó sin conexión. Es lo que
+    // hace idempotente el reintento: ver migración 024.
+    id_local: z.string().optional().nullable(),
 })
 
 export async function createBorradorReporte(
@@ -199,6 +202,7 @@ export async function createBorradorReporte(
                 ubicacion_id: data.ubicacion_id ?? null,
                 ubicacion_detalle: data.ubicacion_detalle ?? null,
                 dispositivo_origen: data.dispositivo_origen ?? 'web',
+                id_local: data.id_local ?? null,
                 estado_reporte: 'en_progreso',
                 // Snapshots del equipo
                 equipo_marca_snapshot: equipo.marca ?? null,
@@ -209,6 +213,24 @@ export async function createBorradorReporte(
             .single()
 
         if (insErr) {
+            // 23505 sobre ux_reportes_id_local significa que este mismo borrador
+            // ya se subió: un intento anterior llegó al servidor y la respuesta
+            // se perdió por el camino. No es un error, es la segunda mitad de un
+            // envío que ya había funcionado — se devuelve el reporte existente y
+            // el reintento continúa sobre él en vez de crear un duplicado.
+            //
+            // Es la razón de ser de la migración 024. Sin este bloque el índice
+            // solo convertiría el duplicado silencioso en un fallo ruidoso.
+            if (insErr.code === '23505' && data.id_local) {
+                const { data: previo } = await supabase
+                    .from('reportes_mantenimiento')
+                    .select('id')
+                    .eq('id_local', data.id_local)
+                    .maybeSingle()
+
+                if (previo) return { data: { id: previo.id }, error: null }
+            }
+
             console.error('[createBorradorReporte]', insErr)
             return { data: null, error: 'Error al crear el borrador del reporte' }
         }
@@ -825,6 +847,19 @@ export async function guardarBorradorGlobal(
 const FirmarTecnicoSchema = z.object({
     reporte_id: z.string().uuid(),
     firma_base64: z.string().min(100, 'La firma está vacía'),
+    /**
+     * Hora en que el técnico terminó, en HH:MM.
+     *
+     * Se acepta desde fuera porque el servidor no siempre puede saberla. Un
+     * reporte hecho sin conexión se sincroniza cuando hay red — puede ser horas
+     * o días después—, y sellar aquí la hora del reloj del servidor le ponía al
+     * reporte la hora de la sincronización en lugar de la del trabajo. Quien
+     * sabe cuándo terminó la visita es el dispositivo que estaba allí.
+     *
+     * Si no llega, se sella la hora actual: es el caso con conexión, donde
+     * firmar y terminar ocurren en el mismo instante.
+     */
+    hora_salida: z.string().optional().nullable(),
 })
 
 /**
@@ -902,7 +937,8 @@ export async function firmarComoTecnico(
         }
 
         const ahora = new Date()
-        const horaSalida = ahora.toTimeString().slice(0, 5) // HH:MM
+        // La que trae el dispositivo manda; la del servidor es el respaldo.
+        const horaSalida = data.hora_salida || ahora.toTimeString().slice(0, 5) // HH:MM
 
         // ── ORDEN: primero la firma, después el cierre ──────────────────────
         //
@@ -1427,31 +1463,12 @@ export async function duplicarReporteAction(
     }
 }
 
-// =============================================================================
-// FUNCIÓN: Duplicar Reporte
-// =============================================================================
-
-export async function duplicarReporte(reporteId: string, nuevoEquipoId: string): Promise<ActionResult<string>> {
-    if (!await requirePermiso(...CREAR_REPORTES)) return { data: null, error: SIN_PERMISO }
-
-    try {
-        const supabase = createClient()
-        const { data, error } = await supabase.rpc('duplicar_reporte', {
-            p_reporte_id: reporteId,
-            p_nuevo_equipo_id: nuevoEquipoId
-        })
-
-        if (error) {
-            console.error('[duplicarReporte] error:', error)
-            return { data: null, error: 'Error al duplicar el reporte: ' + error.message }
-        }
-
-        return { data: data as string, error: null }
-    } catch (err) {
-        console.error('[duplicarReporte]', err)
-        return { data: null, error: 'Error inesperado al duplicar el reporte' }
-    }
-}
+// AQUÍ HABÍA UNA SEGUNDA duplicarReporte(). Se eliminó: no la llamaba nadie y
+// no podía funcionar. Invocaba la RPC con los parámetros p_reporte_id /
+// p_nuevo_equipo_id, que corresponden a otra versión de la función —creada a
+// mano, fuera de db/migrations— y no a la que usa la aplicación. La migración
+// 025 deja una sola definición de duplicar_reporte, así que esta habría fallado
+// siempre. Quien duplica es duplicarReporteAction(), aquí arriba.
 
 /**
  * Reasigna un reporte a un nuevo técnico principal.

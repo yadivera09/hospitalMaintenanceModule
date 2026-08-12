@@ -67,8 +67,17 @@ const SyncReporteSchema = z.object({
 
 /**
  * Recibe un reporte creado offline y lo persiste en Supabase.
+ *
  * Responde { data: { id }, error: null } con el ID real asignado.
  * En conflicto responde con error descriptivo — nunca crea silenciosamente.
+ *
+ * SOBRE EL ID EN LAS RESPUESTAS DE ERROR
+ *   Cuando algo falla DESPUÉS de haber creado el reporte, la respuesta lleva el
+ *   error y además el id del servidor. Parece contradictorio devolver las dos
+ *   cosas, y es justo lo que faltaba: el reporte existe, así que el reintento
+ *   tiene que actualizarlo, no crearlo otra vez. Antes el cliente solo veía el
+ *   error, perdía el id y volvía a empezar de cero — un reporte nuevo por cada
+ *   intento, y un número de serie quemado por cada uno.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -86,8 +95,11 @@ export async function POST(req: NextRequest) {
         const supabase = createClient()
 
         // ── Verificar sesión activa ────────────────────────────────────────────
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
+        // getUser() y no getSession(): el segundo se fía de la cookie tal cual,
+        // el primero valida el JWT contra el servidor de Auth. En un endpoint
+        // que escribe reportes, la diferencia importa.
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
             return NextResponse.json(
                 { data: null, error: 'Sesión no válida — vuelve a iniciar sesión' },
                 { status: 401 },
@@ -95,14 +107,20 @@ export async function POST(req: NextRequest) {
         }
 
         // ── Detectar conflicto: equipo con reporte abierto de otro técnico ─────
-        const { data: conflicto } = await supabase
+        // limit(1) y no maybeSingle(): maybeSingle devuelve ERROR si hay más de
+        // una fila, y con el error la comprobación se saltaba entera. O sea que
+        // la protección se apagaba sola justo cuando había más de un conflicto,
+        // que es cuando más falta hace.
+        const { data: conflictos } = await supabase
             .from('reportes_mantenimiento')
             .select('id, tecnico_principal_id')
             .eq('equipo_id', reporte.equipo_id)
             .eq('estado_reporte', 'en_progreso')
             .eq('activo', true)
             .neq('tecnico_principal_id', reporte.tecnico_principal_id)
-            .maybeSingle()
+            .limit(1)
+
+        const conflicto = conflictos?.[0]
 
         if (conflicto) {
             return NextResponse.json(
@@ -115,7 +133,23 @@ export async function POST(req: NextRequest) {
         }
 
         // ── PASO 1: Crear o actualizar borrador ─────────────────────────────────────────────
-        let reporte_id = reporte.reporte_server_id
+        //
+        // Si el dispositivo no trae id de servidor, todavía puede ser un
+        // reintento: el envío anterior pudo crear el reporte y perder la
+        // respuesta. Se busca por el id local antes de decidir, que es
+        // exactamente para lo que existe el índice de la migración 024.
+        let reporte_id = reporte.reporte_server_id ?? null
+
+        if (!reporte_id) {
+            const { data: yaSubido } = await supabase
+                .from('reportes_mantenimiento')
+                .select('id')
+                .eq('id_local', reporte.id)
+                .maybeSingle()
+
+            if (yaSubido) reporte_id = yaSubido.id
+        }
+
         if (reporte_id) {
             const { actualizarBorradorReporte } = await import('@/app/actions/reportes')
             const borradorRes = await actualizarBorradorReporte(reporte_id, {
@@ -149,6 +183,7 @@ export async function POST(req: NextRequest) {
                 motivo_visita: reporte.motivo_visita ?? null,
                 numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
                 dispositivo_origen: reporte.dispositivo_origen ?? 'web',
+                id_local: reporte.id,
             })
 
             if (borradorRes.error || !borradorRes.data) {
@@ -159,6 +194,12 @@ export async function POST(req: NextRequest) {
             }
             reporte_id = borradorRes.data.id
         }
+
+        // El reporte ya existe en la base a partir de aquí. Cualquier error que
+        // venga después viaja CON su id, para que el reintento actualice este
+        // reporte en vez de crear otro.
+        const fallo = (error: string, status = 422) =>
+            NextResponse.json({ data: { id: reporte_id }, error }, { status })
 
         // ── PASO 2: Guardar detalle (solo si estado_equipo_post está presente) ─
         if (reporte.estado_equipo_post) {
@@ -172,18 +213,20 @@ export async function POST(req: NextRequest) {
                 actividades: reporte.actividades,
             })
 
-            if (detalleRes.error) {
-                // Revertir borrador creado antes de retornar el error
-                await supabase
-                    .from('reportes_mantenimiento')
-                    .update({ activo: false })
-                    .eq('id', reporte_id)
-
-                return NextResponse.json(
-                    { data: null, error: detalleRes.error },
-                    { status: 422 },
-                )
-            }
+            // Ya NO se revierte con activo:false. Antes tenía sentido porque el
+            // reintento creaba un reporte nuevo y este quedaba huérfano; ahora el
+            // reintento vuelve sobre este mismo id, y desactivarlo lo dejaría
+            // invisible para siempre — actualizarBorradorReporte no filtra por
+            // activo, así que lo seguiría escribiendo sin que nadie lo viera.
+            if (detalleRes.error) return fallo(detalleRes.error)
+        } else if (reporte.hora_salida) {
+            // La hora de salida vive en reportes_mantenimiento pero solo la
+            // escribía guardarDetalleReporte, que exige estado_equipo_post. Un
+            // reporte sincronizado sin ese campo perdía la hora en silencio.
+            await supabase
+                .from('reportes_mantenimiento')
+                .update({ hora_salida: reporte.hora_salida })
+                .eq('id', reporte_id)
         }
 
         // ── PASO 3: Guardar insumos, accesorios y técnicos de apoyo ──────────
@@ -205,34 +248,40 @@ export async function POST(req: NextRequest) {
                 tecnicos_apoyo: reporte.tecnicos_apoyo.map(id => ({ tecnico_id: id })),
             })
 
-            if (insumosRes.error) {
-                await supabase
-                    .from('reportes_mantenimiento')
-                    .update({ activo: false })
-                    .eq('id', reporte_id)
-
-                return NextResponse.json(
-                    { data: null, error: insumosRes.error },
-                    { status: 422 },
-                )
-            }
+            if (insumosRes.error) return fallo(insumosRes.error)
         }
 
         // ── PASO 4: Aplicar firma de técnico y cliente ────────────────────────────────────────
         if (reporte.firma_base64) {
             const { firmarComoTecnico, firmarComoCliente } = await import('@/app/actions/reportes')
-            
+
+            // Un reintento puede encontrarse el reporte ya cerrado: el intento
+            // anterior llegó hasta el final y solo se perdió la respuesta.
+            // Volver a firmar fallaría —firmarComoTecnico exige 'en_progreso'—
+            // y, peor, cerrar_borrador_reporte consume un número de serie ANTES
+            // de comprobar si procede, y PostgreSQL no revierte las secuencias.
+            // Cada reintento sobre un reporte ya cerrado quemaba un RPT-.
+            const { data: estadoActual } = await supabase
+                .from('reportes_mantenimiento')
+                .select('estado_reporte')
+                .eq('id', reporte_id)
+                .maybeSingle()
+
+            if (estadoActual?.estado_reporte === 'cerrado') {
+                return NextResponse.json(
+                    { data: { id: reporte_id, yaExistia: true }, error: null },
+                    { status: 200 },
+                )
+            }
+
             const firmaTecnicoRes = await firmarComoTecnico({
                 reporte_id,
                 firma_base64: reporte.firma_base64,
+                // La hora real de la visita, no la de esta sincronización.
+                hora_salida: reporte.hora_salida ?? null,
             })
 
-            if (firmaTecnicoRes.error) {
-                return NextResponse.json(
-                    { data: null, error: firmaTecnicoRes.error },
-                    { status: 422 },
-                )
-            }
+            if (firmaTecnicoRes.error) return fallo(firmaTecnicoRes.error)
 
             if (reporte.firma_cliente_base64) {
                 const firmaClienteRes = await firmarComoCliente({
@@ -241,12 +290,7 @@ export async function POST(req: NextRequest) {
                     nombre_firmante: reporte.nombre_firmante || 'Cliente',
                 })
 
-                if (firmaClienteRes.error) {
-                    return NextResponse.json(
-                        { data: null, error: firmaClienteRes.error },
-                        { status: 422 },
-                    )
-                }
+                if (firmaClienteRes.error) return fallo(firmaClienteRes.error)
             }
         }
 

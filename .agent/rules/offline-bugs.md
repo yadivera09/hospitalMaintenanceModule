@@ -2,183 +2,415 @@
 trigger: always_on
 ---
 
-# offline_bugs.md — Bugs Pendientes Modo Offline
-## Módulo de Mantenimiento Mobilhospital
+# offline-bugs.md — Mapa de fallos del modo offline
+## Módulo de Mantenimiento Mobilhospital · auditoría del 2026-08-12
 
 ## CONTEXTO
-El modo offline tiene implementadas las tres capas (logic, sync, UI) pero persisten
-bugs críticos que impiden el flujo completo de creación de reporte offline.
-Atacar en el orden listado — los bugs están priorizados por impacto.
+
+Las tres capas (datos, sincronización, UI) están implementadas y el flujo completo
+funciona en el camino feliz. Lo que falla es todo lo demás: el dispositivo se vacía
+solo pasadas unas horas, la cola no se vacía sin intervención, y el reintento crea
+reportes duplicados que además queman números de serie.
+
+Esta auditoría sustituye a la anterior (bugs 1–5 de la ronda de julio). Al final se
+indica qué quedó vivo de aquella.
+
+**Los 20 fallos están agrupados por causa, no por síntoma.** Varios síntomas que el
+técnico reporta por separado salen del mismo defecto.
+
+## ESTADO (2026-08-12)
+
+| | |
+|---|---|
+| **Corregidos en código** | A1, A2, B1, B2, B3, B4, B5, B6, B7, B8, C3, D1 (cliente), D2, D3 |
+| **Corregidos, pendientes de aplicar la migración** | B4/B5 → `024_sync_idempotente.sql` · D1 (servidor) y D4 → `025_duplicar_reporte_reparado.sql` · C1 y C3 → `026_numeracion_correlativa.sql` |
+| **Sin empezar** | A3 (RSC), A4 (reintento de la preparación), C2 (fuera de esta tanda por decisión) |
+
+Las tres migraciones van en orden: **024 → 025 → 026**. La 026 depende de la 024.
 
 ---
 
-## BUG 1 — CRÍTICO: El reporte se duplica al sincronizar
+# A — EL DISPOSITIVO SE VACÍA SOLO
+### Síntoma reportado: "para entrar al modo offline necesito tener al menos un poco de internet"
 
-### Síntoma
-Al crear un reporte con internet y perder la conexión antes de firmar, al reconectar
-se crean múltiples copias del mismo reporte en la base de datos (se ven 10+ reportes
-"En progreso" del mismo equipo). Los reportes "Pendiente sync" locales también se
-multiplican.
+## A1 — CRÍTICO: los datos caducan y sin red no hay forma de renovarlos
 
-### Causa probable
-`guardarPaso()` en `useOfflineReporte` está añadiendo entradas a `sync_queue` en
-cada avance de paso, en lugar de solo guardar en `reportes_borrador`. Al sincronizar,
-cada entrada de la cola crea un reporte nuevo en el servidor.
+`src/lib/offline/db.ts:131-132`
 
-### Fix esperado
-- `guardarPaso()` → solo escribe en `reportes_borrador` (crash recovery). NUNCA toca `sync_queue`
-- `finalizarReporte()` → es el ÚNICO que añade una entrada a `sync_queue`
-- Verificar que no haya otras rutas de código que añadan a `sync_queue` fuera de `finalizarReporte()`
-- Añadir guard en `sync.ts`: antes de procesar una entrada de `sync_queue`, verificar
-  que no existe ya un reporte con el mismo `equipo_id` + `tecnico_id` + `fecha` en el
-  servidor para evitar duplicados aunque la cola tenga entradas repetidas
+```
+const TTL_CATALOGOS_MS = 24 * 60 * 60 * 1000   // 24 h
+const TTL_EQUIPOS_MS   = 12 * 60 * 60 * 1000   // 12 h
+```
 
-### Limpieza requerida
-Eliminar manualmente en Supabase todos los reportes duplicados de prueba antes de
-verificar el fix.
+`buscarEquipoEnCache` (`db.ts:316-321`) y `getAllEquiposFromCache` (`db.ts:339-344`)
+descartan por TTL. A las 12 horas sin conexión el wizard responde *"Equipo no
+disponible offline"* aunque el equipo esté ahí, íntegro, en IndexedDB. Los catálogos
+mueren a las 24.
 
----
+El TTL tiene sentido con red — evita trabajar con datos viejos. Sin red es
+exactamente al revés: un dato de ayer es infinitamente mejor que ninguno, y no
+existe la opción de refrescarlo. **Un caché offline no debe caducar mientras no haya
+con qué reemplazarlo.**
 
-## BUG 2 — ~~CRÍTICO~~ PARCIALMENTE RESUELTO: La firma no redirige al dashboard tras guardar offline
+**Fix:** el TTL pasa a ser una señal de "conviene refrescar", no de "descarta". Sin
+conexión se sirve siempre lo que haya. Con conexión, un dato vencido se usa igual y
+se dispara la recarga en segundo plano.
 
-### Estado
-La firma se guarda correctamente offline. El problema ahora es el comportamiento
-post-firma: el técnico **no es redirigido al dashboard** después de firmar sin conexión,
-y el dashboard no muestra el estado "Esperando sincronización" para el reporte pendiente.
+## A2 — ALTO: las lecturas de catálogo no son consistentes entre sí
 
-### Síntoma actual
-- La firma se captura y guarda en `reportes_borrador` ✓
-- Al confirmar la firma sin conexión, el flujo se detiene — no hay redirección
-- El dashboard no refleja el reporte como "Pendiente sync" al volver
+`src/app/(tecnico)/tecnico/nuevo-reporte/[equipoId]/page.tsx:974-981`
 
-### Causa probable
-`finalizarReporte()` probablemente hace `await` a alguna operación de red (fetch a
-Supabase o server action) antes de ejecutar el `router.push('/dashboard')`. Sin
-conexión, ese await cuelga o falla silenciosamente y nunca se alcanza la redirección.
+```
+getCatalogo<TecnicoData>('tecnico_actual'),           // caduca
+getCatalogo<TipoMantenimiento[]>('tipos_mantenimiento'), // caduca
+getCatalogo<Insumo[]>('insumos'),                     // caduca
+getCatalogo<UbicacionConCliente[]>('ubicaciones', true), // no caduca
+getCatalogo<TecnicoData[]>('tecnicos', true),         // no caduca
+```
 
-### Fix esperado
-- `finalizarReporte()` debe seguir este flujo estrictamente:
-  1. Guardar firma en `reportes_borrador` (IndexedDB) — operación local, sin red
-  2. Añadir entrada a `sync_queue` (IndexedDB) — operación local, sin red
-  3. `router.push('/dashboard')` — **siempre**, independientemente del estado de red
-- La redirección NO debe estar condicionada a que el reporte llegue a Supabase
-- En el dashboard, al volver, debe mostrarse el reporte recién creado con estado
-  "Pendiente sync" (leer desde `sync_queue` o `reportes_borrador` local)
-- El sync real a Supabase ocurre en background cuando se detecta reconexión —
-  el técnico no debe esperar ese proceso
+Tres pasan `ignoreExpiry` y tres no, sin ningún criterio aparente. El resultado es
+que a las 24 horas el wizard offline pierde tipos de mantenimiento e insumos pero
+conserva ubicaciones y técnicos: medio formulario vacío. Se arregla solo con A1.
 
-### Mensaje de confirmación antes de redirigir
-Mostrar brevemente (toast o pantalla intermedia):
-> "Firma guardada. El reporte se enviará automáticamente cuando tengas conexión."
+## A3 — ALTO: la navegación entre pantallas no funciona sin red
 
-Luego redirigir al dashboard. No bloquear la UI esperando respuesta del servidor.
+`public/sw.js:294-297`
 
-### Nota sobre el error del Service Worker (previo, para referencia)
-`A listener indicated an asynchronous response by returning true, but the message
-channel closed` venía de `sw.js`. Revisar todos los `addEventListener('message', ...)`
-— si alguno retorna `true` pero no llama `event.ports[0].postMessage()` antes de que
-el canal se cierre, lanzará este error. Corregir o eliminar los listeners que no
-resuelven correctamente.
+```js
+if (request.headers.get('RSC') === '1' || request.headers.get('Next-Router-State-Tree')) return
+```
 
----
+El service worker deja pasar a la red las peticiones RSC del App Router. Sin red
+fallan, así que **navegar por enlaces dentro de la app no funciona offline**: solo
+funciona la recarga completa de la URL. Para el técnico esto se ve como "la app se
+queda cargando" y refuerza la sensación de que hace falta internet.
 
-## BUG 3 — ~~ALTO~~ RESUELTO PARCIALMENTE: Búsqueda offline funciona, superposición visual persiste en dashboard
+**Fix:** cachear también los payloads RSC, o forzar navegación dura (`<a>` en vez de
+`<Link>`) en el panel del técnico. La primera opción es la buena.
 
-### Estado
-La búsqueda de equipos offline ya funciona correctamente — filtra desde `equipos_cache`
-con los términos ingresados. ✓
+## A4 — MEDIO: la preparación offline no se reintenta
 
-### Síntoma pendiente
-El banner "Sin conexión" sigue superponiéndose visualmente al contenido del **dashboard**
-(no solo al wizard). El saludo, los reportes recientes o los botones de acción quedan
-parcialmente tapados por el banner.
+`src/lib/offline/preparar.ts:186` corta si `navigator.onLine` es falso, y
+`TecnicoLayoutClient.tsx:75-78` solo la lanza al montar el layout. Si el técnico abre
+la app con una conexión mala y la preparación falla a medias, no vuelve a intentarse
+hasta que recargue la página. Nada le avisa de que salió a campo sin preparar.
 
-### Causa probable
-El banner de modo offline en el dashboard tiene `position: fixed` o `position: sticky`
-sin que el contenedor principal tenga el `padding-top` o `margin-top` compensatorio.
-Al renderizarse el banner, empuja o se superpone al contenido en lugar de desplazarlo.
-
-### Fix esperado
-- El banner debe ocupar espacio en el flujo del documento (no flotar sobre el contenido)
-- Si se mantiene `position: fixed`, el layout wrapper del dashboard debe aplicar
-  dinámicamente un `padding-top` igual a la altura del banner cuando `isOnline === false`
-- Verificar que el banner tiene altura fija o conocida para calcular el offset correctamente
-- Aplicar el mismo fix en todas las vistas que usen el banner (dashboard, wizard, listados)
+**Fix:** reintentar al recuperar conexión y al volver la pestaña a primer plano.
 
 ---
 
-## BUG 4 — ALTO: Timeout al crear nuevo reporte sin conexión
+# B — LA COLA NUNCA TERMINA DE VACIARSE
+### Síntoma reportado: "al sincronizar siempre me queda algo pendiente"
 
-### Síntoma
-Sin internet, al presionar "Crear nuevo reporte" (botón `+` o equivalente en el
-dashboard), la acción demora varios segundos antes de responder o no responde en
-absoluto. El técnico queda esperando sin feedback.
+## B1 — CRÍTICO: la sincronización automática solo existe en la transición offline→online
 
-### Causa probable
-El handler del botón probablemente dispara una llamada a Supabase (fetch de catálogos,
-verificación de sesión, o precarga de datos del equipo) de forma **síncrona antes de
-navegar**. Sin red, esa llamada espera hasta que agota su timeout (generalmente 10–30s)
-antes de fallar y continuar.
+`src/hooks/useOfflineStatus.ts:49-71`
 
-### Fix esperado
-- El botón "Crear nuevo reporte" debe navegar **inmediatamente** a la ruta del wizard
-  sin esperar ninguna llamada de red
-- Cualquier fetch de catálogos o datos necesarios para el wizard debe:
-  1. Primero intentar leer desde `catalogos_cache` / `equipos_cache` en IndexedDB
-  2. Disparar el fetch de red **en paralelo o en background**, no bloqueando la navegación
-- Si `isOnline === false`, omitir completamente los fetches de red al iniciar el wizard
-- Añadir un indicador de carga inmediato (spinner o skeleton) mientras se leen los
-  datos locales, para que el técnico reciba feedback en < 200ms tras el click
+El único disparador automático es el evento `online`. Ese evento **solo se emite al
+cambiar de estado**. El caso más común en campo — el técnico llega a la oficina,
+abre la app y ya hay WiFi — no dispara nada: al montar solo se cuenta la cola, no se
+sincroniza. Los reportes se quedan ahí hasta que alguien pulse "Sincronizar ahora".
+
+Esta es la causa principal de lo que reportas. **Es también la que explica por qué
+"siempre" queda algo:** no es que falle un reporte concreto, es que nada arranca.
+
+**Fix:** sincronizar al montar si hay red y cola; reintentar con espera creciente
+mientras queden pendientes; y volver a intentarlo cuando la pestaña vuelve a primer
+plano.
+
+## B2 — ALTO: el contador de pendientes ignora lo que sube el service worker
+
+`public/sw.js:530-533` avisa a las pestañas abiertas:
+
+```js
+client.postMessage({ type: 'SYNC_COMPLETED', reporteId: reporte.id })
+```
+
+**Nadie escucha ese mensaje.** No hay un solo `addEventListener('message')` en toda
+la app. Cuando el background sync sube los reportes, el contador sigue mostrando los
+pendientes de antes: la app dice que faltan reportes que ya están en el servidor.
+Parte del "siempre queda algo pendiente" es este espejismo.
+
+## B3 — ALTO: sin reintento, un fallo transitorio es permanente
+
+`sync.ts:132-146` marca el reporte como `error_sync` y lo deja en la cola. No hay
+reintento ni espera creciente: hasta el próximo evento `online` o hasta que el
+técnico pulse el botón, ahí se queda. Un microcorte de red basta para dejar un
+reporte atascado indefinidamente.
+
+## B4 — CRÍTICO: `/api/sync` no es atómico ni idempotente
+
+`src/app/api/sync/route.ts:117-251` — cuatro pasos sueltos: crear borrador, guardar
+detalle, guardar insumos, aplicar firmas.
+
+Si falla el paso 4, el reporte **ya existe en el servidor**, pero la respuesta es un
+error y el cliente nunca llega a guardar el `reporte_server_id`. En el siguiente
+intento vuelve a entrar por la rama "crear" y **produce otro reporte**. Cada
+reintento, uno más.
+
+Los pasos 2 y 3 sí revierten (`activo: false`), el 4 no.
+
+**Fix:** devolver el `reporte_server_id` también en las respuestas de error
+parcial, para que el reintento actualice en vez de crear. Idealmente, una única RPC
+transaccional en Postgres.
+
+## B5 — CRÍTICO: la detección de duplicados borra reportes buenos
+
+`src/lib/offline/sync.ts:87-110`
+
+```js
+.eq('equipo_id', ...).eq('tecnico_principal_id', ...)
+.gte('fecha_inicio', `${fechaSolo}T00:00:00.000Z`)
+.lt('fecha_inicio',  `${fechaSolo}T23:59:59.999Z`)
+.maybeSingle()
+```
+
+Dos defectos en el mismo bloque:
+
+1. **Falso positivo con pérdida de datos.** Si encuentra coincidencia,
+   `eliminarReporteBorrador()` y suma a `sincronizados`. Dos reportes legítimos del
+   mismo equipo, mismo técnico y mismo día — un preventivo por la mañana y un
+   correctivo por la tarde — y el segundo **se borra sin subirse y se cuenta como
+   sincronizado**. Desaparece sin dejar rastro ni aviso.
+
+2. **Falso negativo.** `maybeSingle()` devuelve error si hay más de una fila. El
+   error se captura y se ignora (`catch` en la línea 107), `duplicado` queda null y
+   se crea el duplicado de todos modos. Es decir: la protección se apaga sola justo
+   cuando ya hay duplicados, que es cuando más falta hace.
+
+Este bloque viene de la ronda anterior (el "Fix esperado" de aquel BUG 1). La
+heurística equipo+técnico+fecha no distingue un reintento de un trabajo distinto, y
+no puede: **la identidad del reporte es su id local**, que ya existe y no se usa.
+
+**Fix:** mandar el id local al servidor y que sea él quien decida por clave única.
+El cliente no debe borrar nada por su cuenta.
+
+## B6 — ALTO: en el service worker, un envío muerto atasca la cola para siempre
+
+`public/sw.js:502`
+
+```js
+if (reporte.estado === 'sincronizando') continue
+```
+
+`sync.ts:59` sí tiene el margen de abandono de dos minutos —y su comentario explica
+justo este fallo—, pero **la copia del service worker se quedó sin él**. Un reporte
+que muera a mitad de envío (pestaña cerrada, móvil bloqueado) queda marcado
+`sincronizando` y el background sync lo salta en cada pasada, para siempre.
+
+## B7 — MEDIO: `hora_salida` se pierde si no hay estado del equipo
+
+`src/app/api/sync/route.ts:164-171` — `hora_salida` viaja dentro de
+`guardarDetalleReporte`, que solo se llama `if (reporte.estado_equipo_post)`. Un
+reporte sincronizado sin ese campo pierde la hora de salida en silencio.
+
+## B8 — BAJO: la sesión se valida con `getSession()`
+
+`src/app/api/sync/route.ts:89`. El resto del código usa `getUser()`, que verifica el
+JWT contra el servidor de Auth; `getSession()` se fía de la cookie. En un endpoint
+que escribe reportes debería ser `getUser()`.
 
 ---
 
-## BUG 5 — ALTO: Seleccionar equipo e iniciar reporte redirige al dashboard en lugar de avanzar
+# C — LOS NÚMEROS DE REPORTE SALTAN
+### Síntoma reportado: "el último era RPT-000036 y los de offline salieron RPT-000054 y 55"
 
-### Síntoma
-Sin conexión, en el paso 1 del wizard: el técnico busca un equipo, lo selecciona, y
-presiona "Iniciar reporte". En lugar de avanzar al paso 2, la app redirige al dashboard.
-El reporte no se crea.
+## C1 — ALTO: cada reintento quema un número de serie, y confirmado en los datos
 
-### Causa probable
-Al confirmar el equipo, probablemente se ejecuta una validación o fetch contra Supabase
-(ej: verificar que el equipo existe, obtener su historial, o crear el registro inicial
-del reporte en la BD). Sin red, ese fetch falla y el error handler ejecuta
-`router.push('/dashboard')` como fallback de error en lugar de continuar offline.
+`db/migrations/023_estado_cerrado_unico.sql:165`
 
-### Fix esperado
-- Al seleccionar equipo y presionar "Iniciar reporte", NO debe hacerse ningún fetch
-  de red antes de avanzar al paso 2
-- La selección del equipo debe guardarse en `reportes_borrador` via `guardarPaso(1, { equipo })`
-  — operación local, sin red
-- El fetch de historial u otros datos del equipo puede hacerse en background o diferirse
-  al momento de sincronización final
-- Revisar el `catch` del handler de "Iniciar reporte": si actualmente hace
-  `router.push('/dashboard')` al fallar, cambiarlo para que solo registre el error
-  en consola y continúe el flujo offline
-- El avance al paso 2 debe ocurrir siempre que el equipo esté seleccionado y los
-  datos estén disponibles localmente
+```sql
+v_serial := 'RPT-' || LPAD(nextval('seq_numero_reporte')::TEXT, 6, '0');
+UPDATE ... WHERE estado_reporte = 'en_progreso' AND numero_reporte_fisico IS NULL;
+IF NOT FOUND THEN RAISE EXCEPTION ...
+```
+
+`nextval()` se consume **antes** del UPDATE, y PostgreSQL **no revierte las
+secuencias al hacer rollback** — es deliberado, así las secuencias no bloquean entre
+transacciones concurrentes. Así que cada llamada que después falla se lleva un
+número por delante.
+
+Comprobado contra la base de producción:
+
+```
+reportes con serial:     37
+serial mínimo / máximo:  1 / 55
+números quemados:        18  →  10, 37, 38, 39 … 53
+```
+
+El bloque 37–53 son **17 números consecutivos quemados el 2026-08-07 entre las 19:29
+(RPT-000036) y las 20:30 (RPT-000054)**. Coincide exactamente con lo que reportas, y
+la única actividad en esa hora fue el reintento de sincronización: 17 intentos
+fallidos, 17 números.
+
+O sea que C1 no es un fallo aparte — **es el rastro que dejan B4 y B5.** Arreglados
+esos, la sangría se detiene.
+
+**Fix:** pedir el número solo cuando el cierre esté garantizado (dentro de la misma
+transacción y después de comprobar que procede), o aceptar los huecos y documentarlo.
+Una secuencia nunca garantiza continuidad; si el número tiene valor legal y debe ser
+correlativo, no puede salir de una secuencia.
+
+## C3 — CRÍTICO: el serial y el número del reporte en papel comparten columna
+
+Descubierto al preparar la renumeración; no estaba en la primera pasada.
+
+`numero_reporte_fisico` tiene dos dueños:
+
+- **El técnico lo teclea.** `page.tsx:369`, campo con marcador `"Ej: 0007325"` —
+  es el número del talonario de papel, para trazabilidad con la copia firmada.
+- **El sistema escribe ahí el serial.** `cerrar_borrador_reporte` guarda
+  `RPT-000001` en esa misma columna.
+
+Y el cierre exige que esté vacía:
+
+```sql
+UPDATE ... WHERE estado_reporte = 'en_progreso' AND numero_reporte_fisico IS NULL;
+IF NOT FOUND THEN RAISE EXCEPTION ...
+```
+
+O sea: **si el técnico escribe el número de su talonario, el reporte no puede
+cerrarse.** `nextval()` ya se consumió, la sentencia no encuentra fila, salta la
+excepción — y el número queda quemado. Cada reporte con número de papel se lleva
+un serial por delante y encima falla al cerrar.
+
+En la base hay 4 reportes con número tecleado (`00123`, `001323`, `00124`,
+`001234`), todos en estado `cerrado` y **ninguno con serial**: se cerraron por el
+UPDATE masivo de la migración 023, no por la RPC, que con ellos siempre falló.
+
+**Resuelto (2026-08-12):** confirmado con el usuario que esa columna es del
+sistema — en el reporte de papel se escribe el RPT-, no un folio aparte. El campo
+del wizard se eliminó: pedía teclear un número que en el paso 1 todavía no
+existe, porque el serial se asigna al firmar.
+
+Los 4 folios ya guardados se dejan como están (quedaron para revisar aparte, con
+C2). Ya no estorban: la nueva `cerrar_borrador_reporte` de la migración 026 los
+sobreescribe con un serial correcto si alguno volviera a pasar por el cierre, en
+vez de fallar y quemar un número.
+
+## C2 — MEDIO: 33 reportes activos sin número, algunos cerrados
+
+Secuela de la migración 023, que pasó 48 reportes de `pendiente_firma_cliente` a
+`cerrado` con un UPDATE directo, sin pasar por `cerrar_borrador_reporte`. Esos
+reportes están cerrados y no tienen serial. No es un fallo del modo offline, pero
+sale en cualquier informe que agrupe por número.
 
 ---
 
-## ORDEN DE ATAQUE RECOMENDADO
+# D — DUPLICAR UN REPORTE
+### Síntomas reportados: hora heredada del original; insumos sin nombre
 
-1. **Bug 4** (timeout al crear reporte) — desbloquea la entrada al wizard
-2. **Bug 5** (selección de equipo no avanza) — desbloquea el flujo completo del wizard
-3. **Bug 2** (redirección post-firma) — cierra el loop del flujo offline end-to-end
-4. **Bug 1** (duplicados en sync) — validar una vez que el flujo completo funcione
-5. **Bug 3** (banner superpuesto en dashboard) — cosmético, al final
+## D1 — ALTO: la copia hereda las horas del reporte original
+
+`src/lib/offline/duplicar.ts:75-76`
+
+```
+hora_entrada: original.hora_entrada ?? null,
+hora_salida:  original.hora_salida  ?? null,
+```
+
+Un reporte nuevo se inicializa con la hora actual y la salida vacía
+(`page.tsx:936-937`). El duplicado, en cambio, llega con las horas de la visita
+anterior — que puede ser de hace semanas.
+
+**Y la RPC hace lo mismo**: `db/migrations/005_duplicar_reporte_rpc.sql:26-27,42-43`
+copian `hora_entrada` y `hora_salida`. El propio comentario de `duplicar.ts` avisa de
+que las dos implementaciones deben coincidir, así que **hay que corregir las dos** o
+el resultado dependerá de si había señal.
+
+**Fix:** `hora_entrada` = hora actual, `hora_salida` = null, en ambas
+implementaciones. La hora de salida se rellena al cerrar el reporte (ver D3).
+
+## D2 — ALTO: al duplicar, los insumos pierden el nombre
+
+`src/app/(tecnico)/tecnico/nuevo-reporte/[equipoId]/page.tsx:1048-1062`
+
+```js
+insumos_usados: (borrador.insumos_usados || []).map((i) => ({
+    uid: crypto.randomUUID(),
+    insumo_id: i.insumo_id,
+    nombre: '', codigo: null, unidad: '',   // ← nunca se resuelven
+    cantidad: i.cantidad,
+})),
+```
+
+El borrador guarda solo `insumo_id` y cantidad. Al restaurarlo, el nombre se deja en
+blanco y `InsumoSelector` pinta lo que recibe: por eso se ve la cantidad y ningún
+insumo.
+
+Lo llamativo es que **el bloque de justo debajo (líneas 1067-1076) sí hace el cruce**
+para el checklist, contra el catálogo cacheado, y su comentario explica por qué es
+necesario. A los insumos no se les aplicó el mismo tratamiento, y el catálogo ya está
+cargado en memoria (`insumosIDB`, línea 985): el dato está, solo falta cruzarlo.
+
+## D4 — CRÍTICO: duplicar CON conexión no ha funcionado nunca
+
+Descubierto al reparar D1; no estaba en la primera pasada.
+
+La RPC `duplicar_reporte` inserta en una columna que no existe. Probado contra la
+base con un id inexistente —que no crea nada pero sí obliga a Postgres a
+planificar la sentencia—:
+
+```
+42703: column "fecha_ejecucion" of relation "reportes_mantenimiento" does not exist
+```
+
+La columna de la tabla es `fecha_inicio`. `fecha_ejecucion` no existe ni existió;
+solo aparece como alias en una vista. Así que `duplicarReporteAction`, que es la
+que llama el botón de duplicar cuando hay señal, **falla el 100 % de las veces**.
+
+Pasó desapercibido porque en campo se duplica sin red, y ahí responde la otra
+implementación, la de TypeScript, que sí funciona.
+
+Además hay **dos versiones desplegadas** de la función: la de tres argumentos
+(rota, la que usa la app) y otra de dos que no está en `db/migrations` y que no
+llama nadie — alguien la creó a mano. En el código había también una segunda
+`duplicarReporte()` que invocaba esa segunda versión y que tampoco usaba nadie.
+
+Corregido en `db/migrations/025_duplicar_reporte_reparado.sql`: se eliminan las
+dos versiones y queda una sola, con `fecha_inicio`, sin heredar horas, y con los
+snapshots de marca/modelo/serie tomados del equipo NUEVO — la versión anterior
+los heredaba del original, con lo que la copia describía otra máquina.
+
+## D3 — ALTO: la hora de salida se sellaba con la hora de la sincronización
+
+El diagnóstico inicial era que no se rellenaba nunca. Mirándolo de cerca resultó
+ser otra cosa, y peor: `firmarComoTecnico` **sí** la escribía —`reportes.ts`,
+`hora_salida: ahora.toTimeString()`— pero con el reloj del SERVIDOR y en el
+momento de firmar.
+
+Con conexión eso es correcto: firmar y terminar ocurren a la vez. Sin conexión
+no. El reporte se sube cuando vuelve la red, a veces al día siguiente, y acababa
+con la hora de la sincronización en lugar de la hora en que el técnico terminó.
+Encima pisaba la hora que el técnico hubiera escrito a mano.
+
+Corregido: `firmarComoTecnico` acepta `hora_salida` y solo sella la del servidor
+si no le llega ninguna. La calcula el dispositivo al firmar, que es quien estaba
+allí, y la escrita a mano tiene prioridad sobre las dos.
 
 ---
 
-## VERIFICACIÓN FINAL (después de todos los fixes)
+# ORDEN DE ATAQUE
 
-- [ ] Abrir app sin conexión → ver dashboard con saludo visible y banner integrado (sin superposición)
-- [ ] Click en "Crear nuevo reporte" sin internet → navegación inmediata al wizard (< 200ms)
-- [ ] Buscar equipo offline → ver resultados del caché local con aviso "Sin conexión"
-- [ ] Seleccionar equipo → "Iniciar reporte" → avanza al paso 2 sin redirigir al dashboard
-- [ ] Crear reporte completo offline (todos los pasos + firma) → confirmación local + redirección al dashboard
-- [ ] Dashboard muestra reporte con estado "Pendiente sync" tras completar flujo offline
-- [ ] Reconectar → sync automático en background → exactamente 1 reporte creado en Supabase
-- [ ] Crear reporte con conexión, perder red antes de firmar → flujo no se rompe
-- [ ] Reconectar después del caso anterior → 1 reporte sincronizado, sin duplicados
-- [ ] Revisar Supabase: cero reportes duplicados del mismo equipo + técnico + fecha
+1. **B5 + B4** — pérdida de datos y duplicados. Todo lo demás puede esperar; esto no.
+2. **B1 + B2 + B6** — que la cola se vacíe sola, que es lo que se pidió.
+3. **A1 + A2** — que el dispositivo no se vacíe a las 12 horas.
+4. **D1 + D2 + D3** — duplicación (client + RPC a la vez).
+5. **B3, B7, B8, A4, C2** — robustez y detalle.
+6. **A3** — navegación RSC offline; es el más invasivo y el de mejor relación con
+   dejarlo para el final.
+
+C1 se resuelve solo al arreglar B4 y B5.
+
+---
+
+# DE LA RONDA ANTERIOR (julio)
+
+- **BUG 1 (duplicados al sincronizar)** — la mitad del fix se aplicó: `guardarPaso`
+  ya no toca `sync_queue`, y solo `finalizarReporte` encola. La otra mitad, el guard
+  de equipo+técnico+fecha, **es ahora el B5** y hace más daño que el problema que
+  resolvía.
+- **BUG 2 (la firma no redirige)** — resuelto.
+- **BUG 3 (búsqueda offline)** — resuelto.
+- **BUG 4 (timeout al crear reporte sin conexión)** — resuelto; el wizard es IDB-first.
+- **BUG 5 (seleccionar equipo redirige al dashboard)** — resuelto.

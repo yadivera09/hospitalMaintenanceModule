@@ -36,3 +36,6 @@ yarn-error.log*
 next-env.d.ts
 
 .claude/worktrees/
+# Supabase CLI: estado local del enlace al proyecto (contiene el ref y credenciales temporales)
+supabase/.temp
+supabase/.branches

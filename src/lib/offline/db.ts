@@ -126,14 +126,29 @@ interface MobilhospitalDB extends DBSchema {
     }
 }
 
-// ─── TTL de caché ─────────────────────────────────────────────────────────────
-
-const TTL_CATALOGOS_MS = 24 * 60 * 60 * 1000
-const TTL_EQUIPOS_MS   = 12 * 60 * 60 * 1000
-
-function estaVencido(cached_at: string, ttlMs: number): boolean {
-    return Date.now() - new Date(cached_at).getTime() > ttlMs
-}
+// ─── Frescura de la caché ─────────────────────────────────────────────────────
+//
+// OJO CON LO QUE SIGNIFICA "VENCIDO" AQUÍ.
+//
+// Estos plazos dicen "conviene refrescar esto", NO "descarta esto". Es la
+// diferencia entre una caché de rendimiento y una caché offline, y confundirlas
+// costaba caro: hasta ahora buscarEquipoEnCache y getAllEquiposFromCache
+// descartaban por TTL, así que a las 12 horas sin conexión el wizard respondía
+// "Equipo no disponible offline" con el equipo íntegro en IndexedDB. Los
+// catálogos morían a las 24 y el formulario se quedaba a medias.
+//
+// El razonamiento del TTL —no trabajar con datos viejos— solo se sostiene si
+// existe la opción de traer datos nuevos. Sin red no existe, y entonces un dato
+// de ayer no compite con uno de hoy: compite con ninguno.
+//
+// Así que las lecturas devuelven SIEMPRE lo que haya, y ya no hay TTL que
+// aplicar: quien mantiene los datos frescos es prepararModoOffline(), que se
+// ejecuta al montar el panel del técnico y vuelve a descargarlo todo cuando hay
+// red. Sin conexión no hay decisión que tomar — se usa lo que hay.
+//
+// El campo cached_at se conserva en los registros: dice cuándo se guardó cada
+// cosa, y es lo que haría falta el día que se quiera avisar en pantalla de que
+// los datos son de hace tres días.
 
 // ─── Singleton ────────────────────────────────────────────────────────────────
 
@@ -219,6 +234,26 @@ export async function actualizarEstadoReporte(
         ...existing,
         estado,
         motivo_error,
+        updated_at: new Date().toISOString(),
+    })
+}
+
+/**
+ * Anota en el borrador el id que le dio el servidor.
+ *
+ * Se llama cuando /api/sync responde con error PERO habiendo creado ya el
+ * reporte. A partir de ese momento el reintento entra por la rama de actualizar
+ * en vez de crear, que es lo que evita que cada intento deje un reporte nuevo
+ * —y un número de serie quemado— detrás.
+ */
+export async function guardarIdDeServidor(idLocal: string, idServidor: string): Promise<void> {
+    const db = await getOfflineDB()
+    const existing = await db.get('reportes_borrador', idLocal)
+    if (!existing) return
+
+    await db.put('reportes_borrador', {
+        ...existing,
+        reporte_server_id: idServidor,
         updated_at: new Date().toISOString(),
     })
 }
@@ -316,8 +351,7 @@ export async function guardarEquipoEnCache(equipo: Equipo): Promise<void> {
 export async function buscarEquipoEnCache(equipoId: string): Promise<Equipo | null> {
     const db = await getOfflineDB()
     const entry = await db.get('equipos_cache', equipoId)
-    if (!entry || estaVencido(entry.cached_at, TTL_EQUIPOS_MS)) return null
-    return entry.datos
+    return entry?.datos ?? null
 }
 
 export async function guardarEquiposEnCache(equipos: Equipo[]): Promise<void> {
@@ -339,8 +373,7 @@ export async function countEquiposEnCache(): Promise<number> {
 export async function getAllEquiposFromCache(): Promise<Equipo[]> {
     const db = await getOfflineDB()
     const entries = await db.getAll('equipos_cache')
-    // Filter out expired cache if needed, or return all
-    return entries.filter(e => !estaVencido(e.cached_at, TTL_EQUIPOS_MS)).map(e => e.datos)
+    return entries.map(e => e.datos)
 }
 
 // ─── reportes_cache ───────────────────────────────────────────────────────────
@@ -397,10 +430,18 @@ export async function guardarCatalogo(
     await db.put('catalogos_cache', { key, datos, cached_at: new Date().toISOString() })
 }
 
-export async function getCatalogo<T = any>(key: string, ignoreExpiry = false): Promise<T | null> {
+/**
+ * Devuelve el catálogo guardado, esté fresco o no.
+ *
+ * El segundo parámetro se mantiene por compatibilidad con las llamadas que ya
+ * pasaban `true`, pero hoy no cambia nada: la lectura nunca descarta. Antes sí,
+ * y era la causa de que a las 24 horas sin red el wizard perdiera tipos de
+ * mantenimiento e insumos pero conservara ubicaciones y técnicos — los únicos
+ * que llamaban con `true`. Medio formulario vacío, sin más criterio que ese.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getCatalogo<T = any>(key: string, _ignoreExpiry = false): Promise<T | null> {
     const db = await getOfflineDB()
     const entry = await db.get('catalogos_cache', key)
-    if (!entry) return null
-    if (!ignoreExpiry && estaVencido(entry.cached_at, TTL_CATALOGOS_MS)) return null
-    return entry.datos as T
+    return (entry?.datos as T) ?? null
 }

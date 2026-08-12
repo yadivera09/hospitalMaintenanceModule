@@ -4,6 +4,7 @@ import {
     eliminarReporteBorrador,
     getPendientesSyncQueue,
     eliminarDeSyncQueue,
+    guardarIdDeServidor,
 } from './db'
 import { createClient } from '@/lib/supabase/client'
 
@@ -84,30 +85,20 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
                 }
             }
 
-            if (!reporte.reporte_server_id) {
-                try {
-                    const supabase = createClient()
-                    const fechaSolo = reporte.fecha_inicio.substring(0, 10)
-
-                    const { data: duplicado } = await supabase
-                        .from('reportes_mantenimiento')
-                        .select('id')
-                        .eq('equipo_id', reporte.equipo_id)
-                        .eq('tecnico_principal_id', reporte.tecnico_principal_id)
-                        .gte('fecha_inicio', `${fechaSolo}T00:00:00.000Z`)
-                        .lt('fecha_inicio', `${fechaSolo}T23:59:59.999Z`)
-                        .maybeSingle()
-
-                    if (duplicado) {
-                        await eliminarReporteBorrador(reporte.id)
-                        await eliminarDeSyncQueue(item.id!)
-                        sincronizados++
-                        continue
-                    }
-                } catch (error) {
-                    console.error('Error al verificar duplicados:', error)
-                }
-            }
+            // AQUÍ HABÍA UNA COMPROBACIÓN DE DUPLICADOS. Se quitó a propósito.
+            //
+            // Buscaba un reporte con el mismo equipo, el mismo técnico y la
+            // misma fecha, y si lo encontraba borraba el borrador local dándolo
+            // por sincronizado. Dos reportes legítimos del mismo equipo el mismo
+            // día —un preventivo por la mañana y un correctivo por la tarde— y el
+            // segundo desaparecía sin subirse y sin avisar. Equipo + técnico +
+            // fecha no distingue un reintento de un trabajo distinto, y no puede.
+            //
+            // Quien lo distingue es el id local, que identifica el trabajo sin
+            // ambigüedad y ahora viaja al servidor: el índice único de la
+            // migración 024 hace que el segundo intento actualice en vez de
+            // duplicar. La decisión se toma donde está el dato, y ningún borrador
+            // se borra sin haberse subido.
 
             try {
                 await actualizarEstadoReporte(reporte.id, 'sincronizando')
@@ -122,6 +113,14 @@ export async function sincronizarReportesPendientes(): Promise<SyncResult> {
                 const json = await res.json()
 
                 if (!res.ok || json.error) {
+                    // El servidor manda el id del reporte también cuando falla,
+                    // si llegó a crearlo. Guardarlo es lo que corta el ciclo de
+                    // duplicados: el próximo intento entra por la rama de
+                    // actualizar y trabaja sobre el reporte que ya existe.
+                    if (json.data?.id) {
+                        await guardarIdDeServidor(reporte.id, json.data.id)
+                    }
+
                     throw new Error(json.error ?? `HTTP ${res.status}`)
                 }
 
