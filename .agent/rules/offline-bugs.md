@@ -42,6 +42,40 @@ dispositivo real sin red. Hace falta una sesión de técnico —el usuario
 administrador no entra al panel— y una build de producción, porque en desarrollo
 los chunks no llevan hash y el service worker se comporta distinto.
 
+### Guion de prueba en campo
+
+Con `npm run build && npm start` y sesión de TÉCNICO. Cortar la red desde el
+sistema operativo, no desde las DevTools: hay que cerrar también el service
+worker, no solo la pestaña.
+
+1. **El dispositivo aguanta.** Abrir la app, esperar al aviso verde de "listo".
+   Cortar la red y **esperar más de 12 horas** (o adelantar el reloj del
+   dispositivo). Abrir el wizard sobre un equipo. Antes: *"Equipo no disponible
+   offline"*. Ahora debe abrirse con todo — tipos, insumos, checklist. **[A1, A2]**
+
+2. **La cola se vacía sola.** Sin red, crear y firmar dos o tres reportes. Cerrar
+   la app del todo. Recuperar la red y volver a abrirla **sin tocar nada**: los
+   pendientes deben subir sin pulsar "Sincronizar ahora", y el contador llegar a
+   cero. **[B1, B2]**
+
+3. **No se duplican.** Con la red inestable —activarla y desactivarla mientras
+   sincroniza— comprobar en `/admin/reportes` que sale UN reporte por cada uno
+   creado, y que los seriales siguen siendo consecutivos. **[B4, B5, C1]**
+
+4. **Dos reportes el mismo día.** Sin red, crear dos reportes del MISMO equipo
+   con el mismo técnico —un preventivo y un correctivo— y firmar los dos.
+   Sincronizar. **Tienen que llegar los dos.** Antes el segundo se borraba sin
+   subirse. **[B5]**
+
+5. **Duplicar.** Con red, duplicar un reporte cerrado: antes fallaba siempre.
+   Sin red, duplicar otro y abrirlo: la hora de entrada debe ser la de ahora, la
+   de salida vacía, y los insumos con su nombre, no solo la cantidad.
+   **[D1, D2, D4]**
+
+6. **La hora de salida.** Firmar un reporte sin red a las 16:00 y sincronizarlo
+   al día siguiente. `hora_salida` debe ser 16:00, no la hora de la
+   sincronización. **[D3]**
+
 ---
 
 # A — EL DISPOSITIVO SE VACÍA SOLO
