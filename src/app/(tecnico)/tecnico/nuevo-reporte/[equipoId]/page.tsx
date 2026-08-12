@@ -1030,8 +1030,26 @@ export default function NuevoReporteWizard() {
                 if (tecnicoIDB.status === 'fulfilled' && tecnicoIDB.value) setTecnicoActual(tecnicoIDB.value)
                 if (tiposIDB.status === 'fulfilled' && tiposIDB.value) setTiposMantenimiento(tiposIDB.value)
                 if (insumosIDB.status === 'fulfilled' && insumosIDB.value) setInsumos(insumosIDB.value)
-                if (ubicacionesIDB.status === 'fulfilled' && ubicacionesIDB.value) setUbicaciones(ubicacionesIDB.value)
                 if (tecnicosIDB.status === 'fulfilled' && tecnicosIDB.value) setTecnicos(tecnicosIDB.value)
+
+                // Las ubicaciones NO se vuelcan tal cual: el catálogo cacheado las
+                // trae TODAS, de todos los clientes, y el desplegable debe ofrecer
+                // solo las del cliente de este equipo. Con conexión eso lo hace el
+                // servidor —getUbicaciones(clienteId), más abajo—, pero esa llamada
+                // tarda, así que volcarlas aquí mostraba durante un instante la
+                // lista completa; y sin conexión no llegaba nunca a corregirse.
+                const todasLasUbicaciones =
+                    ubicacionesIDB.status === 'fulfilled' && ubicacionesIDB.value
+                        ? ubicacionesIDB.value
+                        : []
+
+                // Expresión y no declaración: tsconfig no fija "target", así que el
+                // chequeo cae a ES5 y ahí una función declarada dentro de un bloque
+                // es error en modo estricto.
+                const ubicacionesDelCliente = (clienteId: string | null | undefined) =>
+                    clienteId
+                        ? todasLasUbicaciones.filter((u) => u.cliente_id === clienteId)
+                        : todasLasUbicaciones
 
                 // Sin conexión: si tenemos el equipo en IDB, el wizard funciona completo.
                 // Si no está en IDB, intentar fallback a todos los equipos cacheados.
@@ -1052,6 +1070,10 @@ export default function NuevoReporteWizard() {
                             setErrorGlobal('Error al leer el caché local.')
                         }
                     }
+
+                    // Ya se sabe de qué equipo se trata: el desplegable puede
+                    // ofrecer solo las ubicaciones de SU cliente.
+                    setUbicaciones(ubicacionesDelCliente(cachedEquipo?.cliente_id))
 
                     // Último preventivo precacheado en el equipo (campo añadido por /api/offline/equipos)
                     if (cachedEquipo?.ultimo_preventivo_fecha) {
@@ -1155,6 +1177,13 @@ export default function NuevoReporteWizard() {
                 }
 
                 setEquipo(eqRes.data as any)
+
+                // Provisional desde el caché, ya filtrado por el cliente de este
+                // equipo. getUbicaciones() lo sustituye unas líneas más abajo con
+                // lo que diga el servidor; esto solo evita que el desplegable
+                // aparezca vacío mientras llega, y sirve de red si esa llamada
+                // falla.
+                setUbicaciones(ubicacionesDelCliente((eqRes.data as any).cliente_id))
                 setContratoVigente(eqRes.data.contrato_id ? {
                     numero_contrato: eqRes.data.numero_contrato ?? '',
                     cliente_nombre: eqRes.data.cliente_nombre

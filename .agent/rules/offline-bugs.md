@@ -603,3 +603,36 @@ Con build de producción, sesión de técnico real y el service worker activo.
 | Duplicados | 0 — un solo reporte por `id_local` |
 
 Los dos reportes de prueba quedaron anulados con su motivo.
+
+---
+
+# D7 — MEDIO: el desplegable ofrecía TODAS las ubicaciones
+
+Reportado por el usuario probando en producción el 2026-08-12.
+
+Con conexión, las ubicaciones las filtra el servidor por el cliente del equipo:
+`getUbicaciones(clienteId)`. Sin conexión salían del catálogo cacheado **tal
+cual**, que las trae todas, de todos los clientes. El técnico veía salas de
+hospitales donde no estaba.
+
+Y con conexión también se colaba un instante: el volcado del caché ocurría al
+montar, antes de que llegara la respuesta del servidor, así que la lista completa
+aparecía y luego se corregía sola.
+
+**Corregido:** el catálogo cacheado ya no se vuelca entero. Se filtra por el
+`cliente_id` del equipo en cuanto se sabe cuál es — sin red desde el equipo
+cacheado, y con red como valor provisional inmediato que la respuesta del
+servidor sustituye. De paso, si esa llamada falla, el desplegable ya no se queda
+vacío.
+
+# D8 — BAJO: sin cerrojo contra el doble envío al duplicar
+
+El botón "Duplicar ahora" se deshabilita con estado de React, que se aplica en el
+siguiente render: dos pulsaciones dentro del mismo tick —un doble toque en el
+móvil— entran las dos, y cada una crea un reporte. Añadido un `ref`, que se
+actualiza en el acto.
+
+No fue la causa del duplicado que se reportó: aquellos dos reportes se crearon
+con **101 segundos** de diferencia, y uno tenía los arreglos y el otro no. Fueron
+dos acciones separadas, una con el bundle viejo que el service worker tenía
+cacheado y otra con el nuevo.

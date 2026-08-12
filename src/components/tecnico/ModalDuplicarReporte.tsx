@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
     Copy, Search, X, Check, Loader2, AlertCircle
@@ -36,6 +36,18 @@ export default function ModalDuplicarReporte({
     const [duplicating, setDuplicating] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const { isOnline } = useOfflineStatus()
+
+    /**
+     * Cerrojo contra el doble envío.
+     *
+     * El botón se deshabilita con `duplicating`, pero eso es estado de React y
+     * se aplica en el siguiente render: dos pulsaciones dentro del mismo tick
+     * —un doble toque en el móvil, o un doble clic— entran las dos. Y cada
+     * entrada crea un reporte: uno por la RPC con conexión, uno por borrador
+     * local sin ella. Un ref se actualiza en el acto, así que la segunda
+     * pulsación se descarta antes de llegar a duplicar nada.
+     */
+    const duplicandoRef = useRef(false)
 
     // Cargar equipos al abrir o limpiar al cerrar
     useEffect(() => {
@@ -107,6 +119,9 @@ export default function ModalDuplicarReporte({
 
     const handleConfirmar = async () => {
         if (!selectedId) return
+        if (duplicandoRef.current) return
+
+        duplicandoRef.current = true
         setDuplicating(true)
         setError(null)
         try {
@@ -140,6 +155,7 @@ export default function ModalDuplicarReporte({
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error inesperado al duplicar')
         } finally {
+            duplicandoRef.current = false
             setDuplicating(false)
         }
     }
