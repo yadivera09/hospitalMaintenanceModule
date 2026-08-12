@@ -21,6 +21,15 @@ export interface ReporteBorrador {
     hora_salida: string | null
     ciudad: string | null
     solicitado_por: string | null
+    /**
+     * Ubicación dentro del cliente. El wizard la exige (paso 1, "Ubicación *")
+     * y hasta ahora no existía aquí: el técnico la elegía, pasaba la validación
+     * y el dato se perdía al guardar el borrador. Un reporte hecho sin conexión
+     * llegaba al servidor sin ubicación, mientras que el mismo reporte hecho con
+     * conexión sí la llevaba.
+     */
+    ubicacion_id: string | null
+    ubicacion_detalle: string | null
     // string | null para compatibilidad con el wizard; al sincronizar se valida como MotivoVisita
     motivo_visita: string | null
     numero_reporte_fisico: string | null

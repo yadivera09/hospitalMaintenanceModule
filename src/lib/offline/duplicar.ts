@@ -97,6 +97,12 @@ export async function duplicarReporteOffline(
         fecha_inicio:          hoy(),
         hora_entrada:          horaAhora(),
         hora_salida:           null,
+
+        // La ubicación tampoco se hereda, igual que en la RPC: la copia es para
+        // OTRO equipo, que puede estar en otra sala. El wizard la pide como
+        // obligatoria y el técnico la elige al abrir el borrador.
+        ubicacion_id:          null,
+        ubicacion_detalle:     null,
         numero_reporte_fisico: null,
         firma_base64:          null,
         firma_cliente_base64:  null,

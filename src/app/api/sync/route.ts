@@ -43,6 +43,10 @@ const SyncReporteSchema = z.object({
     hora_salida: z.string().nullable().optional(),
     ciudad: z.string().nullable().optional(),
     solicitado_por: z.string().nullable().optional(),
+    // El wizard exige la ubicación, así que un reporte offline sin ella era un
+    // dato perdido por el camino, no una elección del técnico.
+    ubicacion_id: z.string().uuid().nullable().optional(),
+    ubicacion_detalle: z.string().nullable().optional(),
     motivo_visita: z.string().nullable().optional(),
     numero_reporte_fisico: z.string().nullable().optional(),
     dispositivo_origen: z.string().nullable().optional(),
@@ -161,6 +165,8 @@ export async function POST(req: NextRequest) {
                 ciudad: reporte.ciudad ?? null,
                 solicitado_por: reporte.solicitado_por ?? null,
                 motivo_visita: reporte.motivo_visita ?? null,
+                ubicacion_id: reporte.ubicacion_id ?? null,
+                ubicacion_detalle: reporte.ubicacion_detalle ?? null,
                 numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
                 dispositivo_origen: reporte.dispositivo_origen ?? 'web',
             })
@@ -181,6 +187,8 @@ export async function POST(req: NextRequest) {
                 ciudad: reporte.ciudad ?? null,
                 solicitado_por: reporte.solicitado_por ?? null,
                 motivo_visita: reporte.motivo_visita ?? null,
+                ubicacion_id: reporte.ubicacion_id ?? null,
+                ubicacion_detalle: reporte.ubicacion_detalle ?? null,
                 numero_reporte_fisico: reporte.numero_reporte_fisico ?? null,
                 dispositivo_origen: reporte.dispositivo_origen ?? 'web',
                 id_local: reporte.id,

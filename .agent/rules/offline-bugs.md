@@ -513,3 +513,32 @@ C1 se resuelve solo al arreglar B4 y B5.
 - **BUG 3 (búsqueda offline)** — resuelto.
 - **BUG 4 (timeout al crear reporte sin conexión)** — resuelto; el wizard es IDB-first.
 - **BUG 5 (seleccionar equipo redirige al dashboard)** — resuelto.
+
+---
+
+# D5 — ALTO: la ubicación se perdía en todo el camino offline
+
+Encontrado el 2026-08-12 **probando en el navegador**, no leyendo código. El
+wizard bloqueó al duplicar un reporte sin red con "Debe seleccionar la
+ubicación", y al tirar del hilo apareció algo peor que la validación.
+
+`ubicacion_id` es obligatoria en el paso 1 (`page.tsx`, `Ubicación *`), pero no
+existía en ninguno de los tres puntos del camino sin conexión:
+
+| | |
+|---|---|
+| `ReporteBorrador` (IndexedDB) | no tenía el campo |
+| payload de `finalizarReporte` | no la incluía |
+| `SyncReporteSchema` (`/api/sync`) | no la aceptaba |
+
+O sea: el técnico la elegía porque el formulario se lo exigía, pasaba la
+validación, y el dato moría ahí. **El mismo reporte hecho con conexión sí la
+guardaba.** En la base hay 43 de 74 reportes activos sin ubicación.
+
+**Corregido** en los tres puntos, más `guardarPaso` (si no, un borrador
+recuperado tras un cierre accidental volvía con el paso 1 inválido). La
+duplicación NO la hereda, igual que la RPC: la copia es para otro equipo, que
+puede estar en otra sala.
+
+Verificado en el navegador con build de producción y sesión de técnico: el
+borrador offline guarda `ubicacion_id` tras elegirla en el paso 1.

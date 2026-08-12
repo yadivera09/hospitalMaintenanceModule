@@ -57,6 +57,8 @@ export function useOfflineReporte() {
                     hora_salida: null,
                     ciudad: null,
                     solicitado_por: null,
+                    ubicacion_id: null,
+                    ubicacion_detalle: null,
                     motivo_visita: null,
                     numero_reporte_fisico: null,
                     dispositivo_origen: 'web',
