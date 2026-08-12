@@ -17,7 +17,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Plus, ClipboardList, HardHat, LogOut } from 'lucide-react'
 import OfflineBanner from '@/components/tecnico/OfflineBanner'
 import PreparacionOfflineBanner from '@/components/tecnico/PreparacionOfflineBanner'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { registerServiceWorker } from '@/lib/pwa/register-sw'
 import type { ProgresoPreparacion } from '@/lib/offline/preparar'
 
@@ -44,6 +44,15 @@ export default function TecnicoLayoutClient({
     const pathname = usePathname()
     const router = useRouter()
     const [preparacion, setPreparacion] = useState<ProgresoPreparacion | null>(null)
+
+    /**
+     * Estado del preparador entre reintentos.
+     *
+     * `corriendo` evita que dos disparadores se solapen — reconectar suele venir
+     * acompañado de un cambio de visibilidad, y sin esto la preparación
+     * arrancaría dos veces y descargaría todo por duplicado.
+     */
+    const preparacionRef = useRef({ corriendo: false, completada: false })
 
     useEffect(() => {
         registerServiceWorker()
@@ -72,10 +81,60 @@ export default function TecnicoLayoutClient({
 
         // Dejar el dispositivo listo para trabajar sin red: datos, pantallas y
         // el JavaScript que las hace arrancar.
-        import('@/lib/offline/preparar').then(({ prepararModoOffline }) => {
-            prepararModoOffline(tecnico.id, setPreparacion)
-                .catch((err) => console.warn('[layout] preparación offline falló:', err))
-        })
+        //
+        // Se reintenta, y no es un detalle. Antes esto corría UNA vez al montar
+        // el layout: si el técnico abría la app con mala cobertura —o sin
+        // ninguna— la preparación fallaba y no volvía a intentarse hasta que
+        // recargara la página. Es decir, el escenario que la preparación existe
+        // para evitar era justo el que la dejaba sin hacer, y el técnico salía a
+        // campo con el dispositivo a medias sin enterarse.
+        let cancelado = false
+
+        async function preparar(motivo: string) {
+            const estado = preparacionRef.current
+
+            if (estado.corriendo || estado.completada) return
+            if (!navigator.onLine) return
+
+            estado.corriendo = true
+
+            try {
+                const { prepararModoOffline } = await import('@/lib/offline/preparar')
+
+                await prepararModoOffline(tecnico.id, (progreso) => {
+                    if (cancelado) return
+
+                    setPreparacion(progreso)
+
+                    // Solo 'listo' cierra el asunto. 'listo-parcial' significa que
+                    // los datos están pero las pantallas no, así que conviene
+                    // volver a intentarlo en la siguiente oportunidad.
+                    if (progreso.fase === 'listo') preparacionRef.current.completada = true
+                })
+            } catch (err) {
+                console.warn(`[layout] preparación offline falló (${motivo}):`, err)
+            } finally {
+                preparacionRef.current.corriendo = false
+            }
+        }
+
+        preparar('arranque')
+
+        const alConectar = () => preparar('reconexión')
+        const alCambiarVisibilidad = () => {
+            // El móvil del técnico pasa el día bloqueado: 'online' pudo dispararse
+            // con la pantalla apagada y la app suspendida.
+            if (document.visibilityState === 'visible') preparar('pestaña visible')
+        }
+
+        window.addEventListener('online', alConectar)
+        document.addEventListener('visibilitychange', alCambiarVisibilidad)
+
+        return () => {
+            cancelado = true
+            window.removeEventListener('online', alConectar)
+            document.removeEventListener('visibilitychange', alCambiarVisibilidad)
+        }
     }, [tecnico])
 
     const iniciales = `${tecnico.nombre[0] ?? '?'}${tecnico.apellido[0] ?? ''}`

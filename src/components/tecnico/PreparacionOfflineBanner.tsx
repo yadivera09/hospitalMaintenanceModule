@@ -43,13 +43,23 @@ export default function PreparacionOfflineBanner({
 
     // Un fallo de precache no bloquea nada: con conexión la app funciona igual.
     // Se avisa para que el técnico sepa que NO debe confiar en el modo offline.
+    //
+    // El aviso ya no le pide reabrir la app: la preparación se reintenta sola al
+    // recuperar conexión y al volver a primer plano (ver TecnicoLayoutClient).
+    // Lo que sí sigue haciendo falta es que no se vaya a campo todavía, y eso es
+    // lo único que se le pide.
     if (progreso.fase === 'error') {
+        const sinConexion = progreso.error === 'sin-conexion'
+
         return (
             <div className="fixed top-14 left-0 right-0 z-30 bg-amber-50 border-b border-amber-200">
                 <div className="max-w-lg mx-auto flex items-center gap-2 px-4 py-2">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                     <p className="text-[11px] text-amber-800 leading-tight">
-                        {progreso.detalle} Vuelve a abrir la app con buena señal antes de ir a campo.
+                        {progreso.detalle}{' '}
+                        {sinConexion
+                            ? 'Se preparará sola en cuanto haya señal.'
+                            : 'Se reintentará solo; no salgas a campo hasta ver el aviso de listo.'}
                     </p>
                 </div>
             </div>

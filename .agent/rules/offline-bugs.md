@@ -22,11 +22,23 @@ técnico reporta por separado salen del mismo defecto.
 
 | | |
 |---|---|
-| **Corregidos en código** | A1, A2, B1, B2, B3, B4, B5, B6, B7, B8, C3, D1 (cliente), D2, D3 |
-| **Corregidos, pendientes de aplicar la migración** | B4/B5 → `024_sync_idempotente.sql` · D1 (servidor) y D4 → `025_duplicar_reporte_reparado.sql` · C1 y C3 → `026_numeracion_correlativa.sql` |
-| **Sin empezar** | A3 (RSC), A4 (reintento de la preparación), C2 (fuera de esta tanda por decisión) |
+| **Corregidos** | A1, A2, A4, B1, B2, B3, B4, B5, B6, B7, B8, C1, C3, D1, D2, D3, D4 |
+| **Descartado — no era un fallo** | A3 (ver su apartado antes de volver a tocarlo) |
+| **Fuera de esta tanda, por decisión** | C2 (33 reportes sin serial) |
 
-Las tres migraciones van en orden: **024 → 025 → 026**. La 026 depende de la 024.
+Las tres migraciones **024 → 025 → 026** están aplicadas y verificadas en
+producción (2026-08-12). La 026 dependía de la 024.
+
+Resultado en la base tras aplicarlas: 37 seriales, del 1 al 37, **cero huecos**
+(eran 18), cero repetidos, contador en 37, secuencia `seq_numero_reporte`
+eliminada. Comprobado además que dos llamadas seguidas a
+`cerrar_borrador_reporte` sobre un reporte cerrado devuelven el mismo serial sin
+consumir números.
+
+**Sin verificar en campo:** nada de esto se ha probado de punta a punta con un
+dispositivo real sin red. Hace falta una sesión de técnico —el usuario
+administrador no entra al panel— y una build de producción, porque en desarrollo
+los chunks no llevan hash y el service worker se comporta distinto.
 
 ---
 
@@ -72,30 +84,48 @@ Tres pasan `ignoreExpiry` y tres no, sin ningún criterio aparente. El resultado
 que a las 24 horas el wizard offline pierde tipos de mantenimiento e insumos pero
 conserva ubicaciones y técnicos: medio formulario vacío. Se arregla solo con A1.
 
-## A3 — ALTO: la navegación entre pantallas no funciona sin red
+## A3 — DESCARTADO: no es un fallo
 
-`public/sw.js:294-297`
+Este apartado estaba mal. Se deja escrito para que nadie vuelva a "arreglarlo".
+
+El diagnóstico era: el service worker deja pasar a la red las peticiones RSC
+(`public/sw.js:294-297`), sin red fallan, luego navegar por enlaces no funciona
+offline.
+
+La primera mitad es cierta; la conclusión no. Next.js captura el fallo del RSC y
+cae a una navegación completa del navegador —comprobado en el paquete instalado,
+`next/dist/client/components/router-reducer/fetch-server-response.js` (14.2.35)—:
 
 ```js
-if (request.headers.get('RSC') === '1' || request.headers.get('Next-Router-State-Tree')) return
+} catch (err) {
+    console.error("Failed to fetch RSC payload for " + url + ". Falling back to browser navigation.", err);
+    // If fetch fails handle it like a mpa navigation
 ```
 
-El service worker deja pasar a la red las peticiones RSC del App Router. Sin red
-fallan, así que **navegar por enlaces dentro de la app no funciona offline**: solo
-funciona la recarga completa de la URL. Para el técnico esto se ve como "la app se
-queda cargando" y refuerza la sensación de que hace falta internet.
+Y esa navegación dura SÍ la intercepta el service worker (`request.mode ===
+'navigate'`), que la sirve desde el shell cacheado. O sea que navegar sin red
+funciona: pasa por un intento fallido y una recarga, y sale.
 
-**Fix:** cachear también los payloads RSC, o forzar navegación dura (`<a>` en vez de
-`<Link>`) en el panel del técnico. La primera opción es la buena.
+**Cachear los payloads RSC sería además arriesgado**: varían según la cabecera
+`Next-Router-State-Tree`, de modo que una misma URL tiene distintas respuestas
+válidas. Guardarlas por URL serviría el árbol equivocado. El `return` de
+`sw.js:294-297` es deliberado y correcto.
+
+La causa real de "hace falta internet para que cargue" era **A1**, el TTL de 12
+horas que vaciaba el caché de equipos.
 
 ## A4 — MEDIO: la preparación offline no se reintenta
 
 `src/lib/offline/preparar.ts:186` corta si `navigator.onLine` es falso, y
-`TecnicoLayoutClient.tsx:75-78` solo la lanza al montar el layout. Si el técnico abre
-la app con una conexión mala y la preparación falla a medias, no vuelve a intentarse
-hasta que recargue la página. Nada le avisa de que salió a campo sin preparar.
+`TecnicoLayoutClient` solo la lanzaba al montar el layout. Si el técnico abría la
+app con mala cobertura —o sin ninguna— la preparación fallaba y no volvía a
+intentarse hasta recargar la página. El escenario que la preparación existe para
+evitar era justo el que la dejaba sin hacer.
 
-**Fix:** reintentar al recuperar conexión y al volver la pestaña a primer plano.
+**Corregido:** se reintenta al recuperar conexión y al volver la pestaña a primer
+plano, con un guardián que impide que dos disparadores se solapen. Solo la fase
+`listo` cierra el asunto; `listo-parcial` vuelve a intentarse. El aviso al técnico
+ya no le pide reabrir la app, solo que no salga a campo hasta ver el "listo".
 
 ---
 
