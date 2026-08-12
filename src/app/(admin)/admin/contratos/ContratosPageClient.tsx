@@ -125,12 +125,12 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
             {/* ── Encabezado - siguiendo estándar de Clientes */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <FileText className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <FileText className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Contratos</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Contratos</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {countByEstado['activo'] ?? 0} activos · {contratosIniciales.length} en total
                         </p>
                     </div>
@@ -141,7 +141,7 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                         <Button
                             variant="outline"
                             onClick={handleExportar}
-                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                             id="btn-exportar-contratos"
                         >
                             <Download className="h-4 w-4" />
@@ -151,7 +151,7 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                     {puedeCrear && (
                         <Button
                             onClick={() => { setModoForm('crear'); setContratoEditando(undefined); setErrorForm(null); setModalAbierto(true) }}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                            className="bg-marca hover:bg-marca-fuerte text-white gap-2 shrink-0"
                             id="btn-nuevo-contrato"
                         >
                             <Plus className="h-4 w-4" />
@@ -162,7 +162,7 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
             </div>
 
             {errorInicial && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />{errorInicial}
                 </div>
             )}
@@ -170,7 +170,7 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
             {/* Filtros */}
             <div className="flex flex-wrap gap-3 items-center">
                 <Select value={filtroEstado} onValueChange={(v) => setFiltroEstado(v as EstadoContrato | 'todos')}>
-                    <SelectTrigger className="w-48 bg-white border-[#E2E8F0]" id="filtro-estado"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-48 bg-panel border-borde" id="filtro-estado"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         {ESTADOS_CONTRATO.map((e) => (
                             <SelectItem key={e.value} value={e.value}>
@@ -181,7 +181,7 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                 </Select>
 
                 <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                    <SelectTrigger className="w-56 bg-white border-[#E2E8F0]" id="filtro-cliente"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-56 bg-panel border-borde" id="filtro-cliente"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="todos">Todos los clientes</SelectItem>
                         {clientesList.map((c) => <SelectItem key={c.id} value={c.id}>{c.razon_social}</SelectItem>)}
@@ -190,12 +190,12 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
 
                 {(filtroEstado !== 'todos' || filtroCliente !== 'todos') && (
                     <Button variant="ghost" size="sm" onClick={() => { setFiltroEstado('todos'); setFiltroCliente('todos') }}
-                        className="text-xs text-[#94A3B8] hover:text-[#334155]">Limpiar filtros</Button>
+                        className="text-xs text-tinta-tenue hover:text-tinta-media">Limpiar filtros</Button>
                 )}
             </div>
 
             {/* Tabla */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden">
                 <ContratosTable
                     contratos={contratosFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/contratos/${id}`)}
@@ -205,8 +205,8 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
                     onDesactivar={puedeEliminar ? (contrato) => desactivarContrato(contrato.id) : undefined}
                     onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
-                <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <p className="text-xs text-[#94A3B8]">
+                <div className="px-4 py-3 border-t border-borde bg-panel-suave">
+                    <p className="text-xs text-tinta-tenue">
                         {isPending ? 'Actualizando…' : `Mostrando ${contratosFiltrados.length} de ${contratosIniciales.length} contratos`}
                     </p>
                 </div>
@@ -216,15 +216,15 @@ export default function ContratosPageClient({ contratosIniciales, clientesList, 
             <Dialog open={modalAbierto} onOpenChange={(open) => !open && cerrarModal()}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="text-[#0F172A]">
+                        <DialogTitle className="text-tinta">
                             {modoForm === 'crear' ? 'Nuevo Contrato' : 'Editar Contrato'}
                         </DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">
+                        <DialogDescription className="text-tinta-tenue">
                             {modoForm === 'crear' ? 'Completa los datos para registrar un nuevo contrato.' : `Editando: ${contratoEditando?.numero_contrato}`}
                         </DialogDescription>
                     </DialogHeader>
                     {errorForm && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-3 py-2 text-xs text-critico-tinta">
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />{errorForm}
                         </div>
                     )}

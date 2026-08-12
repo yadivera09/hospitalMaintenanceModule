@@ -161,12 +161,12 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
             {/* ── Encabezado - siguiendo estándar de Clientes */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <Cpu className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <Cpu className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Equipos</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Equipos</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {equiposIniciales.filter((e) => e.activo).length} activos · {equiposIniciales.length} en total
                         </p>
                     </div>
@@ -178,7 +178,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                         <Button
                             variant="outline"
                             onClick={() => setModalCargaMasivaAbierto(true)}
-                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                         >
                             <Upload className="h-4 w-4" />
                             Carga masiva
@@ -188,7 +188,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                         <Button
                             variant="outline"
                             onClick={handleExportar}
-                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                             id="btn-exportar-equipos"
                         >
                             <Download className="h-4 w-4" />
@@ -199,7 +199,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                         <Button
                             id="btn-nuevo-equipo"
                             onClick={() => { setErrorCrear(null); setModalNuevoAbierto(true) }}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                            className="bg-marca hover:bg-marca-fuerte text-white gap-2 shrink-0"
                         >
                             <Plus className="h-4 w-4" />
                             Nuevo Equipo
@@ -209,7 +209,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
             </div>
 
             {errorInicial && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />{errorInicial}
                 </div>
             )}
@@ -217,15 +217,15 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
             {/* Buscador + filtros */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[240px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8] pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tinta-tenue pointer-events-none" />
                     <Input id="buscar-equipo" type="search"
                         placeholder="Busca por Código MH, N° Serie o Activo fijo"
                         value={busqueda} onChange={(e) => handleFilterChange(e.target.value, filtroCategoria)}
-                        className="pl-9 bg-white border-[#E2E8F0]" />
+                        className="pl-9 bg-panel border-borde" />
                 </div>
 
                 <Select value={filtroCategoria} onValueChange={(v) => handleFilterChange(busqueda, v)}>
-                    <SelectTrigger className="w-52 bg-white border-[#E2E8F0]" id="filtro-categoria">
+                    <SelectTrigger className="w-52 bg-panel border-borde" id="filtro-categoria">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -235,7 +235,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                 </Select>
 
                 <Select value={filtroEstado} onValueChange={(v) => setFiltroEstado(v as typeof filtroEstado)}>
-                    <SelectTrigger className="w-44 bg-white border-[#E2E8F0]" id="filtro-estado-equipo">
+                    <SelectTrigger className="w-44 bg-panel border-borde" id="filtro-estado-equipo">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -246,7 +246,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                 </Select>
 
                 <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                    <SelectTrigger className="w-52 bg-white border-[#E2E8F0]" id="filtro-cliente-equipo">
+                    <SelectTrigger className="w-52 bg-panel border-borde" id="filtro-cliente-equipo">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -262,7 +262,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                         handleFilterChange('', 'todos')
                         setFiltroEstado('todos')
                         setFiltroCliente('todos')
-                    }} className="text-xs text-[#94A3B8] hover:text-[#334155]">
+                    }} className="text-xs text-tinta-tenue hover:text-tinta-media">
                         Limpiar
                     </Button>
                 )}
@@ -270,7 +270,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
 
             {/* Banner de series duplicadas */}
             {numDuplicados > 0 && busqueda.trim() !== '' && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <div className="flex items-start gap-2 rounded-lg border border-aviso-linea bg-aviso-suave px-4 py-3 text-sm text-aviso-tinta">
                     <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>
                         Se detectaron <strong>{numDuplicados}</strong> equipos con número de serie duplicado que coinciden con su búsqueda.
@@ -280,7 +280,7 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
             )}
 
             {/* Tabla */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden">
                 <EquiposTable
                     equipos={listaFiltrada}
                     onVerDetalle={(id) => router.push(`/admin/equipos/${id}`)}
@@ -294,8 +294,8 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
                         if (data) setLista(data)
                     })}
                 />
-                <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <p className="text-xs text-[#94A3B8]">
+                <div className="px-4 py-3 border-t border-borde bg-panel-suave">
+                    <p className="text-xs text-tinta-tenue">
                         Mostrando {listaFiltrada.length} equipos
                     </p>
                 </div>
@@ -305,14 +305,14 @@ export default function EquiposPageClient({ equiposIniciales, categoriasList, ti
             <Dialog open={modalNuevoAbierto} onOpenChange={(open) => { if (!open) setModalNuevoAbierto(false) }}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle className="text-[#0F172A]">Nuevo Equipo</DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">
+                        <DialogTitle className="text-tinta">Nuevo Equipo</DialogTitle>
+                        <DialogDescription className="text-tinta-tenue">
                             Completa los datos del equipo. La asignación a contrato se puede hacer desde el detalle.
                         </DialogDescription>
                     </DialogHeader>
 
                     {errorCrear && (
-                        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-600">
+                        <div className="rounded-md bg-critico-suave border border-critico-linea px-3 py-2 text-xs text-critico-tinta">
                             {errorCrear}
                         </div>
                     )}

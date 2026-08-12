@@ -152,7 +152,7 @@ export default function GrupoDetalleClient({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-[#64748B] hover:text-[#0F172A]"
+                    className="h-8 text-tinta-media hover:text-tinta"
                     onClick={() => router.push('/admin/seguridad/grupos')}
                 >
                     <ArrowLeft className="h-4 w-4 mr-1.5" />
@@ -160,52 +160,52 @@ export default function GrupoDetalleClient({
                 </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-panel p-6 rounded-xl border border-borde shadow-sm">
                 <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <UsersRound className="h-6 w-6 text-[#1E40AF]" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-marca-suave">
+                        <UsersRound className="h-6 w-6 text-marca-tinta" />
                     </div>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-[#0F172A]">{grupo.nombre}</h1>
+                            <h1 className="text-2xl font-bold text-tinta">{grupo.nombre}</h1>
                             <Badge variant="outline" className={`font-medium px-2 py-0.5 text-xs ${
                                 grupo.activo 
-                                    ? 'border-green-200 bg-green-50 text-green-700' 
-                                    : 'border-[#E2E8F0] bg-[#F1F5F9] text-[#94A3B8]'
+                                    ? 'border-ok-linea bg-ok-suave text-ok-tinta' 
+                                    : 'border-borde bg-panel-suave text-tinta-tenue'
                             }`}>
                                 {grupo.activo ? 'Activo' : 'Inactivo'}
                             </Badge>
                         </div>
                         {grupo.descripcion && (
-                            <p className="text-[#64748B] text-sm mt-1">{grupo.descripcion}</p>
+                            <p className="text-tinta-media text-sm mt-1">{grupo.descripcion}</p>
                         )}
-                        <p className="text-xs text-[#94A3B8] mt-1 font-medium">
-                            Responsable: <span className="text-[#334155] font-semibold">{grupo.responsable_nombre || 'Sin responsable'}</span>
+                        <p className="text-xs text-tinta-tenue mt-1 font-medium">
+                            Responsable: <span className="text-tinta-media font-semibold">{grupo.responsable_nombre || 'Sin responsable'}</span>
                         </p>
                     </div>
                 </div>
                 <Button 
                     variant="outline" 
                     onClick={handleAbrirEditar}
-                    className="shrink-0 border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC]"
+                    className="shrink-0 border-borde text-tinta hover:bg-panel-suave"
                 >
-                    <Pencil className="h-4 w-4 mr-2 text-[#64748B]" />
+                    <Pencil className="h-4 w-4 mr-2 text-tinta-media" />
                     Editar grupo
                 </Button>
             </div>
 
             {/* ── Miembros ── */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC] gap-3">
-                    <h2 className="text-base font-semibold text-[#0F172A] flex items-center gap-2">
-                        <UsersRound className="h-4 w-4 text-[#64748B]" />
+            <div className="bg-panel rounded-xl border border-borde shadow-sm overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-borde bg-panel-suave gap-3">
+                    <h2 className="text-base font-semibold text-tinta flex items-center gap-2">
+                        <UsersRound className="h-4 w-4 text-tinta-media" />
                         Miembros del grupo
-                        <Badge variant="secondary" className="ml-1 bg-white text-[#64748B] border-[#E2E8F0]">{grupo.total_miembros}</Badge>
+                        <Badge variant="secondary" className="ml-1 bg-panel text-tinta-media border-borde">{grupo.total_miembros}</Badge>
                     </h2>
                     <Button 
                         size="sm" 
                         onClick={handleAbrirAgregarMiembro}
-                        className="h-8 text-xs bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm shrink-0"
+                        className="h-8 text-xs bg-marca hover:bg-marca-fuerte text-white shadow-sm shrink-0"
                     >
                         <Plus className="h-3.5 w-3.5 mr-1" />
                         Agregar miembro
@@ -215,26 +215,26 @@ export default function GrupoDetalleClient({
                 <div className="p-0">
                     {grupo.miembros.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <UsersRound className="h-10 w-10 text-[#E2E8F0] mb-3" />
-                            <p className="text-sm font-medium text-[#64748B]">Este grupo no tiene miembros</p>
-                            <p className="text-xs text-[#94A3B8] mt-1">Agrega usuarios para que pertenezcan al grupo.</p>
+                            <UsersRound className="h-10 w-10 text-borde mb-3" />
+                            <p className="text-sm font-medium text-tinta-media">Este grupo no tiene miembros</p>
+                            <p className="text-xs text-tinta-tenue mt-1">Agrega usuarios para que pertenezcan al grupo.</p>
                         </div>
                     ) : (
-                        <ul className="divide-y divide-[#E2E8F0]">
+                        <ul className="divide-y divide-borde">
                             {grupo.miembros.map(miembro => {
                                 const iniciales = `${miembro.nombre.charAt(0)}${miembro.apellido.charAt(0)}`.toUpperCase()
                                 const avatarColor = getAvatarColor(miembro.nombre)
                                 return (
-                                    <li key={miembro.usuario_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-3 hover:bg-[#F8FAFC] transition-colors gap-3">
+                                    <li key={miembro.usuario_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-3 hover:bg-panel-suave transition-colors gap-3">
                                         <div className="flex items-center gap-3">
                                             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white font-bold text-xs ${avatarColor}`}>
                                                 {iniciales}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-sm font-semibold text-[#0F172A] truncate">
+                                                <span className="text-sm font-semibold text-tinta truncate">
                                                     {miembro.nombre} {miembro.apellido}
                                                 </span>
-                                                <span className="text-xs text-[#64748B] truncate">
+                                                <span className="text-xs text-tinta-media truncate">
                                                     {miembro.email}
                                                 </span>
                                             </div>
@@ -243,7 +243,7 @@ export default function GrupoDetalleClient({
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => handleQuitarMiembro(miembro.usuario_id)}
-                                            className="h-8 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 self-end sm:self-auto shrink-0"
+                                            className="h-8 px-2 text-xs text-critico-tinta hover:text-critico-tinta hover:bg-critico-suave self-end sm:self-auto shrink-0"
                                         >
                                             <UserMinus className="h-3.5 w-3.5 mr-1.5" />
                                             Quitar
@@ -255,7 +255,7 @@ export default function GrupoDetalleClient({
                     )}
                 </div>
                 {isPending && (
-                    <div className="px-5 py-2 bg-blue-50 border-t border-blue-100 text-xs text-blue-700">
+                    <div className="px-5 py-2 bg-marca-suave border-t border-marca-linea text-xs text-marca-tinta">
                         Actualizando lista...
                     </div>
                 )}
@@ -265,11 +265,11 @@ export default function GrupoDetalleClient({
             <Dialog open={modalEditarAbierto} onOpenChange={(open) => !guardando && setModalEditarAbierto(open)}>
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-[#0F172A]">Editar Grupo</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold text-tinta">Editar Grupo</DialogTitle>
                     </DialogHeader>
 
                     {errorModalEditar && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mt-2">
+                        <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta mt-2">
                             <AlertCircle className="h-4 w-4 shrink-0" />
                             {errorModalEditar}
                         </div>
@@ -277,36 +277,36 @@ export default function GrupoDetalleClient({
 
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Nombre del grupo <span className="text-red-500">*</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Nombre del grupo <span className="text-critico-tinta">*</span>
                             </label>
                             <Input 
                                 value={nombre}
                                 onChange={(e) => setNombre(e.target.value)}
                                 disabled={guardando}
-                                className="border-[#E2E8F0] focus-visible:ring-[#1E40AF]"
+                                className="border-borde focus-visible:ring-marca"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Descripción <span className="text-[#94A3B8] font-normal">(Opcional)</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Descripción <span className="text-tinta-tenue font-normal">(Opcional)</span>
                             </label>
                             <Textarea 
                                 value={descripcion}
                                 onChange={(e) => setDescripcion(e.target.value)}
                                 disabled={guardando}
                                 rows={3}
-                                className="border-[#E2E8F0] focus-visible:ring-[#1E40AF]"
+                                className="border-borde focus-visible:ring-marca"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Responsable <span className="text-[#94A3B8] font-normal">(Opcional)</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Responsable <span className="text-tinta-tenue font-normal">(Opcional)</span>
                             </label>
                             <Select value={responsableId} onValueChange={setResponsableId} disabled={guardando}>
-                                <SelectTrigger className="border-[#E2E8F0] focus:ring-[#1E40AF]">
+                                <SelectTrigger className="border-borde focus:ring-marca">
                                     <SelectValue placeholder="Seleccionar responsable..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -326,14 +326,14 @@ export default function GrupoDetalleClient({
                             variant="ghost"
                             onClick={() => setModalEditarAbierto(false)}
                             disabled={guardando}
-                            className="text-[#64748B] hover:text-[#0F172A]"
+                            className="text-tinta-media hover:text-tinta"
                         >
                             Cancelar
                         </Button>
                         <Button
                             onClick={handleEditarGrupo}
                             disabled={guardando || !nombre.trim()}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm"
+                            className="bg-marca hover:bg-marca-fuerte text-white shadow-sm"
                         >
                             {guardando ? 'Guardando...' : 'Guardar cambios'}
                         </Button>
@@ -345,11 +345,11 @@ export default function GrupoDetalleClient({
             <Dialog open={modalMiembroAbierto} onOpenChange={(open) => !agregando && setModalMiembroAbierto(open)}>
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-[#0F172A]">Agregar miembro</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold text-tinta">Agregar miembro</DialogTitle>
                     </DialogHeader>
 
                     {errorModalMiembro && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mt-2">
+                        <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta mt-2">
                             <AlertCircle className="h-4 w-4 shrink-0" />
                             {errorModalMiembro}
                         </div>
@@ -357,16 +357,16 @@ export default function GrupoDetalleClient({
 
                     <div className="space-y-4 py-4">
                         {usuariosDisponibles.length === 0 ? (
-                            <div className="p-4 bg-slate-50 border border-[#E2E8F0] rounded-lg text-center text-sm text-[#64748B]">
+                            <div className="p-4 bg-panel-suave border border-borde rounded-lg text-center text-sm text-tinta-media">
                                 Todos los usuarios activos ya son miembros del grupo.
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#334155]">
-                                    Usuario <span className="text-red-500">*</span>
+                                <label className="text-sm font-medium text-tinta-media">
+                                    Usuario <span className="text-critico-tinta">*</span>
                                 </label>
                                 <Select value={miembroSeleccionado} onValueChange={setMiembroSeleccionado} disabled={agregando}>
-                                    <SelectTrigger className="border-[#E2E8F0] focus:ring-[#1E40AF]">
+                                    <SelectTrigger className="border-borde focus:ring-marca">
                                         <SelectValue placeholder="Seleccionar un usuario..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -386,14 +386,14 @@ export default function GrupoDetalleClient({
                             variant="ghost"
                             onClick={() => setModalMiembroAbierto(false)}
                             disabled={agregando}
-                            className="text-[#64748B] hover:text-[#0F172A]"
+                            className="text-tinta-media hover:text-tinta"
                         >
                             Cancelar
                         </Button>
                         <Button
                             onClick={handleAgregarMiembro}
                             disabled={agregando || !miembroSeleccionado || usuariosDisponibles.length === 0}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm"
+                            className="bg-marca hover:bg-marca-fuerte text-white shadow-sm"
                         >
                             {agregando ? 'Agregando...' : 'Agregar'}
                         </Button>

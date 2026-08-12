@@ -157,7 +157,7 @@ export default function GraficoMantenimientos({
                                                 <span
                                                     className={cn(
                                                         'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                                                        subio ? 'bg-ok-suave text-ok' : 'bg-critico-suave text-critico'
+                                                        subio ? 'bg-ok-suave text-ok-tinta' : 'bg-critico-suave text-critico-tinta'
                                                     )}
                                                 >
                                                     <Flecha className="h-2.5 w-2.5" />

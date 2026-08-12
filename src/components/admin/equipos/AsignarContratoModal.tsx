@@ -110,14 +110,14 @@ export default function AsignarContratoModal({
         <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose() }}>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle className="text-[#0F172A]">
+                    <DialogTitle className="text-tinta">
                         Asignar a contrato
                     </DialogTitle>
-                    <p className="text-sm text-[#94A3B8] mt-0.5">
-                        Equipo: <span className="font-medium text-[#334155]">{equipoNombre}</span>
+                    <p className="text-sm text-tinta-tenue mt-0.5">
+                        Equipo: <span className="font-medium text-tinta-media">{equipoNombre}</span>
                     </p>
                     {contratoVigenteId && (
-                        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                        <div className="rounded-md bg-aviso-suave border border-aviso-linea px-3 py-2 text-xs text-aviso-tinta">
                             ⚠️ Este equipo ya tiene un contrato vigente.
                             Al asignar uno nuevo, el contrato anterior quedará cerrado
                             con fecha de retiro = hoy.
@@ -128,11 +128,11 @@ export default function AsignarContratoModal({
                 <div className="space-y-4 py-2">
                     {/* Contrato */}
                     <div className="space-y-1.5">
-                        <Label className="text-sm font-medium text-[#334155]">
-                            Contrato <span className="text-red-500">*</span>
+                        <Label className="text-sm font-medium text-tinta-media">
+                            Contrato <span className="text-critico-tinta">*</span>
                         </Label>
                         <Select value={contratoId} onValueChange={setContratoId}>
-                            <SelectTrigger className={!contratoId && error ? 'border-red-400' : ''}>
+                            <SelectTrigger className={!contratoId && error ? 'border-critico-linea' : ''}>
                                 <SelectValue placeholder="Seleccionar contrato…" />
                             </SelectTrigger>
                             <SelectContent>
@@ -147,8 +147,8 @@ export default function AsignarContratoModal({
 
                     {/* Ubic ación */}
                     <div className="space-y-1.5">
-                        <Label className="text-sm font-medium text-[#334155]">
-                            Ubicación <span className="text-xs text-[#94A3B8]">(opcional)</span>
+                        <Label className="text-sm font-medium text-tinta-media">
+                            Ubicación <span className="text-xs text-tinta-tenue">(opcional)</span>
                         </Label>
                         <Select value={ubicacionId} onValueChange={setUbicacionId}>
                             <SelectTrigger>
@@ -166,8 +166,8 @@ export default function AsignarContratoModal({
 
                     {/* Fecha */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="fecha_asig" className="text-sm font-medium text-[#334155]">
-                            Fecha de asignación <span className="text-red-500">*</span>
+                        <Label htmlFor="fecha_asig" className="text-sm font-medium text-tinta-media">
+                            Fecha de asignación <span className="text-critico-tinta">*</span>
                         </Label>
                         <Input
                             id="fecha_asig"
@@ -179,27 +179,27 @@ export default function AsignarContratoModal({
 
                     {/* Error */}
                     {error && (
-                        <p className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-600">
+                        <p className="rounded-md bg-critico-suave border border-critico-linea px-3 py-2 text-xs text-critico-tinta">
                             {error}
                         </p>
                     )}
 
                     {/* Éxito */}
                     {exito && (
-                        <p className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+                        <p className="rounded-md bg-ok-suave border border-ok-linea px-3 py-2 text-xs text-ok-tinta">
                             ✅ Equipo asignado correctamente. Actualizando…
                         </p>
                     )}
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={handleClose} disabled={isPending} className="text-[#334155]">
+                    <Button variant="outline" onClick={handleClose} disabled={isPending} className="text-tinta-media">
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleGuardar}
                         disabled={isPending || exito}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                        className="bg-marca hover:bg-marca-fuerte text-white"
                     >
                         {isPending ? 'Asignando…' : 'Confirmar asignación'}
                     </Button>

@@ -105,35 +105,35 @@ export default function TecnicoForm({
             {/* Nombre + Apellido */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="nombre" className="text-sm font-medium text-[#334155]">
-                        Nombre <span className="text-red-500">*</span>
+                    <Label htmlFor="nombre" className="text-sm font-medium text-tinta-media">
+                        Nombre <span className="text-critico-tinta">*</span>
                     </Label>
                     <Input id="nombre" placeholder="Marcos" {...register('nombre')}
-                        className={errors.nombre ? 'border-red-400' : ''} />
-                    {errors.nombre && <p className="text-xs text-red-500">{errors.nombre.message}</p>}
+                        className={errors.nombre ? 'border-critico-linea' : ''} />
+                    {errors.nombre && <p className="text-xs text-critico-tinta">{errors.nombre.message}</p>}
                 </div>
                 <div className="space-y-1.5">
-                    <Label htmlFor="apellido" className="text-sm font-medium text-[#334155]">
-                        Apellido <span className="text-red-500">*</span>
+                    <Label htmlFor="apellido" className="text-sm font-medium text-tinta-media">
+                        Apellido <span className="text-critico-tinta">*</span>
                     </Label>
                     <Input id="apellido" placeholder="Rodríguez" {...register('apellido')}
-                        className={errors.apellido ? 'border-red-400' : ''} />
-                    {errors.apellido && <p className="text-xs text-red-500">{errors.apellido.message}</p>}
+                        className={errors.apellido ? 'border-critico-linea' : ''} />
+                    {errors.apellido && <p className="text-xs text-critico-tinta">{errors.apellido.message}</p>}
                 </div>
             </div>
 
             {/* Cédula + Estado */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="cedula" className="text-sm font-medium text-[#334155]">
-                        Cédula <span className="text-red-500">*</span>
+                    <Label htmlFor="cedula" className="text-sm font-medium text-tinta-media">
+                        Cédula <span className="text-critico-tinta">*</span>
                     </Label>
                     <Input id="cedula" placeholder="0912345678" {...register('cedula')}
-                        className={`font-mono ${errors.cedula ? 'border-red-400' : ''}`} />
-                    {errors.cedula && <p className="text-xs text-red-500">{errors.cedula.message}</p>}
+                        className={`font-mono ${errors.cedula ? 'border-critico-linea' : ''}`} />
+                    {errors.cedula && <p className="text-xs text-critico-tinta">{errors.cedula.message}</p>}
                 </div>
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">Estado</Label>
+                    <Label className="text-sm font-medium text-tinta-media">Estado</Label>
                     <Select value={estadoActual}
                         onValueChange={(v) => setValue('estado_display', v as TecnicoFormValues['estado_display'])}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -148,26 +148,26 @@ export default function TecnicoForm({
 
             {/* Email */}
             <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-medium text-[#334155]">
-                    Email <span className="text-red-500">*</span>
+                <Label htmlFor="email" className="text-sm font-medium text-tinta-media">
+                    Email <span className="text-critico-tinta">*</span>
                 </Label>
                 <Input id="email" type="email" placeholder="tecnico@mobilhospital.com"
-                    {...register('email')} className={errors.email ? 'border-red-400' : ''} />
-                {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+                    {...register('email')} className={errors.email ? 'border-critico-linea' : ''} />
+                {errors.email && <p className="text-xs text-critico-tinta">{errors.email.message}</p>}
             </div>
 
             {/* Teléfono */}
             <div className="space-y-1.5">
-                <Label htmlFor="telefono" className="text-sm font-medium text-[#334155]">Teléfono</Label>
+                <Label htmlFor="telefono" className="text-sm font-medium text-tinta-media">Teléfono</Label>
                 <Input id="telefono" placeholder="+593 99 000-0000" {...register('telefono')} />
             </div>
 
             {/* Acciones */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
-                <Button type="button" variant="outline" onClick={onCancelar} disabled={isLoading} className="text-[#334155]">
+            <div className="flex justify-end gap-2 pt-2 border-t border-borde">
+                <Button type="button" variant="outline" onClick={onCancelar} disabled={isLoading} className="text-tinta-media">
                     Cancelar
                 </Button>
-                <Button type="submit" disabled={isLoading} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white">
+                <Button type="submit" disabled={isLoading} className="bg-marca hover:bg-marca-fuerte text-white">
                     {isLoading ? 'Guardando…' : modo === 'crear' ? 'Guardar Técnico' : 'Actualizar Técnico'}
                 </Button>
             </div>

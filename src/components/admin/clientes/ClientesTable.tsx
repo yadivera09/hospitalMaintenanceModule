@@ -58,10 +58,10 @@ export default function ClientesTable({
     if (clientes.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-sm font-medium text-[#94A3B8]">
+                <p className="text-sm font-medium text-tinta-tenue">
                     No se encontraron clientes
                 </p>
-                <p className="mt-1 text-xs text-[#94A3B8]">
+                <p className="mt-1 text-xs text-tinta-tenue">
                     Intenta ajustar el filtro de búsqueda.
                 </p>
             </div>
@@ -69,26 +69,26 @@ export default function ClientesTable({
     }
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="w-full overflow-x-auto rounded-lg border border-borde">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 pl-4">
+                    <TableRow className="bg-panel-suave hover:bg-panel-suave">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 pl-4">
                             Cliente
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                             RUC
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden md:table-cell">
                             Teléfono
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden lg:table-cell">
                             Email
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                             Estado
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-right pr-4">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-right pr-4">
                             Acciones
                         </TableHead>
                     </TableRow>
@@ -98,39 +98,39 @@ export default function ClientesTable({
                     {clientes.map((cliente) => (
                         <TableRow
                             key={cliente.id}
-                            className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors"
+                            className="border-b border-borde hover:bg-panel-suave transition-colors"
                         >
                             {/* Nombre */}
                             <TableCell className="py-3.5 pl-4">
                                 <button
                                     onClick={() => onVerDetalle(cliente.id)}
-                                    className="text-sm font-semibold text-[#0F172A] hover:text-[#1E40AF] transition-colors text-left"
+                                    className="text-sm font-semibold text-tinta hover:text-marca-tinta transition-colors text-left"
                                 >
                                     {cliente.razon_social}
                                 </button>
                                 {/* Dirección visible en xs */}
-                                <p className="mt-0.5 text-xs text-[#94A3B8] lg:hidden">
+                                <p className="mt-0.5 text-xs text-tinta-tenue lg:hidden">
                                     {truncar(cliente.direccion, 35)}
                                 </p>
                             </TableCell>
 
                             {/* RUC */}
                             <TableCell className="py-3.5">
-                                <span className="text-sm font-mono text-[#334155]">
+                                <span className="text-sm font-mono text-tinta-media">
                                     {cliente.ruc ?? '—'}
                                 </span>
                             </TableCell>
 
                             {/* Teléfono */}
                             <TableCell className="py-3.5 hidden md:table-cell">
-                                <span className="text-sm text-[#334155]">
+                                <span className="text-sm text-tinta-media">
                                     {cliente.telefono ?? '—'}
                                 </span>
                             </TableCell>
 
                             {/* Email */}
                             <TableCell className="py-3.5 hidden lg:table-cell">
-                                <span className="text-sm text-[#334155]">
+                                <span className="text-sm text-tinta-media">
                                     {cliente.email ?? '—'}
                                 </span>
                             </TableCell>
@@ -138,11 +138,11 @@ export default function ClientesTable({
                             {/* Estado */}
                             <TableCell className="py-3.5">
                                 {cliente.activo ? (
-                                    <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium px-2 py-0.5 rounded-sm">
+                                    <Badge className="bg-ok-suave text-ok-tinta border border-ok-linea text-xs font-medium px-2 py-0.5 rounded-sm">
                                         Activo
                                     </Badge>
                                 ) : (
-                                    <Badge className="bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0] text-xs font-medium px-2 py-0.5 rounded-sm">
+                                    <Badge className="bg-panel-suave text-tinta-tenue border border-borde text-xs font-medium px-2 py-0.5 rounded-sm">
                                         Inactivo
                                     </Badge>
                                 )}
@@ -156,7 +156,7 @@ export default function ClientesTable({
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => onEditar(cliente)}
-                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                            className="h-8 w-8 p-0 text-tinta-tenue hover:text-aviso-tinta hover:bg-aviso-suave"
                                             aria-label={`Editar ${cliente.razon_social}`}
                                             title="Editar"
                                         >

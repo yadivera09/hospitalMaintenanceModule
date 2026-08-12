@@ -120,12 +120,12 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
             {/* ── Encabezado ── */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <Users className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <Users className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Usuarios</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Usuarios</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {usuarios.length} usuarios · {totalActivos} activos
                         </p>
                     </div>
@@ -138,14 +138,14 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
             </div>
 
             {errorInicial && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {errorInicial}
                 </div>
             )}
             
             {errorEliminar && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {errorEliminar}
                 </div>
@@ -154,18 +154,18 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
             {/* ── Filtros ── */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tinta-tenue" />
                     <input
                         type="text"
                         placeholder="Buscar por nombre o email..."
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
-                        className="w-full rounded-md border border-[#E2E8F0] pl-9 pr-4 py-2 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:border-[#1E40AF] focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
+                        className="w-full rounded-md border border-borde pl-9 pr-4 py-2 text-sm text-tinta placeholder:text-tinta-tenue focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
                     />
                 </div>
                 
                 <Select value={filtroRol} onValueChange={setFiltroRol}>
-                    <SelectTrigger className="w-full sm:w-[200px] border-[#E2E8F0] text-[#0F172A]">
+                    <SelectTrigger className="w-full sm:w-[200px] border-borde text-tinta">
                         <SelectValue placeholder="Todos los roles" />
                     </SelectTrigger>
                     <SelectContent>
@@ -177,7 +177,7 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                 </Select>
 
                 <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                    <SelectTrigger className="w-full sm:w-[160px] border-[#E2E8F0] text-[#0F172A]">
+                    <SelectTrigger className="w-full sm:w-[160px] border-borde text-tinta">
                         <SelectValue placeholder="Estado" />
                     </SelectTrigger>
                     <SelectContent>
@@ -189,23 +189,23 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
             </div>
 
             {/* ── Tabla de usuarios ── */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 pl-5">
+                        <TableRow className="bg-panel-suave hover:bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 pl-5">
                                 Usuario
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden md:table-cell">
                                 Rol(es)
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell text-center">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden lg:table-cell text-center">
                                 MFA
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                                 Estado
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-right pr-5">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-right pr-5">
                                 Acciones
                             </TableHead>
                         </TableRow>
@@ -216,9 +216,9 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                             <TableRow>
                                 <TableCell colSpan={5} className="py-16 text-center">
                                     <div className="flex flex-col items-center justify-center">
-                                        <Users className="h-8 w-8 text-[#E2E8F0] mb-3" />
-                                        <p className="text-sm font-medium text-[#64748B]">No se encontraron usuarios</p>
-                                        <p className="text-xs text-[#94A3B8] mt-1">Intenta con otros términos de búsqueda.</p>
+                                        <Users className="h-8 w-8 text-borde mb-3" />
+                                        <p className="text-sm font-medium text-tinta-media">No se encontraron usuarios</p>
+                                        <p className="text-xs text-tinta-tenue mt-1">Intenta con otros términos de búsqueda.</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -231,7 +231,7 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                 return (
                                     <TableRow 
                                         key={usuario.id}
-                                        className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors cursor-pointer group"
+                                        className="border-b border-borde hover:bg-panel-suave transition-colors cursor-pointer group"
                                         onClick={() => router.push(`/admin/seguridad/usuarios/${usuario.id}`)}
                                     >
                                         {/* Usuario */}
@@ -241,10 +241,10 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                                     {iniciales}
                                                 </div>
                                                 <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm font-semibold text-[#0F172A] truncate">
+                                                    <span className="text-sm font-semibold text-tinta truncate">
                                                         {usuario.nombre} {usuario.apellido}
                                                     </span>
-                                                    <span className="text-xs text-[#94A3B8] truncate">
+                                                    <span className="text-xs text-tinta-tenue truncate">
                                                         {usuario.email}
                                                     </span>
                                                 </div>
@@ -255,10 +255,10 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                         <TableCell className="py-3.5 hidden md:table-cell">
                                             <div className="flex flex-wrap gap-1">
                                                 {usuario.roles.length === 0 ? (
-                                                    <span className="text-xs text-[#94A3B8] italic">Sin roles</span>
+                                                    <span className="text-xs text-tinta-tenue italic">Sin roles</span>
                                                 ) : (
                                                     usuario.roles.map(r => (
-                                                        <Badge key={r.id} variant="secondary" className="bg-[#1E40AF]/10 text-[#1E40AF] hover:bg-[#1E40AF]/20 border-transparent text-[10px] py-0 px-2 font-medium rounded-sm">
+                                                        <Badge key={r.id} variant="secondary" className="bg-marca-suave text-marca-tinta hover:bg-marca-suave border-transparent text-[10px] py-0 px-2 font-medium rounded-sm">
                                                             {r.nombre}
                                                         </Badge>
                                                     ))
@@ -270,9 +270,9 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                         <TableCell className="py-3.5 hidden lg:table-cell text-center">
                                             <div className="flex justify-center">
                                                 {mfaConfigurado ? (
-                                                    <ShieldCheck className="h-4 w-4 text-green-600" aria-label="MFA configurado" />
+                                                    <ShieldCheck className="h-4 w-4 text-ok-tinta" aria-label="MFA configurado" />
                                                 ) : (
-                                                    <Shield className="h-4 w-4 text-[#94A3B8]" aria-label="MFA no configurado" />
+                                                    <Shield className="h-4 w-4 text-tinta-tenue" aria-label="MFA no configurado" />
                                                 )}
                                             </div>
                                         </TableCell>
@@ -280,11 +280,11 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                         {/* Estado */}
                                         <TableCell className="py-3.5">
                                             {usuario.activo ? (
-                                                <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium px-2 py-0.5 rounded-sm">
+                                                <Badge className="bg-ok-suave text-ok-tinta border border-ok-linea text-xs font-medium px-2 py-0.5 rounded-sm">
                                                     Activo
                                                 </Badge>
                                             ) : (
-                                                <Badge className="bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0] text-xs font-medium px-2 py-0.5 rounded-sm">
+                                                <Badge className="bg-panel-suave text-tinta-tenue border border-borde text-xs font-medium px-2 py-0.5 rounded-sm">
                                                     Inactivo
                                                 </Badge>
                                             )}
@@ -297,7 +297,7 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => router.push(`/admin/seguridad/usuarios/${usuario.id}`)}
-                                                    className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
+                                                    className="h-8 w-8 p-0 text-tinta-tenue hover:text-marca-tinta hover:bg-marca-suave"
                                                     title="Editar usuario"
                                                 >
                                                     <Pencil className="h-4 w-4" />
@@ -308,7 +308,7 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                                                     size="sm"
                                                     onClick={() => handleToggleEstado(usuario.id)}
                                                     disabled={toggling === usuario.id}
-                                                    className={`h-8 w-8 p-0 ${usuario.activo ? 'text-[#94A3B8] hover:text-red-600 hover:bg-red-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                                                    className={`h-8 w-8 p-0 ${usuario.activo ? 'text-tinta-tenue hover:text-critico-tinta hover:bg-critico-suave' : 'text-ok-tinta hover:text-ok-tinta hover:bg-ok-suave'}`}
                                                     title={usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}
                                                 >
                                                     {usuario.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
@@ -322,8 +322,8 @@ export default function UsuariosPageClient({ usuariosIniciales, rolesCatalogo, e
                     </TableBody>
                 </Table>
                 
-                <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <p className="text-xs text-[#94A3B8]">
+                <div className="px-5 py-3 border-t border-borde bg-panel-suave">
+                    <p className="text-xs text-tinta-tenue">
                         {isPending ? 'Actualizando…' : `Mostrando ${usuariosFiltrados.length} de ${usuarios.length} usuarios registrados`}
                     </p>
                 </div>

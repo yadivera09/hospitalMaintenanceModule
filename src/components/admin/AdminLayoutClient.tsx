@@ -6,7 +6,7 @@
  * Maneja el estado del sidebar, el tema claro/oscuro y la estructura base.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from '@/components/admin/Sidebar'
 import Navbar from '@/components/admin/Navbar'
 import { guardarTema, type Tema } from '@/lib/tema/tema'
@@ -30,6 +30,29 @@ export default function AdminLayoutClient({
 }: AdminLayoutClientProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [tema, setTema] = useState<Tema>(temaInicial)
+
+    // El tema tambien se marca en <html>, ademas del contenedor de abajo.
+    //
+    // Radix monta Dialog, Select, DropdownMenu y Tooltip en document.body — es
+    // decir, FUERA del arbol del panel. Con la clase solo en el contenedor, esos
+    // elementos quedaban con los valores del tema claro: modales blancos y
+    // desplegables blancos sobre un panel oscuro.
+    //
+    // Se hace en un efecto y no en el servidor para no volver dinamico el layout
+    // raiz, que sirve tambien al login y al panel del tecnico. El contenedor de
+    // abajo sigue llevando la clase, asi que la primera pintura del panel ya
+    // sale correcta y no hay destello; lo portaleado solo existe despues de una
+    // interaccion, cuando el efecto ya corrio.
+    //
+    // La limpieza al desmontar es lo que mantiene el trato descrito en
+    // lib/tema/tema.ts: fuera del panel, ningun rastro del tema oscuro.
+    useEffect(() => {
+        const raiz = document.documentElement
+
+        raiz.classList.toggle('dark', tema === 'oscuro')
+
+        return () => raiz.classList.remove('dark')
+    }, [tema])
 
     function alternarTema() {
         const siguiente: Tema = tema === 'oscuro' ? 'claro' : 'oscuro'

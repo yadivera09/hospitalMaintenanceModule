@@ -144,35 +144,35 @@ export default function EquipoForm({
             {/* ── Identificadores (3 columnas en md) ─────────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="codigo_mh" className="text-sm font-medium text-[#334155]">
-                        Código MH <span className="text-red-500">*</span>
+                    <Label htmlFor="codigo_mh" className="text-sm font-medium text-tinta-media">
+                        Código MH <span className="text-critico-tinta">*</span>
                     </Label>
                     <Input
                         id="codigo_mh"
                         placeholder="MH-CAM-0001"
                         {...register('codigo_mh')}
-                        className={`font-mono ${errors.codigo_mh ? 'border-red-400' : ''}`}
+                        className={`font-mono ${errors.codigo_mh ? 'border-critico-linea' : ''}`}
                         disabled={modo === 'editar'}
                     />
                     {errors.codigo_mh && (
-                        <p className="text-xs text-red-500">{errors.codigo_mh.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.codigo_mh.message}</p>
                     )}
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label htmlFor="numero_serie" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="numero_serie" className="text-sm font-medium text-tinta-media">
                         N° Serie
                     </Label>
                     <Input
                         id="numero_serie"
                         placeholder="SN-XXX-2024"
                         {...register('numero_serie')}
-                        className={`font-mono ${errors.numero_serie ? 'border-red-400' : ''}`}
+                        className={`font-mono ${errors.numero_serie ? 'border-critico-linea' : ''}`}
                     />
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label htmlFor="activo_fijo" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="activo_fijo" className="text-sm font-medium text-tinta-media">
                         Activo fijo
                     </Label>
                     <Input
@@ -186,28 +186,28 @@ export default function EquipoForm({
 
             {/* ── Nombre ──────────────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="nombre" className="text-sm font-medium text-[#334155]">
-                    Nombre del equipo <span className="text-red-500">*</span>
+                <Label htmlFor="nombre" className="text-sm font-medium text-tinta-media">
+                    Nombre del equipo <span className="text-critico-tinta">*</span>
                 </Label>
                 <Input
                     id="nombre"
                     placeholder="Ej: Cama hospitalaria eléctrica"
                     {...register('nombre')}
-                    className={errors.nombre ? 'border-red-400' : ''}
+                    className={errors.nombre ? 'border-critico-linea' : ''}
                 />
                 {errors.nombre && (
-                    <p className="text-xs text-red-500">{errors.nombre.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.nombre.message}</p>
                 )}
             </div>
 
             {/* ── Marca + Modelo ───────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="marca" className="text-sm font-medium text-[#334155]">Marca</Label>
+                    <Label htmlFor="marca" className="text-sm font-medium text-tinta-media">Marca</Label>
                     <Input id="marca" placeholder="Hill-Rom" {...register('marca')} />
                 </div>
                 <div className="space-y-1.5">
-                    <Label htmlFor="modelo" className="text-sm font-medium text-[#334155]">Modelo</Label>
+                    <Label htmlFor="modelo" className="text-sm font-medium text-tinta-media">Modelo</Label>
                     <Input id="modelo" placeholder="Progressa" {...register('modelo')} />
                 </div>
             </div>
@@ -215,11 +215,11 @@ export default function EquipoForm({
             {/* ── Categoría + Tipo Mantenimiento ───────────────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">
-                        Categoría <span className="text-red-500">*</span>
+                    <Label className="text-sm font-medium text-tinta-media">
+                        Categoría <span className="text-critico-tinta">*</span>
                     </Label>
                     <Select value={categoriaActual} onValueChange={(val) => setValue('categoria_id', val)}>
-                        <SelectTrigger className={errors.categoria_id ? 'border-red-400' : ''}>
+                        <SelectTrigger className={errors.categoria_id ? 'border-critico-linea' : ''}>
                             <SelectValue placeholder="Categoría…" />
                         </SelectTrigger>
                         <SelectContent>
@@ -231,16 +231,16 @@ export default function EquipoForm({
                         </SelectContent>
                     </Select>
                     {errors.categoria_id && (
-                        <p className="text-xs text-red-500">{errors.categoria_id.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.categoria_id.message}</p>
                     )}
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">
-                        Tipo de mantenimiento <span className="text-red-500">*</span>
+                    <Label className="text-sm font-medium text-tinta-media">
+                        Tipo de mantenimiento <span className="text-critico-tinta">*</span>
                     </Label>
                     <Select value={tipoActual} onValueChange={(val) => setValue('tipo_mantenimiento_id', val)}>
-                        <SelectTrigger className={errors.tipo_mantenimiento_id ? 'border-red-400' : ''}>
+                        <SelectTrigger className={errors.tipo_mantenimiento_id ? 'border-critico-linea' : ''}>
                             <SelectValue placeholder="Tipo…" />
                         </SelectTrigger>
                         <SelectContent>
@@ -252,7 +252,7 @@ export default function EquipoForm({
                         </SelectContent>
                     </Select>
                     {errors.tipo_mantenimiento_id && (
-                        <p className="text-xs text-red-500">{errors.tipo_mantenimiento_id.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.tipo_mantenimiento_id.message}</p>
                     )}
                 </div>
             </div>
@@ -260,7 +260,7 @@ export default function EquipoForm({
             {/* ── Estado + Fecha fabricación ───────────────────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">Estado</Label>
+                    <Label className="text-sm font-medium text-tinta-media">Estado</Label>
                     <Select
                         value={estadoActual}
                         onValueChange={(val) =>
@@ -279,7 +279,7 @@ export default function EquipoForm({
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label htmlFor="fecha_fabricacion" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="fecha_fabricacion" className="text-sm font-medium text-tinta-media">
                         Fecha fabricación
                     </Label>
                     <Input
@@ -292,7 +292,7 @@ export default function EquipoForm({
 
             {/* ── Observaciones ────────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="observaciones" className="text-sm font-medium text-[#334155]">
+                <Label htmlFor="observaciones" className="text-sm font-medium text-tinta-media">
                     Observaciones
                 </Label>
                 <Textarea
@@ -305,20 +305,20 @@ export default function EquipoForm({
             </div>
 
             {/* ── Acciones ─────────────────────────────────────────── */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+            <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={onCancelar}
                     disabled={isLoading}
-                    className="text-[#334155]"
+                    className="text-tinta-media"
                 >
                     Cancelar
                 </Button>
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                    className="bg-marca hover:bg-marca-fuerte text-white"
                 >
                     {isLoading
                         ? 'Guardando…'

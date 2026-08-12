@@ -123,7 +123,7 @@ export default function ModalCargaMasivaEquipos({
         <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="p-6 pb-2">
                 <DialogTitle className="flex items-center gap-2 text-xl">
-                    <Table className="h-5 w-5 text-[#1E40AF]" />
+                    <Table className="h-5 w-5 text-marca-tinta" />
                     Carga Masiva de Equipos
                 </DialogTitle>
                 <DialogDescription>
@@ -136,26 +136,26 @@ export default function ModalCargaMasivaEquipos({
                     <div className="space-y-6 py-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Instrucciones */}
-                            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 space-y-3">
-                                <h3 className="text-sm font-bold text-[#1E40AF] flex items-center gap-2">
+                            <div className="p-4 rounded-xl border border-marca-linea bg-marca-suave space-y-3">
+                                <h3 className="text-sm font-bold text-marca-tinta flex items-center gap-2">
                                     <Info className="h-4 w-4" /> Instrucciones
                                 </h3>
-                                <ul className="text-xs text-[#475569] space-y-2 list-disc pl-4">
+                                <ul className="text-xs text-tinta-media space-y-2 list-disc pl-4">
                                     <li>Descarga la plantilla para ver el formato correcto.</li>
                                     <li>
                                         Columnas <strong>obligatorias</strong>:{' '}
-                                        <code className="bg-blue-100 px-1 rounded text-[10px]">codigo_mh</code>,{' '}
-                                        <code className="bg-blue-100 px-1 rounded text-[10px]">nombre</code>,{' '}
-                                        <code className="bg-blue-100 px-1 rounded text-[10px]">categoria</code>,{' '}
-                                        <code className="bg-blue-100 px-1 rounded text-[10px]">tipo_mantenimiento</code>,{' '}
-                                        <code className="bg-red-100 px-1 rounded text-[10px]">numero_contrato</code>
+                                        <code className="bg-marca-suave px-1 rounded text-[10px]">codigo_mh</code>,{' '}
+                                        <code className="bg-marca-suave px-1 rounded text-[10px]">nombre</code>,{' '}
+                                        <code className="bg-marca-suave px-1 rounded text-[10px]">categoria</code>,{' '}
+                                        <code className="bg-marca-suave px-1 rounded text-[10px]">tipo_mantenimiento</code>,{' '}
+                                        <code className="bg-critico-suave px-1 rounded text-[10px]">numero_contrato</code>
                                     </li>
                                     <li>
                                         Columnas <strong>opcionales</strong>: marca, modelo, numero_serie, activo_fijo,
                                         cliente, ubicacion, fecha_fabricacion, observaciones.
                                     </li>
                                     <li>
-                                        Si <code className="bg-slate-100 px-1 rounded text-[10px]">ubicacion</code> se
+                                        Si <code className="bg-panel-suave px-1 rounded text-[10px]">ubicacion</code> se
                                         especifica, debe pertenecer al cliente del contrato.
                                     </li>
                                     <li>El Código MH debe comenzar con &quot;MH-&quot; y ser único.</li>
@@ -164,7 +164,7 @@ export default function ModalCargaMasivaEquipos({
                                     variant="outline"
                                     size="sm"
                                     onClick={downloadTemplate}
-                                    className="w-full mt-2 bg-white text-[#1E40AF] border-blue-200"
+                                    className="w-full mt-2 bg-panel text-marca-tinta border-marca-linea"
                                 >
                                     <FileDown className="h-4 w-4 mr-2" />
                                     Descargar Plantilla
@@ -172,37 +172,37 @@ export default function ModalCargaMasivaEquipos({
                             </div>
 
                             {/* Panel de referencia */}
-                            <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                                <h3 className="text-sm font-bold text-[#0F172A]">Valores de Referencia</h3>
-                                <p className="text-[10px] text-[#94A3B8]">Escribe estos nombres exactamente en el CSV</p>
-                                <div className="max-h-48 overflow-y-auto border rounded bg-slate-50 p-2 space-y-3">
+                            <div className="p-4 rounded-xl border border-borde bg-panel space-y-3">
+                                <h3 className="text-sm font-bold text-tinta">Valores de Referencia</h3>
+                                <p className="text-[10px] text-tinta-tenue">Escribe estos nombres exactamente en el CSV</p>
+                                <div className="max-h-48 overflow-y-auto border rounded bg-panel-suave p-2 space-y-3">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold uppercase text-[#64748B]">Categorías</p>
+                                        <p className="text-[10px] font-bold uppercase text-tinta-media">Categorías</p>
                                         <div className="flex flex-wrap gap-1">
                                             {categorias.map((c) => (
-                                                <Badge key={c.id} variant="outline" className="text-[9px] bg-white border-slate-200">
+                                                <Badge key={c.id} variant="outline" className="text-[9px] bg-panel border-borde">
                                                     {c.nombre}
                                                 </Badge>
                                             ))}
                                         </div>
                                     </div>
                                     <div className="space-y-1 pt-2 border-t">
-                                        <p className="text-[10px] font-bold uppercase text-[#64748B]">Tipos Mant.</p>
+                                        <p className="text-[10px] font-bold uppercase text-tinta-media">Tipos Mant.</p>
                                         <div className="flex flex-wrap gap-1">
                                             {tiposMantenimiento.map((t) => (
-                                                <Badge key={t.id} variant="outline" className="text-[9px] bg-white border-slate-200">
+                                                <Badge key={t.id} variant="outline" className="text-[9px] bg-panel border-borde">
                                                     {t.nombre}
                                                 </Badge>
                                             ))}
                                         </div>
                                     </div>
                                     <div className="space-y-1 pt-2 border-t">
-                                        <p className="text-[10px] font-bold uppercase text-[#64748B] flex items-center gap-1">
+                                        <p className="text-[10px] font-bold uppercase text-tinta-media flex items-center gap-1">
                                             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
                                             Contratos Activos (numero_contrato)
                                         </p>
                                         {contratosActivos.length === 0 ? (
-                                            <p className="text-[10px] text-red-500 font-medium">
+                                            <p className="text-[10px] text-critico-tinta font-medium">
                                                 ⚠ No hay contratos activos. La carga masiva fallará para todas las filas.
                                             </p>
                                         ) : (
@@ -211,11 +211,11 @@ export default function ModalCargaMasivaEquipos({
                                                     <Badge
                                                         key={c.id}
                                                         variant="outline"
-                                                        className="text-[9px] bg-white border-green-200 text-green-700 font-mono"
+                                                        className="text-[9px] bg-panel border-ok-linea text-ok-tinta font-mono"
                                                     >
                                                         {c.numero_contrato}
                                                         {c.cliente_nombre && (
-                                                            <span className="ml-1 text-[#94A3B8] font-sans">
+                                                            <span className="ml-1 text-tinta-tenue font-sans">
                                                                 · {c.cliente_nombre}
                                                             </span>
                                                         )}
@@ -229,14 +229,14 @@ export default function ModalCargaMasivaEquipos({
                         </div>
 
                         {/* Modo de importación */}
-                        <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                            <p className="text-xs font-semibold text-[#334155]">Modo de importación:</p>
+                        <div className="flex items-center gap-4 p-3 rounded-lg bg-panel-suave border border-borde">
+                            <p className="text-xs font-semibold text-tinta-media">Modo de importación:</p>
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setModo('insert')}
                                     className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-md transition-all ${modo === 'insert'
-                                            ? 'bg-[#1E40AF] text-white shadow-sm'
-                                            : 'bg-white border border-slate-200 text-[#64748B] hover:bg-slate-100'
+                                            ? 'bg-marca text-white shadow-sm'
+                                            : 'bg-panel border border-borde text-tinta-media hover:bg-panel-suave'
                                         }`}
                                 >
                                     {modo === 'insert' ? (
@@ -250,7 +250,7 @@ export default function ModalCargaMasivaEquipos({
                                     onClick={() => setModo('upsert')}
                                     className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-md transition-all ${modo === 'upsert'
                                             ? 'bg-amber-600 text-white shadow-sm'
-                                            : 'bg-white border border-slate-200 text-[#64748B] hover:bg-slate-100'
+                                            : 'bg-panel border border-borde text-tinta-media hover:bg-panel-suave'
                                         }`}
                                 >
                                     {modo === 'upsert' ? (
@@ -261,7 +261,7 @@ export default function ModalCargaMasivaEquipos({
                                     Actualizar si existe
                                 </button>
                             </div>
-                            <p className="text-[10px] text-[#94A3B8] flex-1">
+                            <p className="text-[10px] text-tinta-tenue flex-1">
                                 {modo === 'insert'
                                     ? 'Falla si el Código MH ya existe.'
                                     : 'Si el Código MH ya existe, actualiza datos y reasigna contrato.'}
@@ -271,14 +271,14 @@ export default function ModalCargaMasivaEquipos({
                         {/* Zona de drop */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="border-2 border-dashed border-[#E2E8F0] rounded-2xl p-12 text-center hover:border-[#1E40AF] hover:bg-blue-50/30 transition-all cursor-pointer group"
+                            className="border-2 border-dashed border-borde rounded-2xl p-12 text-center hover:border-marca hover:bg-marca-suave transition-all cursor-pointer group"
                         >
                             <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                            <div className="h-14 w-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-[#1E40AF]/10 transition-all">
-                                <Upload className="h-6 w-6 text-[#94A3B8] group-hover:text-[#1E40AF]" />
+                            <div className="h-14 w-14 bg-panel-suave rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-marca-suave transition-all">
+                                <Upload className="h-6 w-6 text-tinta-tenue group-hover:text-marca-tinta" />
                             </div>
-                            <p className="text-sm font-bold text-[#0F172A]">Selecciona o arrastra tu archivo CSV</p>
-                            <p className="text-xs text-[#94A3B8] mt-1">Solo archivos .csv con el formato de la plantilla</p>
+                            <p className="text-sm font-bold text-tinta">Selecciona o arrastra tu archivo CSV</p>
+                            <p className="text-xs text-tinta-tenue mt-1">Solo archivos .csv con el formato de la plantilla</p>
                         </div>
 
                         {errorsInFile.length > 0 && (
@@ -299,12 +299,12 @@ export default function ModalCargaMasivaEquipos({
                     <div className="space-y-4 py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-sm font-bold text-[#0F172A]">Previsualización ({data.length} filas)</h3>
+                                <h3 className="text-sm font-bold text-tinta">Previsualización ({data.length} filas)</h3>
                                 <Badge
                                     variant="outline"
                                     className={`text-[10px] ${modo === 'upsert'
-                                            ? 'border-amber-300 bg-amber-50 text-amber-700'
-                                            : 'border-blue-200 bg-blue-50 text-blue-700'
+                                            ? 'border-aviso-linea bg-aviso-suave text-aviso-tinta'
+                                            : 'border-marca-linea bg-marca-suave text-marca-tinta'
                                         }`}
                                 >
                                     Modo: {modo === 'upsert' ? 'Actualizar si existe' : 'Insertar'}
@@ -319,39 +319,39 @@ export default function ModalCargaMasivaEquipos({
                                 Cambiar archivo
                             </Button>
                         </div>
-                        <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                        <div className="rounded-xl border border-borde overflow-hidden shadow-sm">
                             <div className="max-h-96 overflow-auto">
                                 <table className="w-full text-[10px] text-left">
-                                    <thead className="sticky top-0 bg-[#F8FAFC] border-b text-[#64748B] uppercase font-bold">
+                                    <thead className="sticky top-0 bg-panel-suave border-b text-tinta-media uppercase font-bold">
                                         <tr>
                                             <th className="px-3 py-2 border-r">N°</th>
                                             <th className="px-3 py-2 border-r">Código MH</th>
                                             <th className="px-3 py-2 border-r">Nombre</th>
                                             <th className="px-3 py-2 border-r">Categoría</th>
                                             <th className="px-3 py-2 border-r">Tipo Mant.</th>
-                                            <th className="px-3 py-2 border-r text-red-600">Contrato ✱</th>
+                                            <th className="px-3 py-2 border-r text-critico-tinta">Contrato ✱</th>
                                             <th className="px-3 py-2">Ubicación</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-borde-suave">
                                         {data.slice(0, 100).map((row, i) => (
-                                            <tr key={i} className={`hover:bg-slate-50 transition-colors ${!row.numero_contrato ? 'bg-red-50' : ''}`}>
-                                                <td className="px-3 py-2 border-r text-[#94A3B8]">{i + 1}</td>
-                                                <td className="px-3 py-2 border-r font-mono font-bold text-[#1E40AF]">{row.codigo_mh}</td>
-                                                <td className="px-3 py-2 border-r font-medium text-[#0F172A]">{row.nombre}</td>
-                                                <td className="px-3 py-2 border-r text-[#334155]">{row.categoria}</td>
-                                                <td className="px-3 py-2 border-r text-[#64748B]">{row.tipo_mantenimiento}</td>
-                                                <td className={`px-3 py-2 border-r font-mono ${row.numero_contrato ? 'text-green-700 font-bold' : 'text-red-500 italic'}`}>
+                                            <tr key={i} className={`hover:bg-panel-suave transition-colors ${!row.numero_contrato ? 'bg-critico-suave' : ''}`}>
+                                                <td className="px-3 py-2 border-r text-tinta-tenue">{i + 1}</td>
+                                                <td className="px-3 py-2 border-r font-mono font-bold text-marca-tinta">{row.codigo_mh}</td>
+                                                <td className="px-3 py-2 border-r font-medium text-tinta">{row.nombre}</td>
+                                                <td className="px-3 py-2 border-r text-tinta-media">{row.categoria}</td>
+                                                <td className="px-3 py-2 border-r text-tinta-media">{row.tipo_mantenimiento}</td>
+                                                <td className={`px-3 py-2 border-r font-mono ${row.numero_contrato ? 'text-ok-tinta font-bold' : 'text-critico-tinta italic'}`}>
                                                     {row.numero_contrato || '⚠ faltante'}
                                                 </td>
-                                                <td className="px-3 py-2 text-[#94A3B8]">{row.ubicacion || '—'}</td>
+                                                <td className="px-3 py-2 text-tinta-tenue">{row.ubicacion || '—'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                             {data.length > 100 && (
-                                <div className="p-2 bg-[#F8FAFC] text-center text-[10px] text-[#94A3B8] italic border-t">
+                                <div className="p-2 bg-panel-suave text-center text-[10px] text-tinta-tenue italic border-t">
                                     Mostrando solo las primeras 100 filas
                                 </div>
                             )}
@@ -366,7 +366,7 @@ export default function ModalCargaMasivaEquipos({
                                 </AlertDescription>
                             </Alert>
                         )}
-                        <Alert className="bg-amber-50 border-amber-200 text-amber-800 rounded-xl">
+                        <Alert className="bg-aviso-suave border-aviso-linea text-aviso-tinta rounded-xl">
                             <Info className="h-4 w-4" />
                             <AlertDescription className="text-[11px]">
                                 Cada equipo se insertará y asignará al contrato en una sola transacción. Si cualquier
@@ -380,45 +380,45 @@ export default function ModalCargaMasivaEquipos({
                     <div className="space-y-6 py-6">
                         <div className="text-center space-y-2">
                             {result.fallidos === 0 ? (
-                                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <CheckCircle2 className="h-8 w-8 text-green-600" />
+                                <div className="h-16 w-16 bg-ok-suave rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <CheckCircle2 className="h-8 w-8 text-ok-tinta" />
                                 </div>
                             ) : (
-                                <div className="h-16 w-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <AlertTriangle className="h-8 w-8 text-amber-600" />
+                                <div className="h-16 w-16 bg-aviso-suave rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <AlertTriangle className="h-8 w-8 text-aviso-tinta" />
                                 </div>
                             )}
-                            <h2 className="text-xl font-bold text-[#0F172A]">Importación Finalizada</h2>
+                            <h2 className="text-xl font-bold text-tinta">Importación Finalizada</h2>
                             <div className="flex items-center justify-center gap-4 mt-4">
-                                <div className="bg-green-50 px-4 py-2 rounded-lg border border-green-100">
-                                    <p className="text-[10px] text-green-600 font-bold uppercase">Insertados</p>
-                                    <p className="text-2xl font-bold text-green-700">{result.insertados}</p>
+                                <div className="bg-ok-suave px-4 py-2 rounded-lg border border-ok-linea">
+                                    <p className="text-[10px] text-ok-tinta font-bold uppercase">Insertados</p>
+                                    <p className="text-2xl font-bold text-ok-tinta">{result.insertados}</p>
                                 </div>
-                                <div className="bg-red-50 px-4 py-2 rounded-lg border border-red-100">
-                                    <p className="text-[10px] text-red-600 font-bold uppercase">Fallidos</p>
-                                    <p className="text-2xl font-bold text-red-700">{result.fallidos}</p>
+                                <div className="bg-critico-suave px-4 py-2 rounded-lg border border-critico-linea">
+                                    <p className="text-[10px] text-critico-tinta font-bold uppercase">Fallidos</p>
+                                    <p className="text-2xl font-bold text-critico-tinta">{result.fallidos}</p>
                                 </div>
                             </div>
                         </div>
 
                         {result.detalles.length > 0 && (
                             <div className="space-y-3">
-                                <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Detalle de Errores</h3>
-                                <div className="rounded-xl border border-red-100 bg-red-50/30 overflow-hidden max-h-60 overflow-y-auto">
+                                <h3 className="text-xs font-bold text-tinta-media uppercase tracking-wider">Detalle de Errores</h3>
+                                <div className="rounded-xl border border-critico-linea bg-critico-suave overflow-hidden max-h-60 overflow-y-auto">
                                     <table className="w-full text-xs">
-                                        <thead className="bg-red-50 text-red-700 font-bold text-[10px]">
+                                        <thead className="bg-critico-suave text-critico-tinta font-bold text-[10px]">
                                             <tr>
                                                 <th className="px-3 py-2">Fila</th>
                                                 <th className="px-3 py-2">Código MH</th>
                                                 <th className="px-3 py-2 text-right">Error</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-red-100">
+                                        <tbody className="divide-y divide-critico-linea">
                                             {result.detalles.map((det, idx) => (
                                                 <tr key={idx}>
-                                                    <td className="px-3 py-2 font-mono text-[#94A3B8]">{det.row}</td>
+                                                    <td className="px-3 py-2 font-mono text-tinta-tenue">{det.row}</td>
                                                     <td className="px-3 py-2 font-bold">{det.codigo_mh || '—'}</td>
-                                                    <td className="px-3 py-2 text-right text-red-600 font-medium">{det.error}</td>
+                                                    <td className="px-3 py-2 text-right text-critico-tinta font-medium">{det.error}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -430,12 +430,12 @@ export default function ModalCargaMasivaEquipos({
                 )}
             </div>
 
-            <div className="p-6 bg-[#F8FAFC] border-t flex items-center justify-between gap-3">
+            <div className="p-6 bg-panel-suave border-t flex items-center justify-between gap-3">
                 <Button
                     variant="outline"
                     onClick={step === 'result' ? onSuccess : onCancel}
                     disabled={loading}
-                    className="w-32 bg-white"
+                    className="w-32 bg-panel"
                 >
                     {step === 'result' ? 'Cerrar' : 'Cancelar'}
                 </Button>
@@ -444,7 +444,7 @@ export default function ModalCargaMasivaEquipos({
                     <Button
                         disabled={data.length === 0 || loading}
                         onClick={() => setStep('preview')}
-                        className="w-48 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                        className="w-48 bg-marca hover:bg-marca-fuerte text-white"
                     >
                         Continuar
                     </Button>
@@ -454,7 +454,7 @@ export default function ModalCargaMasivaEquipos({
                     <Button
                         disabled={loading}
                         onClick={handleImport}
-                        className={`w-56 text-white ${modo === 'upsert' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#1E40AF] hover:bg-[#1E3A8A]'}`}
+                        className={`w-56 text-white ${modo === 'upsert' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-marca hover:bg-marca-fuerte'}`}
                     >
                         {loading && <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />}
                         {modo === 'upsert' ? 'Confirmar (Actualizar si existe)' : 'Confirmar Importación'}
@@ -462,7 +462,7 @@ export default function ModalCargaMasivaEquipos({
                 )}
 
                 {step === 'result' && result && result.fallidos > 0 && (
-                    <Button variant="outline" onClick={() => setStep('upload')} className="bg-white">
+                    <Button variant="outline" onClick={() => setStep('upload')} className="bg-panel">
                         Intentar de nuevo
                     </Button>
                 )}

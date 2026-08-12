@@ -78,12 +78,12 @@ function SectionHeader({ icon: Icon, title, count, onNuevo }: {
     return (
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-[#94A3B8]" />
-                <h2 className="text-sm font-semibold text-[#0F172A]">{title}</h2>
-                <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">{count}</span>
+                <Icon className="h-4 w-4 text-tinta-tenue" />
+                <h2 className="text-sm font-semibold text-tinta">{title}</h2>
+                <span className="text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">{count}</span>
             </div>
             {puede(MODULO.CATALOGOS, PERMISO.CREAR) && (
-                <Button onClick={onNuevo} size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5 h-8 text-xs">
+                <Button onClick={onNuevo} size="sm" className="bg-marca hover:bg-marca-fuerte text-white gap-1.5 h-8 text-xs">
                     <Plus className="h-3.5 w-3.5" /> Agregar
                 </Button>
             )}
@@ -120,21 +120,21 @@ function TabCategorias({ inicial, onRefresh }: { inicial: Categoria[]; onRefresh
             <SectionHeader icon={Tag} title="Categorías de equipo" count={inicial.length} onNuevo={() => {
                 setEditando(undefined); setForm({ nombre: '', descripcion: '' }); setError(null); setModal(true)
             }} />
-            <div className="rounded-lg border border-[#E2E8F0] overflow-hidden">
+            <div className="rounded-lg border border-borde overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 pl-4">Nombre</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3">Activa</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 text-right pr-4">Acciones</TableHead>
+                        <TableRow className="bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 pl-4">Nombre</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3">Activa</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 text-right pr-4">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {inicial.map((c) => (
-                            <TableRow key={c.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
+                            <TableRow key={c.id} className="border-b border-borde hover:bg-panel-suave">
                                 <TableCell className="py-3 pl-4">
-                                    <p className="text-sm font-medium text-[#0F172A]">{c.nombre}</p>
-                                    {c.descripcion && <p className="text-xs text-[#94A3B8] mt-0.5">{c.descripcion}</p>}
+                                    <p className="text-sm font-medium text-tinta">{c.nombre}</p>
+                                    {c.descripcion && <p className="text-xs text-tinta-tenue mt-0.5">{c.descripcion}</p>}
                                 </TableCell>
                                 <TableCell className="py-3">
                                     <Switch checked={c.activa} onCheckedChange={() => handleToggle(c)} />
@@ -143,7 +143,7 @@ function TabCategorias({ inicial, onRefresh }: { inicial: Categoria[]; onRefresh
                                     <div className="flex items-center justify-end gap-1">
                                         <Button variant="ghost" size="sm" onClick={() => {
                                             setEditando(c); setForm({ nombre: c.nombre, descripcion: c.descripcion ?? '' }); setError(null); setModal(true)
-                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                        }} className="h-7 w-7 p-0 text-tinta-tenue hover:text-aviso-tinta hover:bg-aviso-suave">
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Button>
                                         {c.activa && (
@@ -158,7 +158,7 @@ function TabCategorias({ inicial, onRefresh }: { inicial: Categoria[]; onRefresh
                             </TableRow>
                         ))}
                         {inicial.length === 0 && (
-                            <TableRow><TableCell colSpan={3} className="py-8 text-center text-sm text-[#94A3B8]">Sin categorías registradas</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={3} className="py-8 text-center text-sm text-tinta-tenue">Sin categorías registradas</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
@@ -167,21 +167,21 @@ function TabCategorias({ inicial, onRefresh }: { inicial: Categoria[]; onRefresh
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
                         <DialogTitle>{editando ? 'Editar categoría' : 'Nueva categoría'}</DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">Categoría de equipo hospitalario</DialogDescription>
+                        <DialogDescription className="text-tinta-tenue">Categoría de equipo hospitalario</DialogDescription>
                     </DialogHeader>
-                    {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+                    {error && <p className="text-xs text-critico-tinta bg-critico-suave border border-critico-linea rounded px-3 py-2">{error}</p>}
                     <div className="space-y-3">
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Nombre *</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Nombre *</Label>
                             <Input value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} placeholder="Ej: Cama hospitalaria" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Descripción</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Descripción</Label>
                             <Input value={form.descripcion} onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))} placeholder="Descripción opcional" />
                         </div>
-                        <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                             <Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button>
-                            <Button onClick={guardar} disabled={!form.nombre.trim()} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white">
+                            <Button onClick={guardar} disabled={!form.nombre.trim()} className="bg-marca hover:bg-marca-fuerte text-white">
                                 {editando ? 'Actualizar' : 'Guardar'}
                             </Button>
                         </div>
@@ -262,11 +262,11 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
         <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-[#94A3B8]" />
-                    <h2 className="text-sm font-semibold text-[#0F172A]">Insumos</h2>
-                    <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">{listaFiltrada.length}</span>
+                    <Package className="h-4 w-4 text-tinta-tenue" />
+                    <h2 className="text-sm font-semibold text-tinta">Insumos</h2>
+                    <span className="text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">{listaFiltrada.length}</span>
                     {nombresConDuplicado.size > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-xs text-aviso-tinta bg-aviso-suave border border-aviso-linea rounded-full px-2 py-0.5">
                             <AlertTriangle className="h-3 w-3" />
                             {nombresConDuplicado.size} nombre{nombresConDuplicado.size > 1 ? 's' : ''} duplicado{nombresConDuplicado.size > 1 ? 's' : ''}
                         </span>
@@ -278,11 +278,11 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                         placeholder="Buscar por código o nombre..."
                         value={search}
                         onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full sm:w-56 max-w-sm h-8 mt-0 bg-white"
+                        className="w-full sm:w-56 max-w-sm h-8 mt-0 bg-panel"
                     />
 
                     <Select value={filtroEstado} onValueChange={(v) => setFiltroEstado(v as typeof filtroEstado)}>
-                        <SelectTrigger className="w-36 h-8 bg-white border-[#E2E8F0]" id="filtro-estado-insumo">
+                        <SelectTrigger className="w-36 h-8 bg-panel border-borde" id="filtro-estado-insumo">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -294,36 +294,36 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
 
                     <Button onClick={() => {
                         setEditando(undefined); setForm({ nombre: '', codigo: '', unidad_medida: 'Unidad' }); setError(null); setModal(true)
-                    }} size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5 h-8 text-xs shrink-0">
+                    }} size="sm" className="bg-marca hover:bg-marca-fuerte text-white gap-1.5 h-8 text-xs shrink-0">
                         <Plus className="h-3.5 w-3.5" /> Agregar
                     </Button>
                 </div>
             </div>
-            <div className="rounded-lg border border-[#E2E8F0] overflow-hidden">
+            <div className="rounded-lg border border-borde overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 pl-4">Nombre</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 hidden sm:table-cell">Código</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 hidden md:table-cell">Unidad</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3">Estado</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 text-right pr-4">Acciones</TableHead>
+                        <TableRow className="bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 pl-4">Nombre</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 hidden sm:table-cell">Código</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 hidden md:table-cell">Unidad</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3">Estado</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 text-right pr-4">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {listaFiltrada.map((i: Insumo) => {
                             const esDuplicado = nombresConDuplicado.has(i.nombre.trim().toLowerCase())
                             return (
-                            <TableRow key={i.id} className={`border-b border-[#E2E8F0] hover:bg-[#F8FAFC] ${esDuplicado ? 'bg-amber-50/40' : ''}`}>
+                            <TableRow key={i.id} className={`border-b border-borde hover:bg-panel-suave ${esDuplicado ? 'bg-aviso-suave' : ''}`}>
                                 <TableCell className="py-3 pl-4">
                                     <div className="flex items-center gap-1.5">
-                                        <p className="text-sm font-medium text-[#0F172A]">{i.nombre}</p>
+                                        <p className="text-sm font-medium text-tinta">{i.nombre}</p>
                                         {esDuplicado && (
                                             <TooltipProvider delayDuration={200}>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <span className="cursor-help">
-                                                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                                            <AlertTriangle className="h-3.5 w-3.5 text-aviso-tinta shrink-0" />
                                                         </span>
                                                     </TooltipTrigger>
                                                     <TooltipContent side="right" className="text-xs">
@@ -334,8 +334,8 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                                         )}
                                     </div>
                                 </TableCell>
-                                <TableCell className="py-3 hidden sm:table-cell"><span className="text-xs font-mono text-[#334155]">{i.codigo ?? '—'}</span></TableCell>
-                                <TableCell className="py-3 hidden md:table-cell"><span className="text-sm text-[#334155]">{i.unidad_medida}</span></TableCell>
+                                <TableCell className="py-3 hidden sm:table-cell"><span className="text-xs font-mono text-tinta-media">{i.codigo ?? '—'}</span></TableCell>
+                                <TableCell className="py-3 hidden md:table-cell"><span className="text-sm text-tinta-media">{i.unidad_medida}</span></TableCell>
                                 <TableCell className="py-3">
                                     <Switch checked={i.activo} onCheckedChange={() => handleToggle(i)} />
                                 </TableCell>
@@ -343,7 +343,7 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                                     <div className="flex items-center justify-end gap-1">
                                         <Button variant="ghost" size="sm" onClick={() => {
                                             setEditando(i); setForm({ nombre: i.nombre, codigo: i.codigo ?? '', unidad_medida: i.unidad_medida }); setError(null); setModal(true)
-                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                        }} className="h-7 w-7 p-0 text-tinta-tenue hover:text-aviso-tinta hover:bg-aviso-suave">
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Button>
                                         {i.activo && (
@@ -359,7 +359,7 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                             )
                         })}
                         {listaFiltrada.length === 0 && (
-                            <TableRow><TableCell colSpan={5} className="py-8 text-center text-sm text-[#94A3B8]">No hay insumos{filtroEstado !== 'todos' ? ` con estado ${filtroEstado}` : ''}</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="py-8 text-center text-sm text-tinta-tenue">No hay insumos{filtroEstado !== 'todos' ? ` con estado ${filtroEstado}` : ''}</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
@@ -368,27 +368,27 @@ function TabInsumos({ inicial, onRefresh }: { inicial: Insumo[]; onRefresh: () =
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
                         <DialogTitle>{editando ? 'Editar insumo' : 'Nuevo insumo'}</DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">Material o repuesto usado en mantenimientos</DialogDescription>
+                        <DialogDescription className="text-tinta-tenue">Material o repuesto usado en mantenimientos</DialogDescription>
                     </DialogHeader>
-                    {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+                    {error && <p className="text-xs text-critico-tinta bg-critico-suave border border-critico-linea rounded px-3 py-2">{error}</p>}
                     <div className="space-y-3">
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Nombre *</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Nombre *</Label>
                             <Input value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} placeholder="Nombre del insumo" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                                <Label className="text-sm font-medium text-[#334155]">Código interno</Label>
+                                <Label className="text-sm font-medium text-tinta-media">Código interno</Label>
                                 <Input value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} placeholder="LUB-001" className="font-mono" />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-sm font-medium text-[#334155]">Unidad</Label>
+                                <Label className="text-sm font-medium text-tinta-media">Unidad</Label>
                                 <Input value={form.unidad_medida} onChange={(e) => setForm((p) => ({ ...p, unidad_medida: e.target.value }))} placeholder="Unidad" />
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                             <Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button>
-                            <Button onClick={guardar} disabled={!form.nombre.trim()} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white">
+                            <Button onClick={guardar} disabled={!form.nombre.trim()} className="bg-marca hover:bg-marca-fuerte text-white">
                                 {editando ? 'Actualizar' : 'Guardar'}
                             </Button>
                         </div>
@@ -432,14 +432,14 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
         <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#94A3B8]" />
-                    <h2 className="text-sm font-semibold text-[#0F172A]">Ubicaciones</h2>
-                    <span className="text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">{listaFiltrada.length}</span>
+                    <MapPin className="h-4 w-4 text-tinta-tenue" />
+                    <h2 className="text-sm font-semibold text-tinta">Ubicaciones</h2>
+                    <span className="text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">{listaFiltrada.length}</span>
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                        <SelectTrigger className="w-[180px] h-8 bg-white"><SelectValue placeholder="Todos los clientes" /></SelectTrigger>
+                        <SelectTrigger className="w-[180px] h-8 bg-panel"><SelectValue placeholder="Todos los clientes" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="todos">Todos los clientes</SelectItem>
                             {clientesList.filter(c => c.activo).map((c) => (
@@ -449,30 +449,30 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                     </Select>
                     <Button onClick={() => {
                         setEditando(undefined); setForm({ nombre: '', cliente_id: '', descripcion: '' }); setError(null); setModal(true)
-                    }} size="sm" className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5 h-8 text-xs shrink-0">
+                    }} size="sm" className="bg-marca hover:bg-marca-fuerte text-white gap-1.5 h-8 text-xs shrink-0">
                         <Plus className="h-3.5 w-3.5" /> Agregar
                     </Button>
                 </div>
             </div>
-            <div className="rounded-lg border border-[#E2E8F0] overflow-hidden">
+            <div className="rounded-lg border border-borde overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 pl-4">Nombre</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 hidden md:table-cell">Cliente</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3">Activa</TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase py-3 text-right pr-4">Acciones</TableHead>
+                        <TableRow className="bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 pl-4">Nombre</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 hidden md:table-cell">Cliente</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3">Activa</TableHead>
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase py-3 text-right pr-4">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {listaFiltrada.map((u) => (
-                            <TableRow key={u.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]">
+                            <TableRow key={u.id} className="border-b border-borde hover:bg-panel-suave">
                                 <TableCell className="py-3 pl-4">
-                                    <p className="text-sm font-medium text-[#0F172A]">{u.nombre}</p>
-                                    {u.descripcion && <p className="text-xs text-[#94A3B8] mt-0.5">{u.descripcion}</p>}
+                                    <p className="text-sm font-medium text-tinta">{u.nombre}</p>
+                                    {u.descripcion && <p className="text-xs text-tinta-tenue mt-0.5">{u.descripcion}</p>}
                                 </TableCell>
                                 <TableCell className="py-3 hidden md:table-cell">
-                                    <span className="text-sm text-[#334155]">{clienteMap[u.cliente_id] ?? '—'}</span>
+                                    <span className="text-sm text-tinta-media">{clienteMap[u.cliente_id] ?? '—'}</span>
                                 </TableCell>
                                 <TableCell className="py-3">
                                     <Switch checked={u.activa} onCheckedChange={() => handleToggle(u)} />
@@ -481,7 +481,7 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                                     <div className="flex items-center justify-end gap-1">
                                         <Button variant="ghost" size="sm" onClick={() => {
                                             setEditando(u); setForm({ nombre: u.nombre, cliente_id: u.cliente_id, descripcion: u.descripcion ?? '' }); setError(null); setModal(true)
-                                        }} className="h-7 w-7 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50">
+                                        }} className="h-7 w-7 p-0 text-tinta-tenue hover:text-aviso-tinta hover:bg-aviso-suave">
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Button>
                                         {u.activa && (
@@ -496,7 +496,7 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                             </TableRow>
                         ))}
                         {listaFiltrada.length === 0 && (
-                            <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-[#94A3B8]">Sin ubicaciones registradas o no hay para este filtro</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-tinta-tenue">Sin ubicaciones registradas o no hay para este filtro</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
@@ -505,16 +505,16 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
                         <DialogTitle>{editando ? 'Editar ubicación' : 'Nueva ubicación'}</DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">Piso, sala o área dentro de un cliente</DialogDescription>
+                        <DialogDescription className="text-tinta-tenue">Piso, sala o área dentro de un cliente</DialogDescription>
                     </DialogHeader>
-                    {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+                    {error && <p className="text-xs text-critico-tinta bg-critico-suave border border-critico-linea rounded px-3 py-2">{error}</p>}
                     <div className="space-y-3">
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Nombre *</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Nombre *</Label>
                             <Input value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} placeholder="Ej: UCI Piso 3" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Cliente *</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Cliente *</Label>
                             <Select value={form.cliente_id} onValueChange={(v) => setForm((p) => ({ ...p, cliente_id: v }))}>
                                 <SelectTrigger><SelectValue placeholder="Selecciona un cliente…" /></SelectTrigger>
                                 <SelectContent>
@@ -523,12 +523,12 @@ function TabUbicaciones({ inicial, clientesList, onRefresh }: { inicial: Ubicaci
                             </Select>
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-[#334155]">Descripción</Label>
+                            <Label className="text-sm font-medium text-tinta-media">Descripción</Label>
                             <Input value={form.descripcion} onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))} placeholder="Descripción opcional" />
                         </div>
-                        <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                             <Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button>
-                            <Button onClick={guardar} disabled={!form.nombre.trim() || !form.cliente_id} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white">
+                            <Button onClick={guardar} disabled={!form.nombre.trim() || !form.cliente_id} className="bg-marca hover:bg-marca-fuerte text-white">
                                 {editando ? 'Actualizar' : 'Guardar'}
                             </Button>
                         </div>
@@ -581,11 +581,11 @@ function TabChecklist({ categorias }: { categorias: Categoria[] }) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-5">
-                <CheckSquare className="h-4 w-4 text-[#94A3B8]" />
-                <h2 className="text-sm font-semibold text-[#0F172A]">Checklist por categoría</h2>
+                <CheckSquare className="h-4 w-4 text-tinta-tenue" />
+                <h2 className="text-sm font-semibold text-tinta">Checklist por categoría</h2>
                 <div className="ml-auto w-56">
                     <Select value={categoriaId} onValueChange={(v) => { setCategoriaId(v); cargarActividades(v) }}>
-                        <SelectTrigger className="h-8 text-sm bg-white border-[#E2E8F0]" id="selector-categoria-checklist"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 text-sm bg-panel border-borde" id="selector-categoria-checklist"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             {categorias.map((c) => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
                         </SelectContent>
@@ -594,20 +594,20 @@ function TabChecklist({ categorias }: { categorias: Categoria[] }) {
             </div>
 
             {cargando ? (
-                <div className="py-8 text-center text-sm text-[#94A3B8]">Cargando actividades…</div>
+                <div className="py-8 text-center text-sm text-tinta-tenue">Cargando actividades…</div>
             ) : actuales.length === 0 ? (
-                <div className="flex flex-col items-center py-12 text-center rounded-lg border border-dashed border-[#E2E8F0]">
-                    <CheckSquare className="h-8 w-8 text-[#E2E8F0] mb-2" />
-                    <p className="text-sm text-[#94A3B8]">Sin actividades. Agrega la primera abajo.</p>
+                <div className="flex flex-col items-center py-12 text-center rounded-lg border border-dashed border-borde">
+                    <CheckSquare className="h-8 w-8 text-borde mb-2" />
+                    <p className="text-sm text-tinta-tenue">Sin actividades. Agrega la primera abajo.</p>
                 </div>
             ) : (
                 <div className="space-y-1.5">
                     {actuales.map((a, idx) => (
-                        <div key={a.id} className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${a.activa ? 'border-[#E2E8F0] bg-white' : 'border-[#E2E8F0] bg-[#F8FAFC] opacity-60'}`}>
-                            <GripVertical className="h-4 w-4 text-[#CBD5E1] cursor-grab shrink-0" aria-label="Reordenar (Bloque 3)" />
-                            <span className="text-xs font-mono text-[#94A3B8] w-5 shrink-0">{idx + 1}.</span>
-                            <p className={`text-sm flex-1 ${a.activa ? 'text-[#334155]' : 'text-[#94A3B8] line-through'}`}>{a.descripcion}</p>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${a.obligatoria ? 'bg-red-50 text-red-700 border-red-200' : 'bg-[#F1F5F9] text-[#94A3B8] border-[#E2E8F0]'}`}>
+                        <div key={a.id} className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${a.activa ? 'border-borde bg-panel' : 'border-borde bg-panel-suave opacity-60'}`}>
+                            <GripVertical className="h-4 w-4 text-tinta-tenue cursor-grab shrink-0" aria-label="Reordenar (Bloque 3)" />
+                            <span className="text-xs font-mono text-tinta-tenue w-5 shrink-0">{idx + 1}.</span>
+                            <p className={`text-sm flex-1 ${a.activa ? 'text-tinta-media' : 'text-tinta-tenue line-through'}`}>{a.descripcion}</p>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${a.obligatoria ? 'bg-critico-suave text-critico-tinta border-critico-linea' : 'bg-panel-suave text-tinta-tenue border-borde'}`}>
                                 {a.obligatoria ? 'Obligatoria' : 'Opcional'}
                             </span>
                             <Switch checked={a.activa} onCheckedChange={() => handleToggleActiva(a)} />
@@ -620,13 +620,13 @@ function TabChecklist({ categorias }: { categorias: Categoria[] }) {
                 <Input value={nuevaDesc} onChange={(e) => setNuevaDesc(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && agregarActividad()}
                     placeholder="Nueva actividad… (Enter para agregar)"
-                    className="flex-1 bg-white border-[#E2E8F0]" id="input-nueva-actividad" />
+                    className="flex-1 bg-panel border-borde" id="input-nueva-actividad" />
                 <Button onClick={agregarActividad} disabled={!nuevaDesc.trim() || !categoriaId}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-1.5">
+                    className="bg-marca hover:bg-marca-fuerte text-white gap-1.5">
                     <Plus className="h-4 w-4" /> Agregar
                 </Button>
             </div>
-            <p className="text-xs text-[#94A3B8] mt-2">💡 Drag & drop para reordenar estará disponible en Bloque 3.</p>
+            <p className="text-xs text-tinta-tenue mt-2">💡 Drag & drop para reordenar estará disponible en Bloque 3.</p>
         </div>
     )
 }
@@ -696,12 +696,12 @@ export default function CatalogosClient({
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <BookOpen className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <BookOpen className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Catálogos</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">Gestiona categorías, insumos, ubicaciones y checklists</p>
+                        <h1 className="text-xl font-bold text-tinta leading-none">Catálogos</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">Gestiona categorías, insumos, ubicaciones y checklists</p>
                     </div>
                 </div>
 
@@ -710,7 +710,7 @@ export default function CatalogosClient({
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="outline"
-                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                             id="btn-exportar-catalogos"
                         >
                             <Download className="h-4 w-4" />
@@ -720,19 +720,19 @@ export default function CatalogosClient({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuItem onClick={exportarCategorias}>
-                            <Tag className="h-4 w-4 mr-2 text-[#94A3B8]" />
+                            <Tag className="h-4 w-4 mr-2 text-tinta-tenue" />
                             Categorías de equipo
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={exportarTipos}>
-                            <CheckSquare className="h-4 w-4 mr-2 text-[#94A3B8]" />
+                            <CheckSquare className="h-4 w-4 mr-2 text-tinta-tenue" />
                             Tipos de mantenimiento
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={exportarInsumos}>
-                            <Package className="h-4 w-4 mr-2 text-[#94A3B8]" />
+                            <Package className="h-4 w-4 mr-2 text-tinta-tenue" />
                             Insumos
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={exportarUbicaciones}>
-                            <MapPin className="h-4 w-4 mr-2 text-[#94A3B8]" />
+                            <MapPin className="h-4 w-4 mr-2 text-tinta-tenue" />
                             Ubicaciones
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -740,22 +740,22 @@ export default function CatalogosClient({
             </div>
 
             <Tabs defaultValue="categorias" className="w-full">
-                <TabsList className="bg-[#F1F5F9] border border-[#E2E8F0] h-10">
-                    <TabsTrigger value="categorias" className="text-sm gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm" id="tab-categorias">
+                <TabsList className="bg-panel-suave border border-borde h-10">
+                    <TabsTrigger value="categorias" className="text-sm gap-1.5 data-[state=active]:bg-panel data-[state=active]:shadow-sm" id="tab-categorias">
                         <Tag className="h-3.5 w-3.5" /> Categorías
                     </TabsTrigger>
-                    <TabsTrigger value="insumos" className="text-sm gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm" id="tab-insumos">
+                    <TabsTrigger value="insumos" className="text-sm gap-1.5 data-[state=active]:bg-panel data-[state=active]:shadow-sm" id="tab-insumos">
                         <Package className="h-3.5 w-3.5" /> Insumos
                     </TabsTrigger>
-                    <TabsTrigger value="ubicaciones" className="text-sm gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm" id="tab-ubicaciones">
+                    <TabsTrigger value="ubicaciones" className="text-sm gap-1.5 data-[state=active]:bg-panel data-[state=active]:shadow-sm" id="tab-ubicaciones">
                         <MapPin className="h-3.5 w-3.5" /> Ubicaciones
                     </TabsTrigger>
-                    <TabsTrigger value="checklist" className="text-sm gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm" id="tab-checklist">
+                    <TabsTrigger value="checklist" className="text-sm gap-1.5 data-[state=active]:bg-panel data-[state=active]:shadow-sm" id="tab-checklist">
                         <CheckSquare className="h-3.5 w-3.5" /> Checklist
                     </TabsTrigger>
                 </TabsList>
 
-                <div className="mt-6 rounded-xl bg-white border border-[#E2E8F0] shadow-sm p-5">
+                <div className="mt-6 rounded-xl bg-panel border border-borde shadow-sm p-5">
                     <TabsContent value="categorias" className="mt-0">
                         <TabCategorias inicial={categoriasIniciales} onRefresh={refresh} />
                     </TabsContent>

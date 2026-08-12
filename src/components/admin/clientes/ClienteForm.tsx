@@ -135,23 +135,23 @@ export default function ClienteForm({
         >
             {/* ── Razón social ─────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="razon_social" className="text-sm font-medium text-[#334155]">
-                    Nombre / Razón social <span className="text-red-500">*</span>
+                <Label htmlFor="razon_social" className="text-sm font-medium text-tinta-media">
+                    Nombre / Razón social <span className="text-critico-tinta">*</span>
                 </Label>
                 <Input
                     id="razon_social"
                     placeholder="Ej: Clínica San Lucas S.A."
                     {...register('razon_social')}
-                    className={errors.razon_social ? 'border-red-400 focus-visible:ring-red-300' : ''}
+                    className={errors.razon_social ? 'border-critico-linea focus-visible:ring-critico-linea' : ''}
                 />
                 {errors.razon_social && (
-                    <p className="text-xs text-red-500">{errors.razon_social.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.razon_social.message}</p>
                 )}
             </div>
 
             {/* ── RUC ──────────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="ruc" className="text-sm font-medium text-[#334155]">
+                <Label htmlFor="ruc" className="text-sm font-medium text-tinta-media">
                     RUC
                 </Label>
                 <Input
@@ -159,17 +159,17 @@ export default function ClienteForm({
                     placeholder="0991234567001"
                     maxLength={13}
                     {...register('ruc')}
-                    className={errors.ruc ? 'border-red-400 focus-visible:ring-red-300' : ''}
+                    className={errors.ruc ? 'border-critico-linea focus-visible:ring-critico-linea' : ''}
                 />
                 {errors.ruc && (
-                    <p className="text-xs text-red-500">{errors.ruc.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.ruc.message}</p>
                 )}
             </div>
 
             {/* ── Email + Teléfono (2 columnas) ──────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="email" className="text-sm font-medium text-tinta-media">
                         Email
                     </Label>
                     <Input
@@ -177,32 +177,32 @@ export default function ClienteForm({
                         type="email"
                         placeholder="admin@clinica.com"
                         {...register('email')}
-                        className={errors.email ? 'border-red-400 focus-visible:ring-red-300' : ''}
+                        className={errors.email ? 'border-critico-linea focus-visible:ring-critico-linea' : ''}
                     />
                     {errors.email && (
-                        <p className="text-xs text-red-500">{errors.email.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.email.message}</p>
                     )}
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label htmlFor="telefono" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="telefono" className="text-sm font-medium text-tinta-media">
                         Teléfono
                     </Label>
                     <Input
                         id="telefono"
                         placeholder="+593 4 234-5678"
                         {...register('telefono')}
-                        className={errors.telefono ? 'border-red-400 focus-visible:ring-red-300' : ''}
+                        className={errors.telefono ? 'border-critico-linea focus-visible:ring-critico-linea' : ''}
                     />
                     {errors.telefono && (
-                        <p className="text-xs text-red-500">{errors.telefono.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.telefono.message}</p>
                     )}
                 </div>
             </div>
 
             {/* ── Dirección ────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="direccion" className="text-sm font-medium text-[#334155]">
+                <Label htmlFor="direccion" className="text-sm font-medium text-tinta-media">
                     Dirección
                 </Label>
                 <Textarea
@@ -210,16 +210,16 @@ export default function ClienteForm({
                     placeholder="Av. 9 de Octubre 1234, Guayaquil"
                     rows={2}
                     {...register('direccion')}
-                    className={`resize-none ${errors.direccion ? 'border-red-400 focus-visible:ring-red-300' : ''}`}
+                    className={`resize-none ${errors.direccion ? 'border-critico-linea focus-visible:ring-critico-linea' : ''}`}
                 />
                 {errors.direccion && (
-                    <p className="text-xs text-red-500">{errors.direccion.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.direccion.message}</p>
                 )}
             </div>
 
             {/* ── Estado ───────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-[#334155]">
+                <Label className="text-sm font-medium text-tinta-media">
                     Estado
                 </Label>
                 <Select
@@ -237,20 +237,20 @@ export default function ClienteForm({
             </div>
 
             {/* ── Acciones ────────────────────────────────── */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+            <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={onCancelar}
                     disabled={isLoading}
-                    className="text-[#334155]"
+                    className="text-tinta-media"
                 >
                     Cancelar
                 </Button>
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                    className="bg-marca hover:bg-marca-fuerte text-white"
                 >
                     {isLoading
                         ? 'Guardando…'

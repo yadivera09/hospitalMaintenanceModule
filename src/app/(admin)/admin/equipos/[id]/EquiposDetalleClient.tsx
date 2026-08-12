@@ -92,9 +92,9 @@ function formatFechaHora(fecha: string | null): string {
 }
 
 const ESTADO_BADGE: Record<EstadoEquipo, { label: string; className: string }> = {
-    activo: { label: 'Activo', className: 'bg-green-50 text-green-700 border border-green-200' },
-    almacenado: { label: 'Almacenado', className: 'bg-blue-50 text-blue-700 border border-blue-200' },
-    baja: { label: 'Baja', className: 'bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0]' },
+    activo: { label: 'Activo', className: 'bg-ok-suave text-ok-tinta border border-ok-linea' },
+    almacenado: { label: 'Almacenado', className: 'bg-marca-suave text-marca-tinta border border-marca-linea' },
+    baja: { label: 'Baja', className: 'bg-panel-suave text-tinta-tenue border border-borde' },
 }
 
 const ESTADO_REPORTE_CONFIG: Record<string, {
@@ -102,9 +102,9 @@ const ESTADO_REPORTE_CONFIG: Record<string, {
     label: string;
     className: string;
 }> = {
-    en_progreso: { icon: AlertCircle, label: 'En progreso', className: 'text-indigo-600' },
-    cerrado: { icon: CheckCircle2, label: 'Cerrado', className: 'text-green-600' },
-    anulado: { icon: XCircle, label: 'Anulado', className: 'text-red-500' },
+    en_progreso: { icon: AlertCircle, label: 'En progreso', className: 'text-marca-tinta' },
+    cerrado: { icon: CheckCircle2, label: 'Cerrado', className: 'text-ok-tinta' },
+    anulado: { icon: XCircle, label: 'Anulado', className: 'text-critico-tinta' },
 }
 
 // Fila de dato en ficha
@@ -118,13 +118,13 @@ function FichaFila({
     children: React.ReactNode
 }) {
     return (
-        <div className="flex items-start gap-3 py-2.5 border-b border-[#E2E8F0] last:border-0">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F1F5F9]">
-                <Icon className="h-3 w-3 text-[#94A3B8]" />
+        <div className="flex items-start gap-3 py-2.5 border-b border-borde last:border-0">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-panel-suave">
+                <Icon className="h-3 w-3 text-tinta-tenue" />
             </div>
             <div className="min-w-0">
-                <p className="text-xs text-[#94A3B8]">{label}</p>
-                <div className="mt-0.5 text-sm text-[#334155]">{children}</div>
+                <p className="text-xs text-tinta-tenue">{label}</p>
+                <div className="mt-0.5 text-sm text-tinta-media">{children}</div>
             </div>
         </div>
     )
@@ -155,8 +155,8 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
     if (errorInicial || !equipoActual) {
         return (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-                <Stethoscope className="h-12 w-12 text-[#E2E8F0] mb-4" />
-                <h2 className="text-lg font-bold text-[#0F172A]">{errorInicial || 'Equipo no encontrado'}</h2>
+                <Stethoscope className="h-12 w-12 text-borde mb-4" />
+                <h2 className="text-lg font-bold text-tinta">{errorInicial || 'Equipo no encontrado'}</h2>
                 <Button variant="outline" className="mt-6" onClick={() => router.push('/admin/equipos')}>
                     Volver a Equipos
                 </Button>
@@ -201,7 +201,7 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push('/admin/equipos')}
-                className="gap-1.5 text-[#94A3B8] hover:text-[#334155] -ml-2 px-2"
+                className="gap-1.5 text-tinta-tenue hover:text-tinta-media -ml-2 px-2"
             >
                 <ArrowLeft className="h-4 w-4" />
                 Equipos
@@ -210,20 +210,20 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
             {/* ── Encabezado ────────────────────────────────────────── */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1E40AF]/10">
-                        <Stethoscope className="h-6 w-6 text-[#1E40AF]" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-marca-suave">
+                        <Stethoscope className="h-6 w-6 text-marca-tinta" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-xl font-bold font-mono text-[#0F172A]">
+                            <h1 className="text-xl font-bold font-mono text-tinta">
                                 {equipoActual.codigo_mh}
                             </h1>
                             <Badge className={`text-xs font-medium px-2 py-0.5 rounded-sm ${badgeCfg.className}`}>
                                 {badgeCfg.label}
                             </Badge>
                         </div>
-                        <p className="text-sm text-[#334155] mt-0.5">{equipoActual.nombre}</p>
-                        <p className="text-xs text-[#94A3B8]">
+                        <p className="text-sm text-tinta-media mt-0.5">{equipoActual.nombre}</p>
+                        <p className="text-xs text-tinta-tenue">
                             {[equipoActual.marca, equipoActual.modelo].filter(Boolean).join(' · ')}
                         </p>
                     </div>
@@ -235,7 +235,7 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                         <Button
                             variant="outline"
                             onClick={() => setModalAsignarAbierto(true)}
-                            className="gap-2 text-[#334155]"
+                            className="gap-2 text-tinta-media"
                             id="btn-asignar-contrato"
                         >
                             <Link2 className="h-4 w-4" />
@@ -245,7 +245,7 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                     {puedeEditar && (
                     <Button
                         onClick={() => setModalEditarAbierto(true)}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
+                        className="bg-marca hover:bg-marca-fuerte text-white gap-2"
                         id="btn-editar-equipo"
                     >
                         <Pencil className="h-4 w-4" />
@@ -259,8 +259,8 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
                 {/* Ficha del equipo (3/5) */}
-                <div className="lg:col-span-3 rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-5">
-                    <h2 className="text-sm font-semibold text-[#0F172A] mb-3">Ficha técnica</h2>
+                <div className="lg:col-span-3 rounded-xl border border-borde bg-panel shadow-sm p-5">
+                    <h2 className="text-sm font-semibold text-tinta mb-3">Ficha técnica</h2>
 
                     <div className="grid grid-cols-2 gap-x-6">
                         <div>
@@ -287,9 +287,9 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                     </div>
 
                     {equipoActual.observaciones && (
-                        <div className="mt-3 pt-3 border-t border-[#E2E8F0]">
-                            <p className="text-xs text-[#94A3B8] mb-1">Observaciones</p>
-                            <p className="text-sm text-[#334155] whitespace-pre-line">
+                        <div className="mt-3 pt-3 border-t border-borde">
+                            <p className="text-xs text-tinta-tenue mb-1">Observaciones</p>
+                            <p className="text-sm text-tinta-media whitespace-pre-line">
                                 {equipoActual.observaciones}
                             </p>
                         </div>
@@ -297,10 +297,10 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                 </div>
 
                 {/* Card: Contrato vigente (2/5) */}
-                <div className="lg:col-span-2 rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-5">
+                <div className="lg:col-span-2 rounded-xl border border-borde bg-panel shadow-sm p-5">
                     <div className="flex items-center gap-2 mb-3">
-                        <FileText className="h-4 w-4 text-[#94A3B8]" />
-                        <h2 className="text-sm font-semibold text-[#0F172A]">Contrato vigente</h2>
+                        <FileText className="h-4 w-4 text-tinta-tenue" />
+                        <h2 className="text-sm font-semibold text-tinta">Contrato vigente</h2>
                     </div>
 
                     {contratoVigente ? (
@@ -308,51 +308,51 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                             <div>
                                 <button
                                     onClick={() => router.push(`/admin/contratos/${contratoVigente.contrato_id}`)}
-                                    className="text-base font-bold font-mono text-[#1E40AF] hover:underline"
+                                    className="text-base font-bold font-mono text-marca-tinta hover:underline"
                                 >
                                     {contratoVigente.numero_contrato}
                                 </button>
                             </div>
                             <div className="flex items-start gap-2">
-                                <Building2 className="h-4 w-4 text-[#94A3B8] mt-0.5 shrink-0" />
+                                <Building2 className="h-4 w-4 text-tinta-tenue mt-0.5 shrink-0" />
                                 <div>
-                                    <p className="text-xs text-[#94A3B8]">Cliente</p>
+                                    <p className="text-xs text-tinta-tenue">Cliente</p>
                                     <button
                                         onClick={() => router.push(`/admin/clientes/${contratoVigente.cliente_id}`)}
-                                        className="text-sm font-medium text-[#1E40AF] hover:underline text-left"
+                                        className="text-sm font-medium text-marca-tinta hover:underline text-left"
                                     >
                                         {contratoVigente.cliente_nombre}
                                     </button>
                                 </div>
                             </div>
                             <div className="flex items-start gap-2">
-                                <CalendarDays className="h-4 w-4 text-[#94A3B8] mt-0.5 shrink-0" />
+                                <CalendarDays className="h-4 w-4 text-tinta-tenue mt-0.5 shrink-0" />
                                 <div>
-                                    <p className="text-xs text-[#94A3B8]">Asignado desde</p>
-                                    <p className="text-sm text-[#334155]">
+                                    <p className="text-xs text-tinta-tenue">Asignado desde</p>
+                                    <p className="text-sm text-tinta-media">
                                         {formatFecha(contratoVigente.fecha_asignacion)}
                                     </p>
                                 </div>
                             </div>
                             {contratoVigente.ubicacion && (
                                 <div className="flex items-start gap-2">
-                                    <MapPin className="h-4 w-4 text-[#94A3B8] mt-0.5 shrink-0" />
+                                    <MapPin className="h-4 w-4 text-tinta-tenue mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="text-xs text-[#94A3B8]">Ubicación</p>
-                                        <p className="text-sm text-[#334155]">{contratoVigente.ubicacion}</p>
+                                        <p className="text-xs text-tinta-tenue">Ubicación</p>
+                                        <p className="text-sm text-tinta-media">{contratoVigente.ubicacion}</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] mb-3">
-                                <FileText className="h-5 w-5 text-[#94A3B8]" />
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-panel-suave mb-3">
+                                <FileText className="h-5 w-5 text-tinta-tenue" />
                             </div>
-                            <Badge className="bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0] text-xs mb-2">
+                            <Badge className="bg-panel-suave text-tinta-tenue border border-borde text-xs mb-2">
                                 Sin contrato
                             </Badge>
-                            <p className="text-xs text-[#94A3B8]">
+                            <p className="text-xs text-tinta-tenue">
                                 Este equipo no está asignado a ningún contrato vigente.
                             </p>
                             {puedeEditar && (
@@ -375,27 +375,27 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Historial de contratos */}
-                <div className="rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-5">
+                <div className="rounded-xl border border-borde bg-panel shadow-sm p-5">
                     <div className="flex items-center gap-2 mb-4">
-                        <History className="h-4 w-4 text-[#94A3B8]" />
-                        <h2 className="text-sm font-semibold text-[#0F172A]">
+                        <History className="h-4 w-4 text-tinta-tenue" />
+                        <h2 className="text-sm font-semibold text-tinta">
                             Historial de contratos
                         </h2>
-                        <span className="ml-auto text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">
+                        <span className="ml-auto text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">
                             {historialContratos.length}
                         </span>
                     </div>
 
                     {historialContratos.length === 0 ? (
                         <div className="flex flex-col items-center py-8 text-center">
-                            <History className="h-7 w-7 text-[#E2E8F0] mb-2" />
-                            <p className="text-sm text-[#94A3B8]">Sin historial de contratos</p>
+                            <History className="h-7 w-7 text-borde mb-2" />
+                            <p className="text-sm text-tinta-tenue">Sin historial de contratos</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="bg-[#F8FAFC]">
+                                    <TableRow className="bg-panel-suave">
                                         <TableHead className="text-xs py-2 pl-3">Contrato</TableHead>
                                         <TableHead className="text-xs py-2 hidden sm:table-cell">Ub icación</TableHead>
                                         <TableHead className="text-xs py-2">Desde</TableHead>
@@ -404,26 +404,26 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                                 </TableHeader>
                                 <TableBody>
                                     {historialContratos.map((h: any) => (
-                                        <TableRow key={h.id} className="border-b border-[#E2E8F0]">
+                                        <TableRow key={h.id} className="border-b border-borde">
                                             <TableCell className="py-2.5 pl-3">
                                                 <button
                                                     onClick={() => router.push(`/admin/contratos/${h.contrato?.id}`)}
-                                                    className="text-xs font-mono text-[#1E40AF] hover:underline font-semibold"
+                                                    className="text-xs font-mono text-marca-tinta hover:underline font-semibold"
                                                 >
                                                     {h.contrato?.numero_contrato ?? '—'}
                                                 </button>
                                             </TableCell>
-                                            <TableCell className="py-2.5 text-xs text-[#334155] hidden sm:table-cell">
+                                            <TableCell className="py-2.5 text-xs text-tinta-media hidden sm:table-cell">
                                                 {h.ubicacion?.nombre ?? '—'}
                                             </TableCell>
-                                            <TableCell className="py-2.5 text-xs text-[#94A3B8]">
+                                            <TableCell className="py-2.5 text-xs text-tinta-tenue">
                                                 {formatFecha(h.fecha_asignacion)}
                                             </TableCell>
                                             <TableCell className="py-2.5 pr-3">
                                                 {h.fecha_retiro ? (
-                                                    <span className="text-xs text-[#94A3B8]">{formatFecha(h.fecha_retiro)}</span>
+                                                    <span className="text-xs text-tinta-tenue">{formatFecha(h.fecha_retiro)}</span>
                                                 ) : (
-                                                    <span className="text-xs font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">Vigente</span>
+                                                    <span className="text-xs font-medium text-ok-tinta bg-ok-suave px-1.5 py-0.5 rounded-sm">Vigente</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -435,27 +435,27 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                 </div>
 
                 {/* Historial de ubicaciones (basado en reportes) */}
-                <div className="rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-5">
+                <div className="rounded-xl border border-borde bg-panel shadow-sm p-5">
                     <div className="flex items-center gap-2 mb-4">
-                        <MapPin className="h-4 w-4 text-[#94A3B8]" />
-                        <h2 className="text-sm font-semibold text-[#0F172A]">
+                        <MapPin className="h-4 w-4 text-tinta-tenue" />
+                        <h2 className="text-sm font-semibold text-tinta">
                             Trazabilidad de ubicaciones
                         </h2>
-                        <span className="ml-auto text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">
+                        <span className="ml-auto text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">
                             {historialUbicaciones.length}
                         </span>
                     </div>
 
                     {historialUbicaciones.length === 0 ? (
                         <div className="flex flex-col items-center py-8 text-center">
-                            <MapPin className="h-7 w-7 text-[#E2E8F0] mb-2" />
-                            <p className="text-sm text-[#94A3B8]">Sin registros de ubicación en reportes</p>
+                            <MapPin className="h-7 w-7 text-borde mb-2" />
+                            <p className="text-sm text-tinta-tenue">Sin registros de ubicación en reportes</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="bg-[#F8FAFC]">
+                                    <TableRow className="bg-panel-suave">
                                         <TableHead className="text-xs py-2 pl-3">Ubicación</TableHead>
                                         <TableHead className="text-xs py-2">Fecha</TableHead>
                                         <TableHead className="text-xs py-2">Técnico</TableHead>
@@ -464,21 +464,21 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                                 </TableHeader>
                                 <TableBody>
                                     {historialUbicaciones.map((u: any, idx: number) => (
-                                        <TableRow key={idx} className="border-b border-[#E2E8F0]">
+                                        <TableRow key={idx} className="border-b border-borde">
                                             <TableCell className="py-2.5 pl-3">
-                                                <p className="text-xs font-semibold text-[#334155]">{u.ubicacion_nombre || 'No asignada'}</p>
+                                                <p className="text-xs font-semibold text-tinta-media">{u.ubicacion_nombre || 'No asignada'}</p>
                                                 {u.ubicacion_detalle && (
-                                                    <p className="text-[10px] text-[#94A3B8] italic">{u.ubicacion_detalle}</p>
+                                                    <p className="text-[10px] text-tinta-tenue italic">{u.ubicacion_detalle}</p>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="py-2.5 text-xs text-[#334155]">
+                                            <TableCell className="py-2.5 text-xs text-tinta-media">
                                                 {formatFecha(u.fecha_registro)}
                                             </TableCell>
-                                            <TableCell className="py-2.5 text-xs text-[#94A3B8]">
+                                            <TableCell className="py-2.5 text-xs text-tinta-tenue">
                                                 {u.tecnico_nombre}
                                             </TableCell>
                                             <TableCell className="py-2.5 pr-3 text-right">
-                                                <Badge variant="outline" className="text-[9px] font-medium py-0 h-4 normal-case border-[#E2E8F0]">
+                                                <Badge variant="outline" className="text-[9px] font-medium py-0 h-4 normal-case border-borde">
                                                     {u.estado_reporte === 'cerrado' ? 'Oficial' : 'Provisional'}
                                                 </Badge>
                                             </TableCell>
@@ -491,21 +491,21 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                 </div>
 
                 {/* Últimos mantenimientos */}
-                <div className="rounded-xl border border-[#E2E8F0] bg-white shadow-sm p-5">
+                <div className="rounded-xl border border-borde bg-panel shadow-sm p-5">
                     <div className="flex items-center gap-2 mb-4">
-                        <Wrench className="h-4 w-4 text-[#94A3B8]" />
-                        <h2 className="text-sm font-semibold text-[#0F172A]">
+                        <Wrench className="h-4 w-4 text-tinta-tenue" />
+                        <h2 className="text-sm font-semibold text-tinta">
                             Últimos mantenimientos
                         </h2>
-                        <span className="ml-auto text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">
+                        <span className="ml-auto text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">
                             {mantenimientos.length}
                         </span>
                     </div>
 
                     {mantenimientos.length === 0 ? (
                         <div className="flex flex-col items-center py-8 text-center">
-                            <Wrench className="h-7 w-7 text-[#E2E8F0] mb-2" />
-                            <p className="text-sm text-[#94A3B8]">Sin mantenimientos registrados</p>
+                            <Wrench className="h-7 w-7 text-borde mb-2" />
+                            <p className="text-sm text-tinta-tenue">Sin mantenimientos registrados</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -515,22 +515,22 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
                                 return (
                                     <div
                                         key={m.id}
-                                        className="flex items-start gap-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3"
+                                        className="flex items-start gap-3 rounded-lg border border-borde bg-panel-suave p-3"
                                     >
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-semibold text-[#334155] bg-[#E2E8F0] px-1.5 py-0.5 rounded-sm">
+                                                <span className="text-xs font-semibold text-tinta-media bg-borde px-1.5 py-0.5 rounded-sm">
                                                     {m.tipo?.nombre ?? 'Mantenimiento'}
                                                 </span>
-                                                <span className="text-xs text-[#94A3B8]">
+                                                <span className="text-xs text-tinta-tenue">
                                                     {formatFechaHora(m.fecha_inicio)}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-[#94A3B8] mt-1">
-                                                Técnico: <span className="text-[#334155]">{m.tecnico_principal?.nombre} {m.tecnico_principal?.apellido}</span>
+                                            <p className="text-xs text-tinta-tenue mt-1">
+                                                Técnico: <span className="text-tinta-media">{m.tecnico_principal?.nombre} {m.tecnico_principal?.apellido}</span>
                                             </p>
                                             {m.observaciones && (
-                                                <p className="text-xs text-[#94A3B8] mt-0.5 line-clamp-2">
+                                                <p className="text-xs text-tinta-tenue mt-0.5 line-clamp-2">
                                                     {m.observaciones}
                                                 </p>
                                             )}
@@ -553,8 +553,8 @@ export default function EquiposDetalleClient({ equipoInicial, errorInicial, cont
             <Dialog open={modalEditarAbierto} onOpenChange={(open) => !open && setModalEditarAbierto(false)}>
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
-                        <DialogTitle className="text-[#0F172A]">Editar Equipo</DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">
+                        <DialogTitle className="text-tinta">Editar Equipo</DialogTitle>
+                        <DialogDescription className="text-tinta-tenue">
                             Editando: {equipoActual.codigo_mh} — {equipoActual.nombre}
                         </DialogDescription>
                     </DialogHeader>

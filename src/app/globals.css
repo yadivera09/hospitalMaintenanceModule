@@ -44,28 +44,52 @@
     /* Tinta */
     --tinta:         #0F172A;
     --tinta-media:   #475569;
-    --tinta-tenue:   #8A99AD;
+    /* Tenue es el nivel más bajo de la jerarquía, no un gris decorativo: lo
+       llevan etiquetas, ayudas y celdas secundarias, que hay que poder leer.
+       Se fija por el peor fondo en que aparece — panel-suave, no panel. */
+    --tinta-tenue:   #5F6E82;
 
     /* Marca */
     --marca:         #1E40AF;
     --marca-fuerte:  #1B379A;
     --marca-suave:   #EAF0FF;
+    --marca-linea:   #BFDBFE;
     --marca-tinta:   #1E40AF;
 
     /* Cuadricula de los graficos */
     --reja:          #E9EEF5;
 
-    /* Estado — paleta fija, nunca tematizada.
-       En claro, aviso y grave quedan por debajo de 3:1 a proposito: por eso
-       siempre viajan con icono y etiqueta, nunca solo con el color. */
+    /* Estado — la paleta de MARCA de grafico es fija y no se tematiza: --ok,
+       --aviso, --grave y --critico son los que pintan barras y puntos, estan
+       validados para daltonismo, y en claro quedan por debajo de 3:1 a
+       proposito — por eso siempre viajan con icono y etiqueta, nunca solo con
+       el color.
+
+       Cada estado tiene ademas tres papeles de interfaz:
+         *-suave  fondo tintado del chip o del aviso
+         *-linea  filete que lo cierra
+         *-tinta  el color cuando hace de TEXTO
+
+       El ultimo existe porque un color de marca y un color de texto no son el
+       mismo trabajo. El ambar que se lee bien como barra da 1.68:1 escrito
+       sobre su propio fondo: legible como señal, ilegible como palabra. Es el
+       mismo desdoblamiento que ya tenian marca y marca-tinta. */
     --ok:            #0CA30C;
     --ok-suave:      #E7F7E7;
+    --ok-linea:      #BBF7D0;
+    --ok-tinta:      #0F7A32;
     --aviso:         #FAB219;
     --aviso-suave:   #FEF4E0;
+    --aviso-linea:   #FDE68A;
+    --aviso-tinta:   #B45309;
     --grave:         #EC835A;
     --grave-suave:   #FDEDE6;
+    --grave-linea:   #FED7AA;
+    --grave-tinta:   #C2410C;
     --critico:       #D03B3B;
     --critico-suave: #FBE9E9;
+    --critico-linea: #FECACA;
+    --critico-tinta: #B91C1C;
 
     /* Series categoricas de los graficos */
     --serie-1:       #2A78D6;
@@ -97,25 +121,40 @@
 
     --tinta:         #F1F5F9;
     --tinta-media:   #A3B1C6;
-    --tinta-tenue:   #6B7A90;
+    --tinta-tenue:   #8494AB;
 
-    /* El azul corporativo puro es ilegible sobre casi-negro: en oscuro la marca
-       sube de paso. Es el mismo rol, escalonado para esta superficie. */
-    --marca:         #3B82F6;
-    --marca-fuerte:  #60A5FA;
+    /* --marca es superficie: rellena botones que llevan texto blanco encima, y
+       por eso no puede subir tanto como para que ese blanco deje de leerse.
+       Quien sube aqui es --marca-tinta, que es el rol de texto: el azul
+       corporativo puro sobre casi-negro no se lee.
+
+       marca-fuerte es el hover de marca y oscurece, igual que en claro. La
+       version anterior aclaraba, y al aclarar el relleno el texto blanco se
+       borraba justo al pasar el raton por encima. */
+    --marca:         #2563EB;
+    --marca-fuerte:  #1D4ED8;
     --marca-suave:   #16233F;
+    --marca-linea:   #26406B;
     --marca-tinta:   #93C5FD;
 
     --reja:          #1C2536;
 
     --ok:            #0CA30C;
     --ok-suave:      #0E2A16;
+    --ok-linea:      #1C4A2A;
+    --ok-tinta:      #4ADE80;
     --aviso:         #FAB219;
     --aviso-suave:   #2E2410;
+    --aviso-linea:   #4E3E18;
+    --aviso-tinta:   #FBBF24;
     --grave:         #EC835A;
     --grave-suave:   #2E1D16;
+    --grave-linea:   #4E3122;
+    --grave-tinta:   #FDBA8C;
     --critico:       #D03B3B;
     --critico-suave: #2E1416;
+    --critico-linea: #4E2226;
+    --critico-tinta: #F87171;
 
     --serie-1:       #3987E5;
     --serie-2:       #D95926;
@@ -161,26 +200,37 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+  /* Los valores de shadcn en oscuro NO son los que trae la plantilla, que son
+     grises neutros (0 0% 3.9%). Son los mismos tonos que --panel y compañía,
+     escritos en el triplete HSL que exige shadcn.
+
+     Importa porque los primitivos de Radix — Dialog, Select, DropdownMenu,
+     Tooltip — se pintan contra estas variables y ademas se portalean a
+     document.body, fuera del arbol del panel. Con los neutros de fabrica un
+     modal salia gris carbon sobre un panel azulado: el mismo desajuste que se
+     arreglo en las tarjetas, reaparecido en cada dialogo. */
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --background: 221 39% 11%;      /* = --panel      #111827 */
+    --foreground: 210 40% 96%;      /* = --tinta      #F1F5F9 */
+    --card: 221 39% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 217 33% 17%;         /* = --panel-alto #1E293B: flota sobre el panel */
+    --popover-foreground: 210 40% 96%;
+    --primary: 221 83% 53%;         /* = --marca      #2563EB */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 221 32% 15%;       /* = --panel-suave #1A2233 */
+    --secondary-foreground: 210 40% 96%;
+    --muted: 221 32% 15%;
+    --muted-foreground: 216 24% 71%; /* = --tinta-media #A3B1C6 */
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 96%;
+    /* Rojo de relleno, no el de marca: --critico con blanco encima se queda en
+       4.3:1, y estos botones son los de borrar. */
+    --destructive: 0 74% 42%;       /* #B91C1C = --critico-tinta en claro */
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 28% 17%;          /* = --borde      #1F2937 */
+    --input: 215 28% 17%;
+    --ring: 221 83% 53%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

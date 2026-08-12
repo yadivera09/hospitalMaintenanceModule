@@ -46,7 +46,10 @@ function ChipEstado({ estado, count, activo, onClick }: ChipEstadoProps) {
             onClick={onClick}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-all
         ${activo
-                    ? `${cfg.className} ring-2 ring-offset-1 ring-current scale-105`
+                    // El color del hueco del anillo va explícito: por defecto es
+                    // blanco, y sobre el fondo oscuro dibujaba un halo claro
+                    // alrededor del chip seleccionado.
+                    ? `${cfg.className} ring-2 ring-offset-1 ring-offset-superficie ring-current scale-105`
                     : `${cfg.className} opacity-60 hover:opacity-100`
                 }`}
         >
@@ -150,12 +153,12 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
             {/* Encabezado */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <ClipboardList className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <ClipboardList className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Reportes</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Reportes</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {reportes.length} en total
                         </p>
                     </div>
@@ -164,7 +167,7 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
                     <Button
                         variant="outline"
                         onClick={handleExportar}
-                        className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                        className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                         id="btn-exportar-reportes"
                     >
                         <Download className="h-4 w-4" />
@@ -178,10 +181,10 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
                 <button
                     onClick={() => setFiltroEstado('todos')}
                     className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-all
-            bg-[#F1F5F9] text-[#334155] border-[#E2E8F0]
-            ${filtroEstado === 'todos' ? 'ring-2 ring-[#334155] ring-offset-1' : 'opacity-60 hover:opacity-100'}`}>
+            bg-panel-suave text-tinta-media border-borde
+            ${filtroEstado === 'todos' ? 'ring-2 ring-tinta-media ring-offset-1 ring-offset-superficie' : 'opacity-60 hover:opacity-100'}`}>
                     Todos
-                    <span className="flex h-4 w-5 items-center justify-center rounded-sm bg-[#334155]/20 font-bold">
+                    <span className="flex h-4 w-5 items-center justify-center rounded-sm bg-borde font-bold">
                         {reportes.length}
                     </span>
                 </button>
@@ -199,18 +202,18 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
             {/* Filtros */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8] pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tinta-tenue pointer-events-none" />
                     <Input
                         type="search"
                         placeholder="Código MH…"
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
-                        className="pl-9 bg-white border-[#E2E8F0]"
+                        className="pl-9 bg-panel border-borde"
                     />
                 </div>
 
                 <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                    <SelectTrigger className="bg-white border-[#E2E8F0]">
+                    <SelectTrigger className="bg-panel border-borde">
                         <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -222,9 +225,9 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
                 </Select>
 
                 <Select value={filtroTecnico} onValueChange={setFiltroTecnico}>
-                    <SelectTrigger className="bg-white border-[#E2E8F0]">
+                    <SelectTrigger className="bg-panel border-borde">
                         <div className="flex items-center gap-2 truncate">
-                            <User className="h-4 w-4 text-[#94A3B8]" />
+                            <User className="h-4 w-4 text-tinta-tenue" />
                             <SelectValue placeholder="Técnico" />
                         </div>
                     </SelectTrigger>
@@ -239,26 +242,26 @@ export default function ReportesAdminClient({ reportes, tipos, tecnicos }: Repor
                 </Select>
 
                 <div className="relative">
-                    <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-[#94A3B8] font-medium z-10">
+                    <label className="absolute -top-2 left-2 bg-panel px-1 text-[10px] text-tinta-tenue font-medium z-10">
                         Desde
                     </label>
                     <Input
                         type="date"
                         value={fechaDesde}
                         onChange={(e) => setFechaDesde(e.target.value)}
-                        className="bg-white border-[#E2E8F0] text-[#334155]"
+                        className="bg-panel border-borde text-tinta-media"
                     />
                 </div>
 
                 <div className="relative">
-                    <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-[#94A3B8] font-medium z-10">
+                    <label className="absolute -top-2 left-2 bg-panel px-1 text-[10px] text-tinta-tenue font-medium z-10">
                         Hasta
                     </label>
                     <Input
                         type="date"
                         value={fechaHasta}
                         onChange={(e) => setFechaHasta(e.target.value)}
-                        className="bg-white border-[#E2E8F0] text-[#334155]"
+                        className="bg-panel border-borde text-tinta-media"
                     />
                 </div>
             </div>

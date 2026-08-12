@@ -36,13 +36,13 @@ const TONOS: Record<TonoKpi, { icono: string; valor: string; marco: string }> = 
         marco: 'border-borde',
     },
     aviso: {
-        icono: 'bg-aviso-suave text-aviso',
+        icono: 'bg-aviso-suave text-aviso-tinta',
         valor: 'text-tinta',
         marco: 'border-aviso',
     },
     critico: {
-        icono: 'bg-critico-suave text-critico',
-        valor: 'text-critico',
+        icono: 'bg-critico-suave text-critico-tinta',
+        valor: 'text-critico-tinta',
         marco: 'border-critico',
     },
 }
@@ -88,7 +88,7 @@ export default function TarjetaKpi({
                     <span
                         className={cn(
                             'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium',
-                            esBuenaNoticia ? 'bg-ok-suave text-ok' : 'bg-critico-suave text-critico'
+                            esBuenaNoticia ? 'bg-ok-suave text-ok-tinta' : 'bg-critico-suave text-critico-tinta'
                         )}
                     >
                         <Flecha className="h-3 w-3" />

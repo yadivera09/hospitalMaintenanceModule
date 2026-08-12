@@ -11,8 +11,8 @@ export default async function ReporteDetalleAdminPage({ params }: { params: { id
     if (res.error || !res.data) {
         return (
             <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-                <ClipboardList className="h-12 w-12 text-[#E2E8F0]" />
-                <h2 className="text-lg font-bold text-[#0F172A]">Reporte no encontrado</h2>
+                <ClipboardList className="h-12 w-12 text-borde" />
+                <h2 className="text-lg font-bold text-tinta">Reporte no encontrado</h2>
                 <Button variant="outline" asChild>
                     <Link href="/admin/reportes">Volver a reportes</Link>
                 </Button>
@@ -23,7 +23,7 @@ export default async function ReporteDetalleAdminPage({ params }: { params: { id
     return (
         <Suspense fallback={
             <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1E40AF]" />
+                <Loader2 className="h-8 w-8 animate-spin text-marca-tinta" />
             </div>
         }>
             <ReporteDetalleAdminClient reporteRaw={res.data} />

@@ -49,8 +49,8 @@ export default function SeguridadDashboardClient({
             value: totalUsuariosActivos,
             sub: 'Con acceso al sistema',
             icon: Users,
-            color: 'text-[#1E40AF]',
-            bg: 'bg-[#1E40AF]/10',
+            color: 'text-marca-tinta',
+            bg: 'bg-marca-suave',
             cardBg: '',
             href: '/admin/seguridad/usuarios',
         },
@@ -69,7 +69,7 @@ export default function SeguridadDashboardClient({
             value: totalGrupos,
             sub: 'Equipos y áreas',
             icon: UsersRound,
-            color: 'text-[#0891B2]',
+            color: 'text-cyan-600',
             bg: 'bg-cyan-100',
             cardBg: '',
             href: '/admin/seguridad/grupos',
@@ -79,8 +79,8 @@ export default function SeguridadDashboardClient({
             value: totalAuditoria,
             sub: 'Acciones registradas',
             icon: ClipboardList,
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-100',
+            color: 'text-ok-tinta',
+            bg: 'bg-ok-suave',
             cardBg: '',
             href: '/admin/seguridad/auditoria',
         },
@@ -90,12 +90,12 @@ export default function SeguridadDashboardClient({
         <div className="space-y-6">
             {/* ── Encabezado ── */}
             <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                    <ShieldCheck className="h-5 w-5 text-[#1E40AF]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                    <ShieldCheck className="h-5 w-5 text-marca-tinta" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold text-[#0F172A] leading-none">Seguridad</h1>
-                    <p className="text-sm text-[#94A3B8] mt-0.5">
+                    <h1 className="text-xl font-bold text-tinta leading-none">Seguridad</h1>
+                    <p className="text-sm text-tinta-tenue mt-0.5">
                         Control de accesos, roles y auditoría del sistema
                     </p>
                 </div>
@@ -109,12 +109,12 @@ export default function SeguridadDashboardClient({
                         <button
                             key={kpi.label}
                             onClick={() => router.push(kpi.href)}
-                            className={`text-left rounded-lg border p-5 shadow-sm transition-all hover:shadow-md hover:border-[#1E40AF]/20 ${
-                                kpi.cardBg || 'bg-white border-[#E2E8F0]'
+                            className={`text-left rounded-lg border p-5 shadow-sm transition-all hover:shadow-md hover:border-marca-linea ${
+                                kpi.cardBg || 'bg-panel border-borde'
                             }`}
                         >
                             <div className="flex items-start justify-between">
-                                <p className="text-sm font-medium text-[#94A3B8]">{kpi.label}</p>
+                                <p className="text-sm font-medium text-tinta-tenue">{kpi.label}</p>
                                 <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${kpi.bg}`}>
                                     <Icon className={`h-4 w-4 ${kpi.color}`} />
                                 </div>
@@ -122,62 +122,62 @@ export default function SeguridadDashboardClient({
                             <p className={`mt-2 text-3xl font-bold tabular-nums ${kpi.color}`}>
                                 {kpi.value.toLocaleString('es-EC')}
                             </p>
-                            <p className="mt-1 text-xs text-[#94A3B8]">{kpi.sub}</p>
+                            <p className="mt-1 text-xs text-tinta-tenue">{kpi.sub}</p>
                         </button>
                     )
                 })}
             </div>
 
             {/* ── Últimos usuarios ── */}
-            <div className="rounded-xl border border-[#E2E8F0] bg-white shadow-sm overflow-hidden">
+            <div className="rounded-xl border border-borde bg-panel shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-[#E2E8F0]">
-                    <Users className="h-4 w-4 text-[#94A3B8]" />
-                    <h2 className="text-sm font-semibold text-[#0F172A]">Usuarios del sistema</h2>
-                    <span className="ml-auto text-xs text-[#94A3B8] bg-[#F1F5F9] rounded-full px-2 py-0.5">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-borde">
+                    <Users className="h-4 w-4 text-tinta-tenue" />
+                    <h2 className="text-sm font-semibold text-tinta">Usuarios del sistema</h2>
+                    <span className="ml-auto text-xs text-tinta-tenue bg-panel-suave rounded-full px-2 py-0.5">
                         Últimos 5
                     </span>
                 </div>
 
                 {ultimosUsuarios.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-14 text-center">
-                        <Users className="h-8 w-8 text-[#E2E8F0] mb-3" />
-                        <p className="text-sm text-[#94A3B8]">No hay usuarios registrados.</p>
+                        <Users className="h-8 w-8 text-borde mb-3" />
+                        <p className="text-sm text-tinta-tenue">No hay usuarios registrados.</p>
                     </div>
                 ) : (
                     <>
                         {/* Cabecera de tabla */}
-                        <div className="hidden sm:grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-x-4 px-5 py-2.5 bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                        <div className="hidden sm:grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-x-4 px-5 py-2.5 bg-panel-suave border-b border-borde">
                             {['Nombre', 'Email', 'Rol(es)', 'Estado', ''].map((h) => (
-                                <span key={h} className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+                                <span key={h} className="text-xs font-medium text-tinta-tenue uppercase tracking-wide">
                                     {h}
                                 </span>
                             ))}
                         </div>
 
-                        <ul className="divide-y divide-[#E2E8F0]">
+                        <ul className="divide-y divide-borde">
                             {ultimosUsuarios.map((usuario) => (
                                 <li key={usuario.id}>
-                                    <div className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_2fr_1fr_auto] gap-x-4 items-center px-5 py-3.5 hover:bg-[#F8FAFC] transition-colors">
+                                    <div className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_2fr_1fr_auto] gap-x-4 items-center px-5 py-3.5 hover:bg-panel-suave transition-colors">
                                         {/* Nombre */}
-                                        <span className="text-sm font-medium text-[#0F172A] truncate">
+                                        <span className="text-sm font-medium text-tinta truncate">
                                             {usuario.nombre} {usuario.apellido}
                                         </span>
 
                                         {/* Email */}
-                                        <span className="text-sm text-[#64748B] truncate hidden sm:block">
+                                        <span className="text-sm text-tinta-media truncate hidden sm:block">
                                             {usuario.email}
                                         </span>
 
                                         {/* Roles */}
                                         <div className="flex flex-wrap gap-1 hidden sm:flex">
                                             {usuario.roles.length === 0 ? (
-                                                <span className="text-xs text-[#94A3B8]">Sin rol</span>
+                                                <span className="text-xs text-tinta-tenue">Sin rol</span>
                                             ) : (
                                                 usuario.roles.map((rol) => (
                                                     <span
                                                         key={rol.id}
-                                                        className="inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-medium bg-[#1E40AF]/10 text-[#1E40AF] border border-[#1E40AF]/20"
+                                                        className="inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-medium bg-marca-suave text-marca-tinta border border-marca-linea"
                                                     >
                                                         {rol.nombre}
                                                     </span>
@@ -189,8 +189,8 @@ export default function SeguridadDashboardClient({
                                         <span
                                             className={`hidden sm:inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-medium w-fit ${
                                                 usuario.activo
-                                                    ? 'bg-green-50 text-green-700 border border-green-200'
-                                                    : 'bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0]'
+                                                    ? 'bg-ok-suave text-ok-tinta border border-ok-linea'
+                                                    : 'bg-panel-suave text-tinta-tenue border border-borde'
                                             }`}
                                         >
                                             {usuario.activo ? 'Activo' : 'Inactivo'}
@@ -201,7 +201,7 @@ export default function SeguridadDashboardClient({
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => router.push(`/admin/seguridad/usuarios/${usuario.id}`)}
-                                            className="h-7 px-2 text-xs text-[#1E40AF] hover:bg-[#1E40AF]/5"
+                                            className="h-7 px-2 text-xs text-marca-tinta hover:bg-marca-suave"
                                             id={`btn-ver-usuario-${usuario.id}`}
                                         >
                                             Ver
@@ -215,10 +215,10 @@ export default function SeguridadDashboardClient({
                 )}
 
                 {/* Footer */}
-                <div className="flex justify-end px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                <div className="flex justify-end px-5 py-3 border-t border-borde bg-panel-suave">
                     <button
                         onClick={() => router.push('/admin/seguridad/usuarios')}
-                        className="text-xs text-[#1E40AF] hover:underline font-medium"
+                        className="text-xs text-marca-tinta hover:underline font-medium"
                     >
                         Ver todos los usuarios →
                     </button>
@@ -235,12 +235,12 @@ export default function SeguridadDashboardClient({
                     <button
                         key={link.href}
                         onClick={() => router.push(link.href)}
-                        className="text-left group rounded-xl bg-white border border-[#E2E8F0] p-5 shadow-sm hover:border-[#1E40AF]/30 hover:shadow-md transition-all"
+                        className="text-left group rounded-xl bg-panel border border-borde p-5 shadow-sm hover:border-marca-linea hover:shadow-md transition-all"
                     >
-                        <p className="text-sm font-semibold text-[#0F172A] group-hover:text-[#1E40AF] transition-colors">
+                        <p className="text-sm font-semibold text-tinta group-hover:text-marca-tinta transition-colors">
                             {link.label}
                         </p>
-                        <p className="text-xs text-[#94A3B8] mt-1">{link.sub}</p>
+                        <p className="text-xs text-tinta-tenue mt-1">{link.sub}</p>
                     </button>
                 ))}
             </div>

@@ -34,15 +34,15 @@ interface EquiposTableProps {
 const ESTADO_CONFIG: Record<EstadoEquipo, { label: string; className: string }> = {
     activo: {
         label: 'Activo',
-        className: 'bg-green-50 text-green-700 border border-green-200',
+        className: 'bg-ok-suave text-ok-tinta border border-ok-linea',
     },
     almacenado: {
         label: 'Almacenado',
-        className: 'bg-blue-50 text-blue-700 border border-blue-200',
+        className: 'bg-marca-suave text-marca-tinta border border-marca-linea',
     },
     baja: {
         label: 'Baja',
-        className: 'bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0]',
+        className: 'bg-panel-suave text-tinta-tenue border border-borde',
     },
 }
 
@@ -65,10 +65,10 @@ export default function EquiposTable({
     if (equipos.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-sm font-medium text-[#94A3B8]">
+                <p className="text-sm font-medium text-tinta-tenue">
                     No se encontraron equipos
                 </p>
-                <p className="mt-1 text-xs text-[#94A3B8]">
+                <p className="mt-1 text-xs text-tinta-tenue">
                     Intenta ajustar los filtros de búsqueda.
                 </p>
             </div>
@@ -76,29 +76,29 @@ export default function EquiposTable({
     }
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border border-[#E2E8F0]">
+        <div className="w-full overflow-x-auto rounded-lg border border-borde">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 pl-4">
+                    <TableRow className="bg-panel-suave hover:bg-panel-suave">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 pl-4">
                             Código MH
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                             Equipo
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden md:table-cell">
                             N° Serie
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden lg:table-cell">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden lg:table-cell">
                             Categoría
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden xl:table-cell">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden xl:table-cell">
                             Cliente
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                             Estado
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-right pr-4">
+                        <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-right pr-4">
                             Acciones
                         </TableHead>
                     </TableRow>
@@ -110,51 +110,51 @@ export default function EquiposTable({
                         return (
                             <TableRow
                                 key={equipo.id}
-                                className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors"
+                                className="border-b border-borde hover:bg-panel-suave transition-colors"
                             >
                                 {/* Código MH */}
                                 <TableCell className="py-3.5 pl-4">
                                     <button
                                         onClick={() => onVerDetalle(equipo.id)}
-                                        className="text-sm font-semibold font-mono text-[#1E40AF] hover:underline text-left"
+                                        className="text-sm font-semibold font-mono text-marca-tinta hover:underline text-left"
                                     >
                                         {equipo.codigo_mh}
                                     </button>
                                     {/* Marca/Modelo visible en mobile */}
-                                    <p className="mt-0.5 text-xs text-[#94A3B8] md:hidden">
+                                    <p className="mt-0.5 text-xs text-tinta-tenue md:hidden">
                                         {[equipo.marca, equipo.modelo].filter(Boolean).join(' · ') || '—'}
                                     </p>
                                 </TableCell>
 
                                 {/* Equipo (nombre + marca/modelo) */}
                                 <TableCell className="py-3.5">
-                                    <p className="text-sm font-medium text-[#0F172A]">{equipo.nombre}</p>
-                                    <p className="text-xs text-[#94A3B8] mt-0.5 hidden md:block">
+                                    <p className="text-sm font-medium text-tinta">{equipo.nombre}</p>
+                                    <p className="text-xs text-tinta-tenue mt-0.5 hidden md:block">
                                         {[equipo.marca, equipo.modelo].filter(Boolean).join(' · ') || '—'}
                                     </p>
                                 </TableCell>
 
                                 {/* N° Serie */}
                                 <TableCell className="py-3.5 hidden md:table-cell">
-                                    <span className="text-sm font-mono text-[#334155]">
+                                    <span className="text-sm font-mono text-tinta-media">
                                         {equipo.numero_serie ?? '—'}
                                     </span>
                                 </TableCell>
 
                                 {/* Categoría */}
                                 <TableCell className="py-3.5 hidden lg:table-cell">
-                                    <span className="text-sm text-[#334155]">
+                                    <span className="text-sm text-tinta-media">
                                         {equipo.categoria?.nombre ?? '—'}
                                     </span>
                                 </TableCell>
 
                                 {/* Cliente */}
                                 <TableCell className="py-3.5 hidden xl:table-cell">
-                                    <span className="text-sm text-[#334155]">
+                                    <span className="text-sm text-tinta-media">
                                         {equipo.cliente_nombre ?? '—'}
                                     </span>
                                     {equipo.numero_contrato && (
-                                        <p className="text-xs text-[#94A3B8] font-mono mt-0.5">
+                                        <p className="text-xs text-tinta-tenue font-mono mt-0.5">
                                             {equipo.numero_contrato}
                                         </p>
                                     )}
@@ -173,7 +173,7 @@ export default function EquiposTable({
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => onEditar(equipo)}
-                                                className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#D97706] hover:bg-amber-50"
+                                                className="h-8 w-8 p-0 text-tinta-tenue hover:text-aviso-tinta hover:bg-aviso-suave"
                                                 aria-label={`Editar ${equipo.codigo_mh}`}
                                                 title="Editar"
                                             >

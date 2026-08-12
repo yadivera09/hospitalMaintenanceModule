@@ -207,21 +207,21 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                         variant="ghost"
                         size="sm"
                         onClick={() => router.push('/admin/seguridad/roles')}
-                        className="h-8 px-2 text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9] -ml-1"
+                        className="h-8 px-2 text-tinta-tenue hover:text-tinta hover:bg-panel-suave -ml-1"
                     >
                         <ArrowLeft className="h-4 w-4 mr-1" />
                         Roles
                     </Button>
 
-                    <span className="text-[#E2E8F0]">/</span>
+                    <span className="text-borde">/</span>
 
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                            <ShieldCheck className="h-5 w-5 text-[#1E40AF]" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                            <ShieldCheck className="h-5 w-5 text-marca-tinta" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-xl font-bold text-[#0F172A] leading-none">
+                                <h1 className="text-xl font-bold text-tinta leading-none">
                                     {rol.nombre}
                                 </h1>
                                 {rol.es_sistema ? (
@@ -230,13 +230,13 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                         Sistema
                                     </Badge>
                                 ) : (
-                                    <Badge variant="outline" className="bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0] rounded-sm text-[10px] py-0.5 px-2 font-medium">
+                                    <Badge variant="outline" className="bg-panel-suave text-tinta-media border-borde rounded-sm text-[10px] py-0.5 px-2 font-medium">
                                         Custom
                                     </Badge>
                                 )}
                             </div>
                             {rol.descripcion && (
-                                <p className="text-sm text-[#94A3B8] mt-0.5">{rol.descripcion}</p>
+                                <p className="text-sm text-tinta-tenue mt-0.5">{rol.descripcion}</p>
                             )}
                         </div>
                     </div>
@@ -245,9 +245,9 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
 
             {/* ── Banner informativo para roles de sistema ── */}
             {rol.es_sistema && (
-                <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-                    <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                    <p className="text-sm text-blue-700">
+                <div className="flex items-start gap-3 rounded-lg border border-marca-linea bg-marca-suave px-4 py-3">
+                    <Info className="h-4 w-4 text-marca-tinta shrink-0 mt-0.5" />
+                    <p className="text-sm text-marca-tinta">
                         Este es un <strong>rol de sistema</strong>. Puedes editar sus permisos libremente,
                         pero no puedes cambiar su nombre ni eliminarlo.
                     </p>
@@ -258,8 +258,8 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
             {feedback && !modalAbierto && (
                 <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
                     feedback.tipo === 'ok'
-                        ? 'border-green-200 bg-green-50 text-green-700'
-                        : 'border-red-200 bg-red-50 text-red-700'
+                        ? 'border-ok-linea bg-ok-suave text-ok-tinta'
+                        : 'border-critico-linea bg-critico-suave text-critico-tinta'
                 }`}>
                     {feedback.tipo === 'ok'
                         ? <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -270,13 +270,13 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
             )}
 
             {/* ── Tabla de Módulos Asignados ── */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
-                    <h2 className="text-base font-semibold text-[#0F172A]">Módulos y Permisos</h2>
+            <div className="bg-panel rounded-xl border border-borde shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-borde">
+                    <h2 className="text-base font-semibold text-tinta">Módulos y Permisos</h2>
                     <Button 
                         size="sm" 
                         onClick={abrirModalAgregar}
-                        className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2"
+                        className="bg-marca hover:bg-marca-fuerte text-white gap-2"
                     >
                         <Plus className="h-4 w-4" />
                         Agregar módulo
@@ -285,16 +285,16 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
 
                 {modulosAsignados.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <ShieldCheck className="h-10 w-10 text-[#E2E8F0] mb-3" />
-                        <p className="text-sm font-medium text-[#64748B]">Este rol no tiene módulos asignados aún</p>
-                        <p className="text-xs text-[#94A3B8] mt-1">
+                        <ShieldCheck className="h-10 w-10 text-borde mb-3" />
+                        <p className="text-sm font-medium text-tinta-media">Este rol no tiene módulos asignados aún</p>
+                        <p className="text-xs text-tinta-tenue mt-1">
                             Haz clic en "Agregar módulo" para comenzar a configurar los permisos.
                         </p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-[#F8FAFC] text-xs uppercase text-[#64748B] font-medium border-b border-[#E2E8F0]">
+                            <thead className="bg-panel-suave text-xs uppercase text-tinta-media font-medium border-b border-borde">
                                 <tr>
                                     <th className="px-5 py-3 whitespace-nowrap">Módulo</th>
                                     <th className="px-5 py-3 whitespace-nowrap">URL</th>
@@ -302,24 +302,24 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                     <th className="px-5 py-3 whitespace-nowrap text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#F1F5F9]">
+                            <tbody className="divide-y divide-borde-suave">
                                 {modulosAsignados.map(mod => {
                                     const permisosMod = Array.from(matriz[mod.id] || []).map(id => permisosCatalogo.find(p => p.id === id)).filter(Boolean) as PermisoBase[];
                                     // Sort to match canonical order
                                     permisosMod.sort((a, b) => ORDEN_CODIGOS.indexOf(a.codigo) - ORDEN_CODIGOS.indexOf(b.codigo));
                                     
                                     return (
-                                        <tr key={mod.id} className="hover:bg-[#F8FAFC]/50 transition-colors">
+                                        <tr key={mod.id} className="hover:bg-panel-suave transition-colors">
                                             <td className="px-5 py-3">
-                                                <span className="font-medium text-[#0F172A]">{mod.nombre}</span>
+                                                <span className="font-medium text-tinta">{mod.nombre}</span>
                                             </td>
                                             <td className="px-5 py-3">
-                                                <span className="text-[#64748B] font-mono text-xs">{mod.url}</span>
+                                                <span className="text-tinta-media font-mono text-xs">{mod.url}</span>
                                             </td>
                                             <td className="px-5 py-3">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {permisosMod.map(p => (
-                                                        <Badge key={p.id} variant="secondary" className="bg-[#E0E7FF] text-[#3730A3] hover:bg-[#C7D2FE] text-[10px] py-0 px-1.5 font-medium border-[#C7D2FE]">
+                                                        <Badge key={p.id} variant="secondary" className="bg-marca-suave text-marca-tinta hover:bg-marca-suave text-[10px] py-0 px-1.5 font-medium border-marca-linea">
                                                             {p.nombre}
                                                         </Badge>
                                                     ))}
@@ -327,10 +327,10 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#64748B] hover:text-[#1E40AF]" onClick={() => abrirModalEditar(mod.id)}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-tinta-media hover:text-marca-tinta" onClick={() => abrirModalEditar(mod.id)}>
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#64748B] hover:text-red-600 hover:bg-red-50" onClick={() => handleQuitar(mod.id)} disabled={guardando}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-tinta-media hover:text-critico-tinta hover:bg-critico-suave" onClick={() => handleQuitar(mod.id)} disabled={guardando}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -363,8 +363,8 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                     {feedback && modalAbierto && (
                         <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
                             feedback.tipo === 'ok'
-                                ? 'border-green-200 bg-green-50 text-green-700'
-                                : 'border-red-200 bg-red-50 text-red-700'
+                                ? 'border-ok-linea bg-ok-suave text-ok-tinta'
+                                : 'border-critico-linea bg-critico-suave text-critico-tinta'
                         }`}>
                             {feedback.tipo === 'ok'
                                 ? <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -376,7 +376,7 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
 
                     <div className="py-4 space-y-3">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[#334155]">Módulo</label>
+                            <label className="text-sm font-medium text-tinta-media">Módulo</label>
                             <Select 
                                 value={moduloEditando?.moduloId || ''} 
                                 onValueChange={(val) => {
@@ -401,7 +401,7 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                         if (unassignedMods.length === 0) return null;
                                         return (
                                             <SelectGroup key={menu.id}>
-                                                <SelectLabel className="text-[#94A3B8] font-semibold text-xs tracking-wider uppercase flex justify-center py-2">
+                                                <SelectLabel className="text-tinta-tenue font-semibold text-xs tracking-wider uppercase flex justify-center py-2">
                                                     ── {menu.nombre} ──
                                                 </SelectLabel>
                                                 {unassignedMods.map(m => (
@@ -413,7 +413,7 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                 </SelectContent>
                             </Select>
                             {ultimosPermisosGuardados !== null && modoModal === 'agregar' && (
-                                <div className="flex items-center gap-1.5 text-xs text-[#94A3B8] pt-1">
+                                <div className="flex items-center gap-1.5 text-xs text-tinta-tenue pt-1">
                                     <Copy className="h-3.5 w-3.5" />
                                     Se copiaron los permisos del módulo anterior
                                 </div>
@@ -423,11 +423,11 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                         {moduloEditando?.moduloId && (
                             <div className="space-y-3 pt-2">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-[#334155]">Permisos</label>
+                                    <label className="text-sm font-medium text-tinta-media">Permisos</label>
                                     <button 
                                         type="button" 
                                         onClick={toggleTodosPermisos} 
-                                        className="flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#1E40AF]"
+                                        className="flex items-center gap-1.5 text-xs text-tinta-media hover:text-marca-tinta"
                                     >
                                         {todosSeleccionados ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                                         {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
@@ -442,8 +442,8 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                                 key={permiso.id} 
                                                 className={`relative flex flex-col items-center justify-center p-2 gap-1 w-[80px] h-[72px] rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                                                     isChecked 
-                                                        ? 'bg-[#1E40AF]/10 border-[#1E40AF] text-[#1E40AF]' 
-                                                        : 'bg-white border-[#E2E8F0] text-[#94A3B8] hover:border-[#CBD5E1] hover:bg-[#F8FAFC]'
+                                                        ? 'bg-marca-suave border-marca text-marca-tinta' 
+                                                        : 'bg-panel border-borde text-tinta-tenue hover:border-borde hover:bg-panel-suave'
                                                 }`}
                                             >
                                                 <input
@@ -453,8 +453,8 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                                                     disabled={guardando}
                                                     className="sr-only"
                                                 />
-                                                <Icon className={`h-4 w-4 ${isChecked ? 'text-[#1E40AF]' : 'text-[#94A3B8]'}`} />
-                                                <span className={`text-[10px] font-semibold ${isChecked ? 'text-[#1E40AF]' : 'text-[#64748B]'}`}>
+                                                <Icon className={`h-4 w-4 ${isChecked ? 'text-marca-tinta' : 'text-tinta-tenue'}`} />
+                                                <span className={`text-[10px] font-semibold ${isChecked ? 'text-marca-tinta' : 'text-tinta-media'}`}>
                                                     {permiso.nombre}
                                                 </span>
                                             </label>
@@ -465,7 +465,7 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                         )}
                     </div>
 
-                    <DialogFooter className="gap-2 sm:gap-2 pt-4 border-t border-[#E2E8F0]">
+                    <DialogFooter className="gap-2 sm:gap-2 pt-4 border-t border-borde">
                         <Button 
                             variant="outline" 
                             onClick={() => setModalAbierto(false)}
@@ -485,7 +485,7 @@ export default function RolDetalleClient({ rol, menus, permisosCatalogo }: Props
                         <Button 
                             onClick={() => handleGuardarModal('salir')}
                             disabled={guardando || !moduloEditando?.moduloId}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                            className="bg-marca hover:bg-marca-fuerte text-white"
                         >
                             {guardando ? 'Guardando...' : 'Guardar y salir'}
                         </Button>

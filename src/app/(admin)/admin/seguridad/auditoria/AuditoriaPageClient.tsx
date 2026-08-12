@@ -45,10 +45,10 @@ function formatearFecha(iso: string) {
 
 function getBadgeColor(accion: string) {
     switch (accion) {
-        case 'ADICION': return 'bg-green-50 text-green-700 border-green-200'
-        case 'MODIFICACION': return 'bg-amber-50 text-amber-700 border-amber-200'
-        case 'ELIMINACION': return 'bg-red-50 text-red-700 border-red-200'
-        default: return 'bg-slate-50 text-slate-700 border-slate-200'
+        case 'ADICION': return 'bg-ok-suave text-ok-tinta border-ok-linea'
+        case 'MODIFICACION': return 'bg-aviso-suave text-aviso-tinta border-aviso-linea'
+        case 'ELIMINACION': return 'bg-critico-suave text-critico-tinta border-critico-linea'
+        default: return 'bg-panel-suave text-tinta-media border-borde'
     }
 }
 
@@ -156,12 +156,12 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
             {/* ── Encabezado ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <ScrollText className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <ScrollText className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Auditoría</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Auditoría</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             Registro de acciones del sistema
                         </p>
                     </div>
@@ -169,34 +169,34 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                 <Button 
                     onClick={exportarCsv}
                     variant="outline"
-                    className="border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC]"
+                    className="border-borde text-tinta hover:bg-panel-suave"
                 >
-                    <Download className="h-4 w-4 mr-2 text-[#64748B]" />
+                    <Download className="h-4 w-4 mr-2 text-tinta-media" />
                     Exportar CSV
                 </Button>
             </div>
 
             {errorInicial && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     {errorInicial}
                 </div>
             )}
 
             {/* ── Filtros ── */}
-            <div className="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm">
+            <div className="bg-panel p-4 rounded-xl border border-borde shadow-sm">
                 <form onSubmit={handleFiltrar} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     <div className="lg:col-span-2 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tinta-tenue" />
                         <Input
                             placeholder="Buscar tabla..."
                             value={filtroTabla}
                             onChange={(e) => setFiltroTabla(e.target.value)}
-                            className="pl-9 border-[#E2E8F0]"
+                            className="pl-9 border-borde"
                         />
                     </div>
                     
                     <Select value={filtroUsuario} onValueChange={(val) => { setFiltroUsuario(val); handleFiltrar() }}>
-                        <SelectTrigger className="border-[#E2E8F0]">
+                        <SelectTrigger className="border-borde">
                             <SelectValue placeholder="Usuario" />
                         </SelectTrigger>
                         <SelectContent>
@@ -208,7 +208,7 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                     </Select>
 
                     <Select value={filtroAccion} onValueChange={(val) => { setFiltroAccion(val); handleFiltrar() }}>
-                        <SelectTrigger className="border-[#E2E8F0]">
+                        <SelectTrigger className="border-borde">
                             <SelectValue placeholder="Acción" />
                         </SelectTrigger>
                         <SelectContent>
@@ -223,7 +223,7 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                         type="date"
                         value={fechaDesde}
                         onChange={(e) => { setFechaDesde(e.target.value); handleFiltrar() }}
-                        className="border-[#E2E8F0]"
+                        className="border-borde"
                         title="Fecha desde"
                     />
                     
@@ -231,48 +231,48 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                         type="date"
                         value={fechaHasta}
                         onChange={(e) => { setFechaHasta(e.target.value); handleFiltrar() }}
-                        className="border-[#E2E8F0]"
+                        className="border-borde"
                         title="Fecha hasta"
                     />
                 </form>
                 
                 <div className="mt-3 flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={handleLimpiar} className="text-[#64748B] hover:text-[#0F172A]">
+                    <Button variant="ghost" size="sm" onClick={handleLimpiar} className="text-tinta-media hover:text-tinta">
                         Limpiar filtros
                     </Button>
-                    <Button size="sm" onClick={handleFiltrar} className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white">
+                    <Button size="sm" onClick={handleFiltrar} className="bg-marca hover:bg-marca-fuerte text-white">
                         Aplicar
                     </Button>
                 </div>
             </div>
 
             {/* ── Tabla ── */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden relative">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden relative">
                 {isPending && (
-                    <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
-                        <div className="h-6 w-6 border-2 border-[#1E40AF] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 z-10 bg-background/50 backdrop-blur-[1px] flex items-center justify-center">
+                        <div className="h-6 w-6 border-2 border-marca border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 )}
                 
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 pl-5">
+                        <TableRow className="bg-panel-suave hover:bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 pl-5">
                                 Fecha/Hora
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                                 Usuario
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                                 Acción
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                                 Tabla
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden md:table-cell">
                                 Registro ID
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-right pr-5">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-right pr-5">
                                 Detalle
                             </TableHead>
                         </TableRow>
@@ -283,8 +283,8 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                             <TableRow>
                                 <TableCell colSpan={6} className="py-16 text-center">
                                     <div className="flex flex-col items-center justify-center">
-                                        <ScrollText className="h-8 w-8 text-[#E2E8F0] mb-3" />
-                                        <p className="text-sm font-medium text-[#64748B]">No hay registros de auditoría</p>
+                                        <ScrollText className="h-8 w-8 text-borde mb-3" />
+                                        <p className="text-sm font-medium text-tinta-media">No hay registros de auditoría</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -292,17 +292,17 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                             registros.map(r => (
                                 <TableRow 
                                     key={r.id} 
-                                    className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors cursor-pointer group"
+                                    className="border-b border-borde hover:bg-panel-suave transition-colors cursor-pointer group"
                                     onClick={() => verDetalle(r.detalle)}
                                 >
-                                    <TableCell className="py-3.5 pl-5 text-sm text-[#334155]">
+                                    <TableCell className="py-3.5 pl-5 text-sm text-tinta-media">
                                         {formatearFecha(r.created_at)}
                                     </TableCell>
                                     <TableCell className="py-3.5">
                                         {r.usuario_nombre ? (
-                                            <span className="text-sm font-semibold text-[#0F172A]">{r.usuario_nombre}</span>
+                                            <span className="text-sm font-semibold text-tinta">{r.usuario_nombre}</span>
                                         ) : (
-                                            <span className="text-xs text-[#94A3B8] italic">Usuario eliminado</span>
+                                            <span className="text-xs text-tinta-tenue italic">Usuario eliminado</span>
                                         )}
                                     </TableCell>
                                     <TableCell className="py-3.5">
@@ -311,12 +311,12 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="py-3.5">
-                                        <code className="bg-[#F1F5F9] text-[#475569] px-1.5 py-0.5 rounded text-[11px] font-mono border border-[#E2E8F0]">
+                                        <code className="bg-panel-suave text-tinta-media px-1.5 py-0.5 rounded text-[11px] font-mono border border-borde">
                                             {r.tabla}
                                         </code>
                                     </TableCell>
                                     <TableCell className="py-3.5 hidden md:table-cell">
-                                        <code className="text-[#64748B] font-mono text-[11px]" title={r.registro_id}>
+                                        <code className="text-tinta-media font-mono text-[11px]" title={r.registro_id}>
                                             {r.registro_id.substring(0, 8)}...
                                         </code>
                                     </TableCell>
@@ -325,7 +325,7 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => verDetalle(r.detalle)}
-                                            className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
+                                            className="h-8 w-8 p-0 text-tinta-tenue hover:text-marca-tinta hover:bg-marca-suave"
                                             title="Ver detalle"
                                         >
                                             <Eye className="h-4 w-4" />
@@ -339,9 +339,9 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
 
                 {/* ── Paginación ── */}
                 {total > 0 && (
-                    <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
-                        <p className="text-xs text-[#64748B]">
-                            Página <span className="font-medium text-[#0F172A]">{paginaActual}</span> de <span className="font-medium text-[#0F172A]">{totalPaginas}</span>
+                    <div className="px-5 py-3 border-t border-borde bg-panel-suave flex items-center justify-between">
+                        <p className="text-xs text-tinta-media">
+                            Página <span className="font-medium text-tinta">{paginaActual}</span> de <span className="font-medium text-tinta">{totalPaginas}</span>
                             <span className="hidden sm:inline"> · {total} registros en total</span>
                         </p>
                         <div className="flex gap-1">
@@ -350,7 +350,7 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                                 size="sm"
                                 onClick={() => cambiarPagina(paginaActual - 1)}
                                 disabled={paginaActual <= 1 || isPending}
-                                className="h-8 border-[#E2E8F0] text-[#334155]"
+                                className="h-8 border-borde text-tinta-media"
                             >
                                 <ChevronLeft className="h-4 w-4 sm:mr-1" />
                                 <span className="hidden sm:inline">Anterior</span>
@@ -360,7 +360,7 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
                                 size="sm"
                                 onClick={() => cambiarPagina(paginaActual + 1)}
                                 disabled={paginaActual >= totalPaginas || isPending}
-                                className="h-8 border-[#E2E8F0] text-[#334155]"
+                                className="h-8 border-borde text-tinta-media"
                             >
                                 <span className="hidden sm:inline">Siguiente</span>
                                 <ChevronRight className="h-4 w-4 sm:ml-1" />
@@ -374,15 +374,15 @@ export default function AuditoriaPageClient({ datosIniciales, usuarios, errorIni
             <Dialog open={detalleAbierto} onOpenChange={setDetalleAbierto}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-[#0F172A]">Detalle del Registro</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold text-tinta">Detalle del Registro</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
                         {detalleJson ? (
-                            <pre className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4 text-xs font-mono text-[#334155] overflow-auto max-h-[400px]">
+                            <pre className="bg-panel-suave border border-borde rounded-lg p-4 text-xs font-mono text-tinta-media overflow-auto max-h-[400px]">
                                 {JSON.stringify(detalleJson, null, 2)}
                             </pre>
                         ) : (
-                            <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg text-center text-sm text-[#64748B]">
+                            <div className="p-4 bg-panel-suave border border-borde-suave rounded-lg text-center text-sm text-tinta-media">
                                 Sin detalle registrado para esta acción.
                             </div>
                         )}

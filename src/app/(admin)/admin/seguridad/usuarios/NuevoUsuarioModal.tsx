@@ -107,7 +107,7 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
         <>
             <Button
                 onClick={() => setAbierto(true)}
-                className="bg-[#1E40AF] hover:bg-[#1D4ED8] text-white"
+                className="bg-marca hover:bg-marca-fuerte text-white"
             >
                 <UserPlus className="h-4 w-4 mr-1.5" />
                 Nuevo usuario
@@ -120,59 +120,59 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                     {creado ? (
                         <>
                             <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2 text-[#0F172A]">
-                                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                                <DialogTitle className="flex items-center gap-2 text-tinta">
+                                    <ShieldCheck className="h-5 w-5 text-ok-tinta" />
                                     Usuario creado
                                 </DialogTitle>
                             </DialogHeader>
 
                             <div className="space-y-4 py-2">
-                                <p className="text-sm text-[#475569]">
+                                <p className="text-sm text-tinta-media">
                                     Entrega estas credenciales a{' '}
-                                    <span className="font-medium text-[#0F172A]">{creado.email}</span>.
+                                    <span className="font-medium text-tinta">{creado.email}</span>.
                                     En su primer ingreso deberá configurar la verificación en dos pasos.
                                 </p>
 
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                <div className="rounded-lg border border-aviso-linea bg-aviso-suave p-3">
                                     <div className="flex items-center gap-1.5 mb-2">
-                                        <KeyRound className="h-3.5 w-3.5 text-amber-700" />
-                                        <span className="text-xs font-medium text-amber-900">
+                                        <KeyRound className="h-3.5 w-3.5 text-aviso-tinta" />
+                                        <span className="text-xs font-medium text-aviso-tinta">
                                             Contraseña temporal
                                         </span>
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <code className="flex-1 rounded border border-amber-200 bg-white px-3 py-2 text-sm font-mono text-[#0F172A] break-all">
+                                        <code className="flex-1 rounded border border-aviso-linea bg-panel px-3 py-2 text-sm font-mono text-tinta break-all">
                                             {creado.passwordTemporal}
                                         </code>
                                         <button
                                             type="button"
                                             onClick={copiarPassword}
-                                            className="shrink-0 rounded border border-amber-200 bg-white p-2 text-amber-700 hover:bg-amber-100"
+                                            className="shrink-0 rounded border border-aviso-linea bg-panel p-2 text-aviso-tinta hover:bg-aviso-suave"
                                             title="Copiar"
                                         >
                                             {copiado
-                                                ? <Check className="h-4 w-4 text-green-600" />
+                                                ? <Check className="h-4 w-4 text-ok-tinta" />
                                                 : <Copy className="h-4 w-4" />}
                                         </button>
                                     </div>
 
-                                    <p className="text-[11px] text-amber-800 mt-2 leading-relaxed">
+                                    <p className="text-[11px] text-aviso-tinta mt-2 leading-relaxed">
                                         Cópiala ahora: no vuelve a mostrarse. Si se pierde, puedes
                                         generar otra desde la ficha del usuario.
                                     </p>
                                 </div>
 
                                 {advertencia && (
-                                    <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
-                                        <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
-                                        <p className="text-xs text-amber-900">{advertencia}</p>
+                                    <div className="flex items-start gap-2 rounded-lg border border-aviso-linea bg-aviso-suave px-3 py-2.5">
+                                        <AlertCircle className="h-4 w-4 text-aviso-tinta shrink-0 mt-0.5" />
+                                        <p className="text-xs text-aviso-tinta">{advertencia}</p>
                                     </div>
                                 )}
                             </div>
 
                             <DialogFooter>
-                                <Button onClick={cerrar} className="bg-[#1E40AF] hover:bg-[#1D4ED8]">
+                                <Button onClick={cerrar} className="bg-marca hover:bg-marca-fuerte">
                                     Entendido
                                 </Button>
                             </DialogFooter>
@@ -181,19 +181,19 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                         /* ── Formulario ── */
                         <form onSubmit={handleSubmit}>
                             <DialogHeader>
-                                <DialogTitle className="text-[#0F172A]">Nuevo usuario</DialogTitle>
+                                <DialogTitle className="text-tinta">Nuevo usuario</DialogTitle>
                             </DialogHeader>
 
                             <div className="space-y-4 py-4">
-                                <p className="text-xs text-[#94A3B8] leading-relaxed">
+                                <p className="text-xs text-tinta-tenue leading-relaxed">
                                     Crea una cuenta de acceso al sistema. Si le asignas el rol
-                                    <span className="font-medium text-[#475569]"> técnico</span>, se
+                                    <span className="font-medium text-tinta-media"> técnico</span>, se
                                     generará también su ficha para poder asignarle reportes.
                                 </p>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="nombre" className="text-xs text-[#475569]">
+                                        <Label htmlFor="nombre" className="text-xs text-tinta-media">
                                             Nombre
                                         </Label>
                                         <Input
@@ -204,7 +204,7 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="apellido" className="text-xs text-[#475569]">
+                                        <Label htmlFor="apellido" className="text-xs text-tinta-media">
                                             Apellido
                                         </Label>
                                         <Input
@@ -216,7 +216,7 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="email" className="text-xs text-[#475569]">
+                                    <Label htmlFor="email" className="text-xs text-tinta-media">
                                         Email
                                     </Label>
                                     <Input
@@ -229,8 +229,8 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="cedula" className="text-xs text-[#475569]">
-                                            Cédula <span className="text-[#94A3B8]">(opcional)</span>
+                                        <Label htmlFor="cedula" className="text-xs text-tinta-media">
+                                            Cédula <span className="text-tinta-tenue">(opcional)</span>
                                         </Label>
                                         <Input
                                             id="cedula"
@@ -239,8 +239,8 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="telefono" className="text-xs text-[#475569]">
-                                            Teléfono <span className="text-[#94A3B8]">(opcional)</span>
+                                        <Label htmlFor="telefono" className="text-xs text-tinta-media">
+                                            Teléfono <span className="text-tinta-tenue">(opcional)</span>
                                         </Label>
                                         <Input
                                             id="telefono"
@@ -251,32 +251,32 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-[#475569]">Roles</Label>
-                                    <div className="space-y-1.5 max-h-44 overflow-y-auto rounded-md border border-[#E2E8F0] p-2">
+                                    <Label className="text-xs text-tinta-media">Roles</Label>
+                                    <div className="space-y-1.5 max-h-44 overflow-y-auto rounded-md border border-borde p-2">
                                         {rolesCatalogo.map((rol) => {
                                             const marcado = rolesSeleccionados.includes(rol.id)
                                             return (
                                                 <label
                                                     key={rol.id}
-                                                    className="flex items-start gap-2.5 rounded p-2 cursor-pointer hover:bg-[#F8FAFC]"
+                                                    className="flex items-start gap-2.5 rounded p-2 cursor-pointer hover:bg-panel-suave"
                                                 >
                                                     <input
                                                         type="checkbox"
                                                         checked={marcado}
                                                         onChange={() => toggleRol(rol.id)}
-                                                        className="mt-0.5 h-4 w-4 rounded border-[#CBD5E1] text-[#1E40AF] focus:ring-[#1E40AF]"
+                                                        className="mt-0.5 h-4 w-4 rounded border-borde text-marca-tinta focus:ring-marca"
                                                     />
                                                     <div>
-                                                        <p className="text-sm font-medium text-[#0F172A] leading-none">
+                                                        <p className="text-sm font-medium text-tinta leading-none">
                                                             {rol.nombre}
                                                         </p>
                                                         {rol.descripcion && (
-                                                            <p className="text-xs text-[#94A3B8] mt-0.5">
+                                                            <p className="text-xs text-tinta-tenue mt-0.5">
                                                                 {rol.descripcion}
                                                             </p>
                                                         )}
                                                         {rol.nombre === 'tecnico' && marcado && (
-                                                            <p className="text-[11px] text-[#1E40AF] mt-1">
+                                                            <p className="text-[11px] text-marca-tinta mt-1">
                                                                 Se creará su ficha de técnico
                                                             </p>
                                                         )}
@@ -286,16 +286,16 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                         })}
                                     </div>
                                     {rolesSeleccionados.length === 0 && (
-                                        <p className="text-[11px] text-[#94A3B8]">
+                                        <p className="text-[11px] text-tinta-tenue">
                                             Sin al menos un rol, la persona no podrá entrar al sistema.
                                         </p>
                                     )}
                                 </div>
 
                                 {error && (
-                                    <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-                                        <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                                        <p className="text-xs text-red-700">{error}</p>
+                                    <div className="flex items-start gap-2 rounded-lg border border-critico-linea bg-critico-suave px-3 py-2.5">
+                                        <AlertCircle className="h-4 w-4 text-critico-tinta shrink-0 mt-0.5" />
+                                        <p className="text-xs text-critico-tinta">{error}</p>
                                     </div>
                                 )}
                             </div>
@@ -305,14 +305,14 @@ export default function NuevoUsuarioModal({ rolesCatalogo, onCreado }: Props) {
                                     type="button"
                                     variant="outline"
                                     onClick={cerrar}
-                                    className="border-[#E2E8F0] text-[#475569]"
+                                    className="border-borde text-tinta-media"
                                 >
                                     Cancelar
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={guardando || !formValido}
-                                    className="bg-[#1E40AF] hover:bg-[#1D4ED8]"
+                                    className="bg-marca hover:bg-marca-fuerte"
                                 >
                                     {guardando ? 'Creando...' : 'Crear usuario'}
                                 </Button>

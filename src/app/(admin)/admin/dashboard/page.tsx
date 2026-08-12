@@ -58,7 +58,7 @@ export default async function DashboardPage({
         return (
             <div className="rounded-xl border border-critico bg-critico-suave p-5">
                 <div className="flex items-start gap-3">
-                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-critico" />
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-critico-tinta" />
                     <div>
                         <p className="text-sm font-semibold text-tinta">
                             No se pudo cargar el dashboard
@@ -99,7 +99,7 @@ export default async function DashboardPage({
                 deja de leerse a la semana. */}
             {kpis.vencidos.valor > 0 && (
                 <div className="flex flex-wrap items-center gap-3 rounded-xl border border-aviso bg-aviso-suave px-4 py-3">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-aviso" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-aviso-tinta" />
                     <p className="flex-1 text-sm text-tinta">
                         <span className="font-semibold">
                             {kpis.vencidos.valor} {kpis.vencidos.valor === 1 ? 'equipo' : 'equipos'}

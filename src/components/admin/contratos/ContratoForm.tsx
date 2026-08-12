@@ -122,8 +122,8 @@ export default function ContratoForm({
 
             {/* ── Código de contrato ───────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="numero_contrato" className="text-sm font-medium text-[#334155]">
-                    Código de contrato <span className="text-red-500">*</span>
+                <Label htmlFor="numero_contrato" className="text-sm font-medium text-tinta-media">
+                    Código de contrato <span className="text-critico-tinta">*</span>
                 </Label>
                 <Input
                     id="numero_contrato"
@@ -133,23 +133,23 @@ export default function ContratoForm({
                             e.target.value = e.target.value.toUpperCase().replace(/\s/g, '')
                         }
                     })}
-                    className={errors.numero_contrato ? 'border-red-400' : ''}
+                    className={errors.numero_contrato ? 'border-critico-linea' : ''}
                 />
                 {errors.numero_contrato && (
-                    <p className="text-xs text-red-500">{errors.numero_contrato.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.numero_contrato.message}</p>
                 )}
             </div>
 
             {/* ── Cliente ──────────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-[#334155]">
-                    Cliente <span className="text-red-500">*</span>
+                <Label className="text-sm font-medium text-tinta-media">
+                    Cliente <span className="text-critico-tinta">*</span>
                 </Label>
                 <Select
                     value={clienteActual}
                     onValueChange={(val) => setValue('cliente_id', val)}
                 >
-                    <SelectTrigger className={errors.cliente_id ? 'border-red-400' : ''}>
+                    <SelectTrigger className={errors.cliente_id ? 'border-critico-linea' : ''}>
                         <SelectValue placeholder="Selecciona un cliente…" />
                     </SelectTrigger>
                     <SelectContent>
@@ -161,15 +161,15 @@ export default function ContratoForm({
                     </SelectContent>
                 </Select>
                 {errors.cliente_id && (
-                    <p className="text-xs text-red-500">{errors.cliente_id.message}</p>
+                    <p className="text-xs text-critico-tinta">{errors.cliente_id.message}</p>
                 )}
             </div>
 
             {/* ── Tipo + Estado (2 col) ────────────────────── */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">
-                        Tipo <span className="text-red-500">*</span>
+                    <Label className="text-sm font-medium text-tinta-media">
+                        Tipo <span className="text-critico-tinta">*</span>
                     </Label>
                     <Select
                         value={tipoActual}
@@ -189,7 +189,7 @@ export default function ContratoForm({
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-[#334155]">Estado</Label>
+                    <Label className="text-sm font-medium text-tinta-media">Estado</Label>
                     <Select
                         value={estadoActual}
                         onValueChange={(val) =>
@@ -212,39 +212,39 @@ export default function ContratoForm({
             {/* ── Fecha inicio + Fecha fin (2 col) ─────────── */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                    <Label htmlFor="fecha_inicio" className="text-sm font-medium text-[#334155]">
-                        Fecha inicio <span className="text-red-500">*</span>
+                    <Label htmlFor="fecha_inicio" className="text-sm font-medium text-tinta-media">
+                        Fecha inicio <span className="text-critico-tinta">*</span>
                     </Label>
                     <Input
                         id="fecha_inicio"
                         type="date"
                         {...register('fecha_inicio')}
-                        className={errors.fecha_inicio ? 'border-red-400' : ''}
+                        className={errors.fecha_inicio ? 'border-critico-linea' : ''}
                     />
                     {errors.fecha_inicio && (
-                        <p className="text-xs text-red-500">{errors.fecha_inicio.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.fecha_inicio.message}</p>
                     )}
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label htmlFor="fecha_fin" className="text-sm font-medium text-[#334155]">
+                    <Label htmlFor="fecha_fin" className="text-sm font-medium text-tinta-media">
                         Fecha fin
                     </Label>
                     <Input
                         id="fecha_fin"
                         type="date"
                         {...register('fecha_fin')}
-                        className={errors.fecha_fin ? 'border-red-400' : ''}
+                        className={errors.fecha_fin ? 'border-critico-linea' : ''}
                     />
                     {errors.fecha_fin && (
-                        <p className="text-xs text-red-500">{errors.fecha_fin.message}</p>
+                        <p className="text-xs text-critico-tinta">{errors.fecha_fin.message}</p>
                     )}
                 </div>
             </div>
 
             {/* ── Observaciones ────────────────────────────── */}
             <div className="space-y-1.5">
-                <Label htmlFor="observaciones" className="text-sm font-medium text-[#334155]">
+                <Label htmlFor="observaciones" className="text-sm font-medium text-tinta-media">
                     Observaciones
                 </Label>
                 <Textarea
@@ -257,20 +257,20 @@ export default function ContratoForm({
             </div>
 
             {/* ── Acciones ────────────────────────────────── */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+            <div className="flex justify-end gap-2 pt-2 border-t border-borde">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={onCancelar}
                     disabled={isLoading}
-                    className="text-[#334155]"
+                    className="text-tinta-media"
                 >
                     Cancelar
                 </Button>
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white"
+                    className="bg-marca hover:bg-marca-fuerte text-white"
                 >
                     {isLoading
                         ? 'Guardando…'

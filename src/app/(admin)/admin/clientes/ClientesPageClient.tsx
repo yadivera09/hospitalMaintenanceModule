@@ -140,14 +140,14 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
             {/* ── Encabezado */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <Users className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <Users className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">
+                        <h1 className="text-xl font-bold text-tinta leading-none">
                             Clientes
                         </h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {clientesIniciales.filter((c) => c.activo).length} activos
                             {' · '}
                             {clientesIniciales.length} en total
@@ -160,7 +160,7 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                         <Button
                             variant="outline"
                             onClick={handleExportar}
-                            className="gap-2 border-[#1E40AF]/20 text-[#1E40AF] hover:bg-blue-50 shrink-0"
+                            className="gap-2 border-marca-linea text-marca-tinta hover:bg-marca-suave shrink-0"
                             id="btn-exportar-clientes"
                         >
                             <Download className="h-4 w-4" />
@@ -170,7 +170,7 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                     {puedeCrear && (
                         <Button
                             onClick={abrirCrear}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white gap-2 shrink-0"
+                            className="bg-marca hover:bg-marca-fuerte text-white gap-2 shrink-0"
                             id="btn-nuevo-cliente"
                         >
                             <Plus className="h-4 w-4" />
@@ -182,7 +182,7 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
 
             {/* ── Error de carga inicial */}
             {errorInicial && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {errorInicial}
                 </div>
@@ -191,19 +191,19 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
             {/* ── Filtros: búsqueda + estado */}
             <div className="flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[220px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8] pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tinta-tenue pointer-events-none" />
                     <Input
                         id="buscar-cliente"
                         type="search"
                         placeholder="Buscar por nombre o RUC…"
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
-                        className="pl-9 bg-white border-[#E2E8F0]"
+                        className="pl-9 bg-panel border-borde"
                     />
                 </div>
 
                 <Select value={filtroEstado} onValueChange={(v) => setFiltroEstado(v as typeof filtroEstado)}>
-                    <SelectTrigger className="w-44 bg-white border-[#E2E8F0]" id="filtro-estado-cliente">
+                    <SelectTrigger className="w-44 bg-panel border-borde" id="filtro-estado-cliente">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -216,14 +216,14 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                 {(busqueda || filtroEstado !== 'todos') && (
                     <Button variant="ghost" size="sm"
                         onClick={() => { setBusqueda(''); setFiltroEstado('todos') }}
-                        className="text-xs text-[#94A3B8] hover:text-[#334155]">
+                        className="text-xs text-tinta-tenue hover:text-tinta-media">
                         Limpiar filtros
                     </Button>
                 )}
             </div>
 
             {/* ── Tabla */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden">
                 <ClientesTable
                     clientes={clientesFiltrados}
                     onVerDetalle={(id) => router.push(`/admin/clientes/${id}`)}
@@ -231,8 +231,8 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                     onDesactivar={puedeEliminar ? (cliente) => desactivarCliente(cliente.id) : undefined}
                     onDesactivarExito={() => startTransition(() => { router.refresh() })}
                 />
-                <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <p className="text-xs text-[#94A3B8]">
+                <div className="px-4 py-3 border-t border-borde bg-panel-suave">
+                    <p className="text-xs text-tinta-tenue">
                         {isPending ? 'Actualizando…' : `Mostrando ${clientesFiltrados.length} de ${clientesIniciales.length} clientes`}
                     </p>
                 </div>
@@ -242,10 +242,10 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
             <Dialog open={modalAbierto} onOpenChange={(open) => !open && cerrarModal()}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="text-[#0F172A]">
+                        <DialogTitle className="text-tinta">
                             {modoForm === 'crear' ? 'Nuevo Cliente' : 'Editar Cliente'}
                         </DialogTitle>
-                        <DialogDescription className="text-[#94A3B8]">
+                        <DialogDescription className="text-tinta-tenue">
                             {modoForm === 'crear'
                                 ? 'Completa los datos para registrar un nuevo cliente.'
                                 : `Editando: ${clienteEditando?.razon_social}`}
@@ -253,7 +253,7 @@ export default function ClientesPageClient({ clientesIniciales, errorInicial }: 
                     </DialogHeader>
 
                     {errorForm && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-3 py-2 text-xs text-critico-tinta">
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             {errorForm}
                         </div>

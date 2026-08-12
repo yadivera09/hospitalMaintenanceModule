@@ -112,19 +112,19 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
             {/* ── Encabezado ── */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1E40AF]/10">
-                        <UsersRound className="h-5 w-5 text-[#1E40AF]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+                        <UsersRound className="h-5 w-5 text-marca-tinta" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[#0F172A] leading-none">Grupos</h1>
-                        <p className="text-sm text-[#94A3B8] mt-0.5">
+                        <h1 className="text-xl font-bold text-tinta leading-none">Grupos</h1>
+                        <p className="text-sm text-tinta-tenue mt-0.5">
                             {grupos.length} grupos · {totalActivos} activos
                         </p>
                     </div>
                 </div>
                 <Button 
                     onClick={handleAbrirCrear} 
-                    className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm"
+                    className="bg-marca hover:bg-marca-fuerte text-white shadow-sm"
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Grupo
@@ -132,30 +132,30 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
             </div>
 
             {errorGlobal && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     {errorGlobal}
                 </div>
             )}
 
             {/* ── Tabla ── */}
-            <div className="rounded-xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="rounded-xl bg-panel border border-borde shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-[#F8FAFC] hover:bg-[#F8FAFC]">
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 pl-5">
+                        <TableRow className="bg-panel-suave hover:bg-panel-suave">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 pl-5">
                                 Grupo
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 hidden md:table-cell">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 hidden md:table-cell">
                                 Responsable
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-center hidden sm:table-cell">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-center hidden sm:table-cell">
                                 Miembros
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3">
                                 Estado
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-[#334155] uppercase tracking-wide py-3 text-right pr-5">
+                            <TableHead className="text-xs font-semibold text-tinta-media uppercase tracking-wide py-3 text-right pr-5">
                                 Acciones
                             </TableHead>
                         </TableRow>
@@ -166,8 +166,8 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                             <TableRow>
                                 <TableCell colSpan={5} className="py-16 text-center">
                                     <div className="flex flex-col items-center justify-center">
-                                        <UsersRound className="h-8 w-8 text-[#E2E8F0] mb-3" />
-                                        <p className="text-sm font-medium text-[#64748B]">No hay grupos creados</p>
+                                        <UsersRound className="h-8 w-8 text-borde mb-3" />
+                                        <p className="text-sm font-medium text-tinta-media">No hay grupos creados</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -175,17 +175,17 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                             grupos.map((grupo) => (
                                 <TableRow 
                                     key={grupo.id}
-                                    className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors cursor-pointer group"
+                                    className="border-b border-borde hover:bg-panel-suave transition-colors cursor-pointer group"
                                     onClick={() => router.push(`/admin/seguridad/grupos/${grupo.id}`)}
                                 >
                                     {/* Grupo */}
                                     <TableCell className="py-3.5 pl-5">
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-bold text-[#0F172A] truncate">
+                                            <span className="text-sm font-bold text-tinta truncate">
                                                 {grupo.nombre}
                                             </span>
                                             {grupo.descripcion && (
-                                                <span className="text-xs text-[#94A3B8] truncate mt-0.5 max-w-[250px]">
+                                                <span className="text-xs text-tinta-tenue truncate mt-0.5 max-w-[250px]">
                                                     {grupo.descripcion}
                                                 </span>
                                             )}
@@ -195,16 +195,16 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                                     {/* Responsable */}
                                     <TableCell className="py-3.5 hidden md:table-cell">
                                         {grupo.responsable_nombre ? (
-                                            <span className="text-sm text-[#334155]">{grupo.responsable_nombre}</span>
+                                            <span className="text-sm text-tinta-media">{grupo.responsable_nombre}</span>
                                         ) : (
-                                            <span className="text-xs text-[#94A3B8] italic">Sin responsable</span>
+                                            <span className="text-xs text-tinta-tenue italic">Sin responsable</span>
                                         )}
                                     </TableCell>
 
                                     {/* Miembros */}
                                     <TableCell className="py-3.5 text-center hidden sm:table-cell">
-                                        <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-[#0F172A]">
-                                            <Users className="h-4 w-4 text-[#94A3B8]" />
+                                        <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-tinta">
+                                            <Users className="h-4 w-4 text-tinta-tenue" />
                                             {grupo.total_miembros}
                                         </div>
                                     </TableCell>
@@ -212,11 +212,11 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                                     {/* Estado */}
                                     <TableCell className="py-3.5">
                                         {grupo.activo ? (
-                                            <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium px-2 py-0.5 rounded-sm">
+                                            <Badge className="bg-ok-suave text-ok-tinta border border-ok-linea text-xs font-medium px-2 py-0.5 rounded-sm">
                                                 Activo
                                             </Badge>
                                         ) : (
-                                            <Badge className="bg-[#F1F5F9] text-[#94A3B8] border border-[#E2E8F0] text-xs font-medium px-2 py-0.5 rounded-sm">
+                                            <Badge className="bg-panel-suave text-tinta-tenue border border-borde text-xs font-medium px-2 py-0.5 rounded-sm">
                                                 Inactivo
                                             </Badge>
                                         )}
@@ -229,7 +229,7 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => router.push(`/admin/seguridad/grupos/${grupo.id}`)}
-                                                className="h-8 w-8 p-0 text-[#94A3B8] hover:text-[#1E40AF] hover:bg-blue-50"
+                                                className="h-8 w-8 p-0 text-tinta-tenue hover:text-marca-tinta hover:bg-marca-suave"
                                                 title="Editar grupo"
                                             >
                                                 <Pencil className="h-4 w-4" />
@@ -240,7 +240,7 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                                                 size="sm"
                                                 onClick={() => handleEliminar(grupo.id)}
                                                 disabled={grupo.total_miembros > 0}
-                                                className="h-8 w-8 p-0 text-[#94A3B8] hover:text-red-600 hover:bg-red-50 disabled:opacity-30"
+                                                className="h-8 w-8 p-0 text-tinta-tenue hover:text-critico-tinta hover:bg-critico-suave disabled:opacity-30"
                                                 title={grupo.total_miembros > 0 ? "No se puede eliminar un grupo con miembros" : "Eliminar grupo"}
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -253,8 +253,8 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                     </TableBody>
                 </Table>
                 
-                <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <p className="text-xs text-[#94A3B8]">
+                <div className="px-5 py-3 border-t border-borde bg-panel-suave">
+                    <p className="text-xs text-tinta-tenue">
                         {isPending ? 'Actualizando…' : `Mostrando ${grupos.length} grupos registrados`}
                     </p>
                 </div>
@@ -264,11 +264,11 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
             <Dialog open={modalCrearAbierto} onOpenChange={(open) => !guardando && setModalCrearAbierto(open)}>
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-[#0F172A]">Nuevo Grupo</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold text-tinta">Nuevo Grupo</DialogTitle>
                     </DialogHeader>
 
                     {errorGlobal && modalCrearAbierto && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mt-2">
+                        <div className="flex items-center gap-2 rounded-lg border border-critico-linea bg-critico-suave px-4 py-3 text-sm text-critico-tinta mt-2">
                             <AlertCircle className="h-4 w-4 shrink-0" />
                             {errorGlobal}
                         </div>
@@ -276,21 +276,21 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
 
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Nombre del grupo <span className="text-red-500">*</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Nombre del grupo <span className="text-critico-tinta">*</span>
                             </label>
                             <Input 
                                 value={nombre}
                                 onChange={(e) => setNombre(e.target.value)}
                                 placeholder="Ej: Equipo Quito"
                                 disabled={guardando}
-                                className="border-[#E2E8F0] focus-visible:ring-[#1E40AF]"
+                                className="border-borde focus-visible:ring-marca"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Descripción <span className="text-[#94A3B8] font-normal">(Opcional)</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Descripción <span className="text-tinta-tenue font-normal">(Opcional)</span>
                             </label>
                             <Textarea 
                                 value={descripcion}
@@ -298,16 +298,16 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                                 placeholder="Propósito o área de cobertura del grupo..."
                                 disabled={guardando}
                                 rows={3}
-                                className="border-[#E2E8F0] focus-visible:ring-[#1E40AF]"
+                                className="border-borde focus-visible:ring-marca"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[#334155]">
-                                Responsable <span className="text-[#94A3B8] font-normal">(Opcional)</span>
+                            <label className="text-sm font-medium text-tinta-media">
+                                Responsable <span className="text-tinta-tenue font-normal">(Opcional)</span>
                             </label>
                             <Select value={responsableId} onValueChange={setResponsableId} disabled={guardando}>
-                                <SelectTrigger className="border-[#E2E8F0] focus:ring-[#1E40AF]">
+                                <SelectTrigger className="border-borde focus:ring-marca">
                                     <SelectValue placeholder="Seleccionar responsable..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -327,14 +327,14 @@ export default function GruposPageClient({ gruposIniciales, usuariosActivos, err
                             variant="ghost"
                             onClick={() => setModalCrearAbierto(false)}
                             disabled={guardando}
-                            className="text-[#64748B] hover:text-[#0F172A]"
+                            className="text-tinta-media hover:text-tinta"
                         >
                             Cancelar
                         </Button>
                         <Button
                             onClick={handleCrearGrupo}
                             disabled={guardando || !nombre.trim()}
-                            className="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm"
+                            className="bg-marca hover:bg-marca-fuerte text-white shadow-sm"
                         >
                             {guardando ? 'Creando...' : 'Crear grupo'}
                         </Button>

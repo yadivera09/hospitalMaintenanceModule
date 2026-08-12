@@ -108,7 +108,7 @@ export default function Navbar({ onMenuClick, usuario, tema, onAlternarTema }: N
                     <li>
                         <a
                             href="/admin/dashboard"
-                            className="flex items-center hover:text-marca transition-colors"
+                            className="flex items-center hover:text-marca-tinta transition-colors"
                             aria-label="Inicio"
                         >
                             <Home className="h-3.5 w-3.5 shrink-0" />
@@ -125,7 +125,7 @@ export default function Navbar({ onMenuClick, usuario, tema, onAlternarTema }: N
                             ) : (
                                 <a
                                     href={crumb.href}
-                                    className="hover:text-marca transition-colors truncate"
+                                    className="hover:text-marca-tinta transition-colors truncate"
                                 >
                                     {crumb.label}
                                 </a>
@@ -170,7 +170,7 @@ export default function Navbar({ onMenuClick, usuario, tema, onAlternarTema }: N
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    className="gap-1.5 text-tinta-tenue hover:text-critico hover:bg-critico-suave transition-colors"
+                    className="gap-1.5 text-tinta-tenue hover:text-critico-tinta hover:bg-critico-suave transition-colors"
                     aria-label="Cerrar sesión"
                     id="navbar-logout-btn"
                 >

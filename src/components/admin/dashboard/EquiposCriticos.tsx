@@ -28,9 +28,9 @@ interface EquiposCriticosProps {
 }
 
 const NIVELES: Record<NivelCorrectivos, { label: string; color: string; chip: string }> = {
-    critico: { label: 'Crítico', color: 'var(--critico)', chip: 'bg-critico-suave text-critico' },
-    alerta: { label: 'Alerta', color: 'var(--aviso)', chip: 'bg-aviso-suave text-aviso' },
-    normal: { label: 'Normal', color: 'var(--ok)', chip: 'bg-ok-suave text-ok' },
+    critico: { label: 'Crítico', color: 'var(--critico)', chip: 'bg-critico-suave text-critico-tinta' },
+    alerta: { label: 'Alerta', color: 'var(--aviso)', chip: 'bg-aviso-suave text-aviso-tinta' },
+    normal: { label: 'Normal', color: 'var(--ok)', chip: 'bg-ok-suave text-ok-tinta' },
 }
 
 /** Marcas del eje: el primer múltiplo de cuatro que cubre el máximo. */

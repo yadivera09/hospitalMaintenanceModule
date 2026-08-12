@@ -74,24 +74,38 @@ const config: Config = {
 					DEFAULT: "var(--marca)",
 					fuerte: "var(--marca-fuerte)",
 					suave: "var(--marca-suave)",
+					linea: "var(--marca-linea)",
 					tinta: "var(--marca-tinta)",
 				},
 				reja: "var(--reja)",
+				// DEFAULT es la marca de gráfico — barras y puntos, paleta fija.
+				// *-suave es el fondo tintado; *-linea, el filete que lo cierra;
+				// *-tinta, el color cuando hace de texto. Para escribir, SIEMPRE
+				// la variante -tinta: el DEFAULT está calibrado para leerse como
+				// señal, no como palabra.
 				ok: {
 					DEFAULT: "var(--ok)",
 					suave: "var(--ok-suave)",
+					linea: "var(--ok-linea)",
+					tinta: "var(--ok-tinta)",
 				},
 				aviso: {
 					DEFAULT: "var(--aviso)",
 					suave: "var(--aviso-suave)",
+					linea: "var(--aviso-linea)",
+					tinta: "var(--aviso-tinta)",
 				},
 				grave: {
 					DEFAULT: "var(--grave)",
 					suave: "var(--grave-suave)",
+					linea: "var(--grave-linea)",
+					tinta: "var(--grave-tinta)",
 				},
 				critico: {
 					DEFAULT: "var(--critico)",
 					suave: "var(--critico-suave)",
+					linea: "var(--critico-linea)",
+					tinta: "var(--critico-tinta)",
 				},
 				serie: {
 					"1": "var(--serie-1)",

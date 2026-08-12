@@ -81,21 +81,21 @@ export default function EstadoFlota({ flota }: EstadoFlotaProps) {
             etiqueta: 'Al día',
             valor: flota.alDia,
             color: 'var(--ok)',
-            textoChip: 'text-ok',
+            textoChip: 'text-ok-tinta',
         },
         {
             clave: 'vencidos',
             etiqueta: 'Vencidos',
             valor: flota.vencidos,
             color: 'var(--aviso)',
-            textoChip: 'text-aviso',
+            textoChip: 'text-aviso-tinta',
         },
         {
             clave: 'nunca',
             etiqueta: 'Sin mantenimiento',
             valor: flota.nuncaMantenidos,
             color: 'var(--critico)',
-            textoChip: 'text-critico',
+            textoChip: 'text-critico-tinta',
         },
     ]
 

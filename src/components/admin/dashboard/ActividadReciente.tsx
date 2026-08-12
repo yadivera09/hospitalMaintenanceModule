@@ -36,8 +36,8 @@ interface ActividadRecienteProps {
  */
 const ESTADOS: Record<string, { label: string; clase: string }> = {
     en_progreso: { label: 'En progreso', clase: 'bg-marca-suave text-marca-tinta' },
-    cerrado: { label: 'Cerrado', clase: 'bg-ok-suave text-ok' },
-    anulado: { label: 'Anulado', clase: 'bg-critico-suave text-critico' },
+    cerrado: { label: 'Cerrado', clase: 'bg-ok-suave text-ok-tinta' },
+    anulado: { label: 'Anulado', clase: 'bg-critico-suave text-critico-tinta' },
 }
 
 /**
@@ -48,12 +48,12 @@ const ESTADOS: Record<string, { label: string; clase: string }> = {
  * nuevos como 'Preventivo Anual' encuentran igual su icono.
  */
 const TIPOS: { coincide: string; icono: LucideIcon; clase: string }[] = [
-    { coincide: 'correctivo', icono: Wrench, clase: 'bg-critico-suave text-critico' },
-    { coincide: 'emergencia', icono: Flame, clase: 'bg-grave-suave text-grave' },
+    { coincide: 'correctivo', icono: Wrench, clase: 'bg-critico-suave text-critico-tinta' },
+    { coincide: 'emergencia', icono: Flame, clase: 'bg-grave-suave text-grave-tinta' },
     { coincide: 'instalación', icono: PackagePlus, clase: 'bg-marca-suave text-marca-tinta' },
     { coincide: 'instalacion', icono: PackagePlus, clase: 'bg-marca-suave text-marca-tinta' },
     { coincide: 'retiro', icono: PackagePlus, clase: 'bg-panel-suave text-tinta-media' },
-    { coincide: 'preventivo', icono: ShieldCheck, clase: 'bg-ok-suave text-ok' },
+    { coincide: 'preventivo', icono: ShieldCheck, clase: 'bg-ok-suave text-ok-tinta' },
 ]
 
 const TIPO_POR_DEFECTO = { icono: AlertTriangle, clase: 'bg-panel-suave text-tinta-media' }
