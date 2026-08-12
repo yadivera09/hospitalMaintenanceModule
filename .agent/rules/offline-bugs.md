@@ -15,7 +15,7 @@ reportes duplicados que además queman números de serie.
 Esta auditoría sustituye a la anterior (bugs 1–5 de la ronda de julio). Al final se
 indica qué quedó vivo de aquella.
 
-**Los 20 fallos están agrupados por causa, no por síntoma.** Varios síntomas que el
+**Los 19 fallos están agrupados por causa, no por síntoma.** Varios síntomas que el
 técnico reporta por separado salen del mismo defecto.
 
 ## ESTADO (2026-08-12)
@@ -23,8 +23,10 @@ técnico reporta por separado salen del mismo defecto.
 | | |
 |---|---|
 | **Corregidos** | A1, A2, A4, B1, B2, B3, B4, B5, B6, B7, B8, C1, C3, D1, D2, D3, D4 |
-| **Descartado — no era un fallo** | A3 (ver su apartado antes de volver a tocarlo) |
-| **Fuera de esta tanda, por decisión** | C2 (33 reportes sin serial) |
+| **Cerrados sin cambios — no eran fallos** | A3 y C2 (leer sus apartados antes de volver a tocarlos) |
+
+**Los 19 están resueltos.** 17 con código o migración, 2 cerrados por análisis
+tras comprobar que no eran fallos.
 
 Las tres migraciones **024 → 025 → 026** están aplicadas y verificadas en
 producción (2026-08-12). La 026 dependía de la 024.
@@ -318,12 +320,45 @@ C2). Ya no estorban: la nueva `cerrar_borrador_reporte` de la migración 026 los
 sobreescribe con un serial correcto si alguno volviera a pasar por el cierre, en
 vez de fallar y quemar un número.
 
-## C2 — MEDIO: 33 reportes activos sin número, algunos cerrados
+## C2 — CERRADO: los reportes sin número son anteriores al sistema de numeración
 
-Secuela de la migración 023, que pasó 48 reportes de `pendiente_firma_cliente` a
-`cerrado` con un UPDATE directo, sin pasar por `cerrar_borrador_reporte`. Esos
-reportes están cerrados y no tienen serial. No es un fallo del modo offline, pero
-sale en cualquier informe que agrupe por número.
+La hipótesis inicial —secuela del UPDATE masivo de la migración 023— **era
+falsa**. Investigado con datos el 2026-08-12:
+
+| estado | activo | total | con firma técnico | rango |
+|---|---|---|---|---|
+| anulado | sí | 20 | 4 | 9 mar – 7 may |
+| cerrado | sí | 11 | 11 | 9 mar – 16 mar |
+| en_progreso | sí | 2 | 0 | 11 may – 7 ago |
+| en_progreso | no | 1 | 0 | 29 abr |
+
+De los 33, **30 no tienen nada de anómalo**:
+
+- Los 3 `en_progreso` no han cerrado todavía, y el serial se asigna al cerrar.
+- Los 20 `anulado` se anularon antes de cerrarse — 16 ni siquiera llegaron a
+  tener firma del técnico. Nunca llegaron a merecer número.
+
+Quedan los **11 cerrados**. Y la explicación es la fecha:
+
+```
+primer reporte con serial            2026-03-16
+cerrados sin serial anteriores a esa fecha   10 de 11
+el 11º es del propio 2026-03-16
+```
+
+Son **anteriores al sistema de numeración**. La secuencia se creó en la migración
+003, aplicada por esas fechas; lo que se cerró antes no recibió número porque el
+mecanismo no existía. No es un fallo: es historia.
+
+**Decisión: se dejan como están.** Darles número hoy solo tiene dos formas y
+ninguna mejora nada — asignarles del 38 al 48, cronológicamente absurdo para
+reportes de marzo; o renumerarlo todo otra vez para insertarlos al principio,
+moviendo los 37 seriales recién estabilizados. Y esos 11 reportes se entregaron
+hace cinco meses sin número: no hay copia en papel que apunte a uno.
+
+La interfaz ya lo resuelve bien: cuando no hay serial muestra `#<id abreviado>`
+(`ReportesTable.tsx:96`, `MisReportesClient.tsx:181`), que identifica el reporte
+sin inventarle un correlativo.
 
 ---
 
